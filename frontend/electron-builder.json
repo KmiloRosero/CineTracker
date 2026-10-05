@@ -1,0 +1,46 @@
+{
+  "appId": "com.cinetracker.app",
+  "productName": "CineTracker",
+  "copyright": "Copyright © 2024 Camilo Rosero",
+  "directories": {
+    "buildResources": "icons",
+    "output": "C:/CineTracker-release"
+  },
+  "files": [
+    "dist/**/*",
+    "electron/**/*",
+    "node_modules/**/*",
+    "package.json",
+    {
+      "from": "../backend",
+      "to": "backend",
+      "filter": ["**/*"]
+    }
+  ],
+  "win": {
+    "target": [
+      { "target": "portable", "arch": ["x64"] }
+    ],
+    "icon": "icons/icon.ico",
+    "sign": null,
+    "signingHashAlgorithms": null
+  },
+  "mac": {
+    "target": [
+      { "target": "dmg", "arch": ["x64", "arm64"] }
+    ],
+    "icon": "icons/icon.icns",
+    "category": "public.app-category.entertainment",
+    "identity": null
+  },
+  "linux": {
+    "target": ["AppImage"],
+    "icon": "icons/icon.png",
+    "category": "Video"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "publish": null
+}
