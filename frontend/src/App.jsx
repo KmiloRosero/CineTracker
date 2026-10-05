@@ -7,7 +7,7 @@ import TitleDetail from './pages/TitleDetail';
 import Statistics from './pages/Statistics';
 import Login from './pages/Login';
 import ThemeToggle from './components/ThemeToggle';
-import ProtectedRoute from './components/ProtectedRoute';
+import LoginModal from './components/LoginModal';
 import { useAuth } from './context/AuthContext';
 
 const NAV_LINKS = [
@@ -16,7 +16,6 @@ const NAV_LINKS = [
   { to: '/statistics', label: 'Statistics', icon: 'chart' },
 ];
 
-// Minimal inline SVG icons — one consistent stroke weight, no emoji
 function NavIcon({ name }) {
   const icons = {
     home: (
@@ -38,6 +37,16 @@ function NavIcon({ name }) {
   return <span className="nav-icon">{icons[name]}</span>;
 }
 
+function IconLogIn() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/>
+      <polyline points="10 17 15 12 10 7"/>
+      <line x1="15" y1="12" x2="3" y2="12"/>
+    </svg>
+  );
+}
+
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
@@ -53,12 +62,12 @@ export function PageWrapper({ children }) {
 }
 
 function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user, logout, openLoginModal } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
     await logout();
-    navigate('/login', { replace: true });
+    // stay on current page after logout — no forced redirect
   }
 
   return (
@@ -83,7 +92,8 @@ function Sidebar() {
       <div className="app-sidebar__spacer" />
       <ThemeToggle />
 
-      {user && (
+      {user ? (
+        // ── logged-in user block ──────────────────────────────────────────
         <div className="sidebar-user">
           {user.avatar_url ? (
             <img className="sidebar-user__avatar" src={user.avatar_url} alt={user.name} />
@@ -97,43 +107,51 @@ function Sidebar() {
             <button className="sidebar-user__logout" onClick={handleLogout}>Log out</button>
           </div>
         </div>
+      ) : (
+        // ── guest login prompt ────────────────────────────────────────────
+        <button
+          className="sidebar-login-btn"
+          onClick={() => openLoginModal()}
+          aria-label="Sign in to CineTracker"
+        >
+          <IconLogIn />
+          <span>Log in</span>
+        </button>
       )}
     </nav>
   );
 }
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const location = useLocation();
 
   if (loading) return <div className="page-loading">Loading…</div>;
 
   return (
     <div className="app-layout">
-      {user && <Sidebar />}
+      {/* sidebar is always visible — guest or logged in */}
+      <Sidebar />
 
       <main className="app-content">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
-            <Route path="/login" element={
-              user ? <Navigate to="/" replace /> : <PageWrapper><Login /></PageWrapper>
-            } />
-            <Route path="/" element={
-              <ProtectedRoute><PageWrapper><Home /></PageWrapper></ProtectedRoute>
-            } />
-            <Route path="/catalog" element={
-              <ProtectedRoute><PageWrapper><Catalog /></PageWrapper></ProtectedRoute>
-            } />
-            <Route path="/title/:id" element={
-              <ProtectedRoute><PageWrapper><TitleDetail /></PageWrapper></ProtectedRoute>
-            } />
-            <Route path="/statistics" element={
-              <ProtectedRoute><PageWrapper><Statistics /></PageWrapper></ProtectedRoute>
-            } />
-            <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
+            {/* /login stays available for direct navigation */}
+            <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+
+            {/* public routes — no auth required to browse */}
+            <Route path="/"            element={<PageWrapper><Home /></PageWrapper>} />
+            <Route path="/catalog"     element={<PageWrapper><Catalog /></PageWrapper>} />
+            <Route path="/title/:id"   element={<PageWrapper><TitleDetail /></PageWrapper>} />
+            <Route path="/statistics"  element={<PageWrapper><Statistics /></PageWrapper>} />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AnimatePresence>
       </main>
+
+      {/* global login modal — rendered at root so it overlays any page */}
+      <LoginModal />
     </div>
   );
 }

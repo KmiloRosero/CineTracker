@@ -1729,3 +1729,56 @@ a:hover { text-decoration: underline; }
 .toast__icon svg { width: 16px; height: 16px; }
 .toast--success .toast__icon { color: var(--status-completed); }
 .toast--error   .toast__icon { color: var(--status-dropped); }
+
+/* ─── Sidebar guest login button ─────────────────────────────────────────── */
+.sidebar-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  margin: 8px 8px 0;
+  padding: 9px 10px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(0,191,255,.22);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t), border-color var(--t), box-shadow var(--t);
+}
+.sidebar-login-btn:hover {
+  background: rgba(0,191,255,.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+/* ─── LoginModal overrides ───────────────────────────────────────────────── */
+.login-modal {
+  max-width: 420px;
+}
+.login-modal-overlay {
+  /* same as .modal-overlay but ensure it stacks above everything */
+  z-index: 300;
+}
+.login-modal__brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.login-modal__logo {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.login-modal__title {
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.login-modal__sub {
+  font-size: .76rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}

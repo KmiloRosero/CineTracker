@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchTitle, getTitleDetails } from '../services/tmdbApi';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 
 // ── Icons ─────────────────────────────────────────────────────────────────
 function IconSearch() {
@@ -49,6 +50,7 @@ function IconClose() {
 
 // ── TitleAutocomplete ─────────────────────────────────────────────────────
 export default function TitleAutocomplete({ onSaved, onManualAdd }) {
+  const requireAuth = useRequireAuth();
   const [query,       setQuery]       = useState('');
   const [results,     setResults]     = useState([]);
   const [searching,   setSearching]   = useState(false);
