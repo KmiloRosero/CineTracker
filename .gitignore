@@ -12,6 +12,8 @@ frontend/.webpack/
 # Environment variables
 frontend/.env.local
 frontend/.env.*.local
+backend/.env
+backend/.env.local
 
 # Logs
 npm-debug.log*

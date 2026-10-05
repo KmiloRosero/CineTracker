@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import TitleCard from '../components/TitleCard';
-import { gridVariants } from '../components/cardAnimations';
+import { gridVariants, cardVariants } from '../components/cardAnimations';
 import { useAuth } from '../context/AuthContext';
 import { PageLoading, PageError } from '../components/PageLoading';
 
@@ -12,7 +12,7 @@ const NO_REC_MSG = {
   'no-match':    'No pending titles match your top-rated genres yet. Keep rating.',
 };
 
-// ── Icon components — drawn SVGs, no emoji ────────────────────────────────
+// ── Icon components ───────────────────────────────────────────────────────
 function IconFilm() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -62,6 +62,21 @@ function IconPlus() {
     </svg>
   );
 }
+function IconSpinner() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>
+  );
+}
+function IconAI() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/>
+      <path d="M12 8v4l3 3"/>
+    </svg>
+  );
+}
 
 // ── StatPill ──────────────────────────────────────────────────────────────
 function StatPill({ label, value, icon: Icon, accent = false }) {
@@ -74,26 +89,42 @@ function StatPill({ label, value, icon: Icon, accent = false }) {
   );
 }
 
+// ── AI recommendation card — TitleCard + reason caption ───────────────────
+function AIRecCard({ title, onClick }) {
+  return (
+    <motion.div className="ai-rec-card" variants={cardVariants}>
+      <TitleCard title={title} onClick={onClick} />
+      {title.ai_reason && (
+        <p className="ai-rec-card__reason">
+          <span className="ai-rec-card__reason-icon"><IconAI /></span>
+          {title.ai_reason}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
 // ── Home ──────────────────────────────────────────────────────────────────
 export default function Home() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const { user }  = useAuth();
 
-  const [titles,  setTitles]  = useState([]);
-  const [stats,   setStats]   = useState(null);
-  const [rec,     setRec]     = useState({ recommendations: [], reason: 'no-ratings' });
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [titles,     setTitles]     = useState([]);
+  const [stats,      setStats]      = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
 
-  // ── data fetching — untouched ─────────────────────────────────────────
+  // AI recommendations — fetched separately so the page doesn't block on Claude
+  const [aiRec,      setAiRec]      = useState(null);   // null = not yet fetched
+  const [aiLoading,  setAiLoading]  = useState(false);
+  const [aiSource,   setAiSource]   = useState(null);   // 'ai' | 'rule-based'
+
+  // ── load catalog data ─────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       try {
-        const [allTitles, recResult] = await Promise.all([          window.electronAPI.getAllTitles({}),
-          window.electronAPI.getRecommendations(),
-        ]);
+        const allTitles = await window.electronAPI.getAllTitles({});
         setTitles(allTitles);
-        setRec(recResult ?? { recommendations: [], reason: 'no-ratings' });
 
         const completed = allTitles.filter((t) => t.status === 'completed').length;
         const watching  = allTitles.filter((t) => t.status === 'watching').length;
@@ -113,8 +144,28 @@ export default function Home() {
     load();
   }, []);
 
+  // ── load AI recommendations after catalog is ready ────────────────────
+  useEffect(() => {
+    if (loading) return; // wait for catalog
+    setAiLoading(true);
+    window.electronAPI.getAIRecommendations()
+      .then((result) => {
+        setAiRec(result ?? { recommendations: [], reason: 'no-ratings' });
+        setAiSource(result?.source ?? 'rule-based');
+      })
+      .catch((err) => {
+        console.error('AI rec error:', err);
+        setAiRec({ recommendations: [], reason: 'no-ratings' });
+        setAiSource('rule-based');
+      })
+      .finally(() => setAiLoading(false));
+  }, [loading]);
+
   const recent = useMemo(() => titles.slice(0, 6), [titles]);
-  const { recommendations, reason } = rec;
+
+  const recommendations = aiRec?.recommendations ?? [];
+  const recReason       = aiRec?.reason ?? 'no-ratings';
+  const isAI            = aiSource === 'ai';
 
   const greeting = user
     ? `Good ${getTimeOfDay()}, ${user.name.split(' ')[0]}`
@@ -122,6 +173,7 @@ export default function Home() {
 
   if (loading) return <PageLoading />;
   if (error)   return <PageError message={`Failed to load: ${error}`} onRetry={() => { setLoading(true); setError(null); }} />;
+
   return (
     <main className="page">
 
@@ -155,34 +207,55 @@ export default function Home() {
         </motion.div>
       )}
 
-      {/* ── recommendations — primary section ── */}
+      {/* ── recommendations ── */}
       <section className="home__section" aria-label="Recommended for you">
         <div className="section-header section-header--primary">
           <div className="section-header__left">
             <h2>Recommended for You</h2>
-            {recommendations.length > 0 && (
+            {!aiLoading && recommendations.length > 0 && (
               <span className="section-header__sub">
-                Based on your highest-rated genres
+                {isAI
+                  ? <><span className="ai-badge"><IconAI /> AI-powered</span> · Personalized by Claude</>
+                  : 'Based on your highest-rated genres'}
               </span>
             )}
           </div>
         </div>
 
-        {recommendations.length > 0 ? (
-          <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
-            {recommendations.map((t) => (
-              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-            ))}
+        {/* loading skeleton while Claude is thinking */}
+        {aiLoading && (
+          <div className="rec-loading" role="status" aria-label="Generating recommendations">
+            <IconSpinner />
+            <span>Generating personalized recommendations…</span>
+          </div>
+        )}
+
+        {/* results */}
+        {!aiLoading && recommendations.length > 0 && (
+          <motion.div
+            className={`title-grid${isAI ? ' title-grid--ai' : ''}`}
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            {recommendations.map((t) =>
+              isAI
+                ? <AIRecCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
+                : <TitleCard  key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
+            )}
           </motion.div>
-        ) : (
+        )}
+
+        {/* empty state */}
+        {!aiLoading && recommendations.length === 0 && (
           <div className="home__empty" role="status">
             <div className="home__empty__icon-wrap"><IconSparkle /></div>
-            <p>{NO_REC_MSG[reason] ?? 'No recommendations available yet.'}</p>
+            <p>{NO_REC_MSG[recReason] ?? 'No recommendations available yet.'}</p>
           </div>
         )}
       </section>
 
-      {/* ── recently added — secondary section ── */}
+      {/* ── recently added ── */}
       <section className="home__section" aria-label="Recently added">
         <div className="section-header">
           <div className="section-header__left">
@@ -214,7 +287,6 @@ export default function Home() {
   );
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────
 function getTimeOfDay() {
   const h = new Date().getHours();
   if (h < 12) return 'morning';

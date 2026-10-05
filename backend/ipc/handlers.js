@@ -1,6 +1,7 @@
 const titleService          = require('../services/titleService.js');
 const statisticsService     = require('../services/statisticsService.js');
 const recommendationService = require('../services/recommendationService.js');
+const aiRecommendationService = require('../services/aiRecommendationService.js');
 const authService           = require('../services/authService.js');
 const recordRepository      = require('../repositories/recordRepository.js');
 const listRepository        = require('../repositories/listRepository.js');
@@ -36,7 +37,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('stats:getMonthlyWatched', safe(() => statisticsService.getMonthlyWatched()));
   ipcMain.handle('stats:getTotalHours',     safe(() => statisticsService.getTotalHours()));
 
-  ipcMain.handle('recommendations:get', safe(() => recommendationService.getRecommendations()));
+  ipcMain.handle('recommendations:get',   safe(() => recommendationService.getRecommendations()));
+  ipcMain.handle('recommendations:getAI', safe(() => aiRecommendationService.getAIRecommendations()));
 
   ipcMain.handle('app:getTheme', safe(() => {
     return getDb().prepare('SELECT value FROM settings WHERE key = ?').get('theme')?.value;

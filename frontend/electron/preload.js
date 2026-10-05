@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Recommendations ──────────────────────────────────────────────────────
   /** Returns { recommendations: Title[], reason: string } */
   getRecommendations: () => ipcRenderer.invoke('recommendations:get'),
+  getAIRecommendations: () => ipcRenderer.invoke('recommendations:getAI'),
 
   // ── App settings ─────────────────────────────────────────────────────────
   getTheme: ()        => ipcRenderer.invoke('app:getTheme'),
