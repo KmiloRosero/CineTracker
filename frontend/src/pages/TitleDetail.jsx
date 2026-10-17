@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import RatingStars from '../components/RatingStars';
 import { PageLoading } from '../components/PageLoading';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { useAuth } from '../context/AuthContext';
+import GuestPrompt from '../components/GuestPrompt';
 
 // ── constants — untouched ─────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -99,6 +101,7 @@ export default function TitleDetail() {
   const navigate = useNavigate();
   const isNew = id === 'new';
   const requireAuth = useRequireAuth();
+  const { user } = useAuth();
 
   // ── state — untouched ──────────────────────────────────────────────────
   const [title,   setTitle]   = useState(null);
@@ -113,6 +116,7 @@ export default function TitleDetail() {
   // ── data fetching — untouched ──────────────────────────────────────────
   useEffect(() => {
     if (isNew) return;
+    if (!user) { setLoading(false); return; }
     async function load() {
       setLoading(true);
       setError(null);
@@ -141,7 +145,7 @@ export default function TitleDetail() {
       }
     }
     load();
-  }, [id, isNew, navigate]);
+  }, [id, isNew, navigate, user]);
 
   function parseGenres(raw) {
     if (!raw) return [];
@@ -235,6 +239,13 @@ export default function TitleDetail() {
   }
 
   // ── derived values ────────────────────────────────────────────────────
+  if (!user && !isNew) {
+    return (
+      <main className="page">
+        <GuestPrompt title="Log in to see this title" message="Titles, ratings and watch history belong to your account." />
+      </main>
+    );
+  }
   if (loading) return <PageLoading />;
   if (error && !title) return <div className="page-error">{error}</div>;
 

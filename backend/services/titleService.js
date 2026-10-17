@@ -1,49 +1,42 @@
 const titleRepository  = require('../repositories/titleRepository.js');
 const recordRepository = require('../repositories/recordRepository.js');
-const { validateTitleInput, validateTitleUpdate } = require('../utils/validators.js');
+const { validateTitleInput, validateTitleUpdate, validateId } = require('../utils/validators.js');
 
-// Columns the renderer may change. The repository builds SQL from the keys it
-// receives, so anything else (id, added_at, updated_at, unknown keys) is dropped.
-const UPDATABLE_FIELDS = [
-  'tmdb_id', 'type', 'title', 'original_title', 'overview', 'poster_path',
-  'backdrop_path', 'release_year', 'genres', 'runtime', 'status', 'rating', 'notes',
-];
-
-function pickUpdatable(data) {
-  return Object.fromEntries(
-    Object.entries(data).filter(([key]) => UPDATABLE_FIELDS.includes(key))
-  );
+/** Returns the user's title or throws a user-facing "not found" error. */
+function requireTitle(userId, id) {
+  validateId(id, 'Title id');
+  const title = titleRepository.findById(userId, Number(id));
+  if (!title) throw new Error('Title not found.');
+  return title;
 }
 
-function addTitle(titleData) {
+function addTitle(userId, titleData) {
   validateTitleInput(titleData);
-  return titleRepository.create(titleData);
+  if (titleData.tmdb_id != null && titleRepository.findByTmdbId(userId, titleData.tmdb_id)) {
+    throw new Error(`"${titleData.title}" is already in your catalog.`);
+  }
+  return titleRepository.create(userId, { ...titleData, title: titleData.title.trim() });
 }
 
-function getAllTitles(filters = {}) {
-  return titleRepository.findAll(filters);
+function getAllTitles(userId, filters = {}) {
+  return titleRepository.findAll(userId, filters ?? {});
 }
 
-function getTitleWithRecords(id) {
-  const title = titleRepository.findById(id);
-  if (!title) throw new Error(`Title not found: ${id}`);
-  const records = recordRepository.findByTitleId(id);
+function getTitleWithRecords(userId, id) {
+  const title = requireTitle(userId, id);
+  const records = recordRepository.findByTitleId(userId, title.id);
   return { title, records };
 }
 
-function updateTitle(id, data) {
-  const existing = titleRepository.findById(id);
-  if (!existing) throw new Error(`Title not found: ${id}`);
+function updateTitle(userId, id, data) {
+  const existing = requireTitle(userId, id);
   validateTitleUpdate(data);
-  const fields = pickUpdatable(data);
-  if (Object.keys(fields).length === 0) return existing;
-  return titleRepository.update(id, fields);
+  return titleRepository.update(userId, existing.id, data);
 }
 
-function deleteTitle(id) {
-  const existing = titleRepository.findById(id);
-  if (!existing) throw new Error(`Title not found: ${id}`);
-  return titleRepository.remove(id);
+function deleteTitle(userId, id) {
+  const existing = requireTitle(userId, id);
+  return titleRepository.remove(userId, existing.id);
 }
 
-module.exports = { addTitle, getAllTitles, getTitleWithRecords, updateTitle, deleteTitle };
+module.exports = { requireTitle, addTitle, getAllTitles, getTitleWithRecords, updateTitle, deleteTitle };

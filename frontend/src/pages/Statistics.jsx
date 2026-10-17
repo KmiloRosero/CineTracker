@@ -2,8 +2,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChartCard, LineChartCard } from '../components/StatsChart';
 import { PageLoading, PageError } from '../components/PageLoading';
+import GuestPrompt from '../components/GuestPrompt';
+import { useAuth } from '../context/AuthContext';
 
-// ── helpers — untouched ───────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────
+function unwrap(result) {
+  if (result?.error) throw new Error(result.error);
+  return result;
+}
+
 function parseGenres(raw) {
   if (!raw) return [];
   try { return JSON.parse(raw); } catch { return []; }
@@ -81,17 +88,20 @@ export default function Statistics() {
   const [hours,   setHours]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const { user } = useAuth();
 
-  // ── data fetching — untouched ──────────────────────────────────────────
+  // ── data fetching ──────────────────────────────────────────────────────
   useEffect(() => {
+    if (!user) { setLoading(false); return; }
     async function load() {
       setLoading(true); setError(null);
       try {
         const [allTitles, genreCounts, monthlyWatched, totalHours] = await Promise.all([
-          window.electronAPI.getAllTitles({}),
-          window.electronAPI.getGenreCounts(),
-          window.electronAPI.getMonthlyWatched(),
-          window.electronAPI.getTotalHours(),
+          window.electronAPI.getAllTitles({}).then(unwrap),
+          window.electronAPI.getGenreCounts().then(unwrap),
+          window.electronAPI.getMonthlyWatched().then(unwrap),
+          window.electronAPI.getTotalHours().then(unwrap),
         ]);
         setTitles(allTitles);
         setGenres(genreCounts ?? []);
@@ -104,7 +114,7 @@ export default function Statistics() {
       }
     }
     load();
-  }, []);
+  }, [user, reloadKey]);
 
   // ── derived — untouched ────────────────────────────────────────────────
   const summary = useMemo(() => {
@@ -140,8 +150,19 @@ export default function Statistics() {
   }, [titles]);
 
   // ── loading / error ────────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <main className="page">
+        <h1 className="page__heading">Statistics</h1>
+        <GuestPrompt
+          title="Your viewing stats live here"
+          message="Log in to see your genres, monthly activity and hours watched."
+        />
+      </main>
+    );
+  }
   if (loading) return <PageLoading message="Loading statistics…" />;
-  if (error)   return <PageError message={error} onRetry={() => { setLoading(true); setError(null); }} />;
+  if (error)   return <PageError message={error} onRetry={() => setReloadKey((k) => k + 1)} />;
 
   if (titles.length === 0) {
     return (

@@ -7,6 +7,7 @@ import { gridVariants } from '../components/cardAnimations';
 import { PageLoading, PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import GuestPrompt from '../components/GuestPrompt';
 
 const STATUS_OPTIONS = ['watching', 'completed', 'pending', 'dropped'];
 
@@ -156,7 +157,10 @@ export default function Catalog() {
       setLoading(false);
     }
   }
-  useEffect(() => { loadTitles(); }, []);
+  useEffect(() => {
+    if (user) loadTitles();
+    else { setTitles([]); setLoading(false); }
+  }, [user]);
 
   // ── derived ───────────────────────────────────────────────────────────
   const allGenres = useMemo(() => {
@@ -260,6 +264,14 @@ export default function Catalog() {
         </button>
       </div>
 
+      {!user && (
+        <GuestPrompt
+          title="Start your catalog"
+          message="Log in to add movies and series, track what you are watching and rate what you finish."
+        />
+      )}
+
+      {user && <>
       {/* ── toolbar ── */}
       <div className="catalog__toolbar" role="search">
         <div className="catalog__toolbar-row">
@@ -345,7 +357,7 @@ export default function Catalog() {
         <>
           <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
             {filtered.map((t) => (
-              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} onDelete={user ? handleDelete : undefined} />
+              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} onDelete={handleDelete} />
             ))}
           </motion.div>
           <p className="catalog__count" aria-live="polite">
@@ -354,6 +366,7 @@ export default function Catalog() {
           </p>
         </>
       )}
+      </>}
 
       {/* ── AUTOCOMPLETE MODAL ── */}
       <AnimatePresence>

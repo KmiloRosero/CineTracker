@@ -37,6 +37,10 @@ async function register(name, email, password) {
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const user = userRepo.create({ name: name.trim(), email: email.toLowerCase(), passwordHash });
+
+  // Data saved before accounts existed belongs to the first account created.
+  if (userRepo.count() === 1) userRepo.claimUnownedData(user.id);
+
   return stripHash(user);
 }
 

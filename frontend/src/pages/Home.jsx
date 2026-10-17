@@ -117,6 +117,7 @@ export default function Home() {
   const [stats,      setStats]      = useState(null);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
+  const [reloadKey,  setReloadKey]  = useState(0);
 
   // AI recommendations — fetched separately so the page doesn't block on Claude
   const [aiRec,      setAiRec]      = useState(null);   // null = not yet fetched
@@ -139,7 +140,15 @@ export default function Home() {
   }
 
   useEffect(() => {
+    if (!user) {
+      setTitles([]);
+      setStats(null);
+      setLoading(false);
+      return;
+    }
     async function load() {
+      setLoading(true);
+      setError(null);
       try {
         const allTitles = await refreshTitles();
 
@@ -159,7 +168,7 @@ export default function Home() {
       }
     }
     load();
-  }, []);
+  }, [user, reloadKey]);
 
   // ── load AI recommendations after catalog is ready (logged-in only) ───
   useEffect(() => {
@@ -227,8 +236,109 @@ export default function Home() {
     ? `Good ${getTimeOfDay()}, ${user.name.split(' ')[0]}`
     : 'Discover what to watch';
 
+  // ── recommendations ──
+  const recommendationsSection = (
+    <section className="home__section" aria-label="Recommended for you">
+      <div className="section-header section-header--primary">
+        <div className="section-header__left">
+          <h2>Recommended for You</h2>
+          {!aiLoading && recommendations.length > 0 && (
+            <span className="section-header__sub">
+              {isAI
+                ? <><span className="ai-badge"><IconAI /> AI-powered</span> · Personalized by Claude</>
+                : 'Based on your highest-rated genres'}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* guests: personalized picks need an account */}
+      {!user && (
+        <div className="home__empty" role="status">
+          <div className="home__empty__icon-wrap"><IconSparkle /></div>
+          <p>Log in to get recommendations based on what you have watched and rated.</p>
+          <button className="btn btn--primary" onClick={() => openLoginModal()}>Log in</button>
+        </div>
+      )}
+
+      {/* loading skeleton while Claude is thinking */}
+      {aiLoading && (
+        <div className="rec-loading" role="status" aria-label="Generating recommendations">
+          <IconSpinner />
+          <span>Generating personalized recommendations…</span>
+        </div>
+      )}
+
+      {/* results */}
+      {!aiLoading && recommendations.length > 0 && (
+        <motion.div
+          className={`title-grid${isAI ? ' title-grid--ai' : ''}`}
+          variants={gridVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {recommendations.map((t) =>
+            isAI
+              ? <AIRecCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
+              : <TitleCard  key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
+          )}
+        </motion.div>
+      )}
+
+      {/* empty state */}
+      {user && !aiLoading && recommendations.length === 0 && (
+        <div className="home__empty" role="status">
+          <div className="home__empty__icon-wrap"><IconSparkle /></div>
+          <p>{NO_REC_MSG[recReason] ?? 'No recommendations available yet.'}</p>
+        </div>
+      )}
+    </section>
+  );
+
+  // ── trending on TMDB ──
+  const trendingSection = (trendingLoading || trendingError || trending.length > 0) && (
+    <section className="home__section" aria-label="Trending this week">
+      <div className="section-header">
+        <div className="section-header__left">
+          <h2>Trending This Week</h2>
+          <span className="section-header__sub">From TMDB</span>
+        </div>
+      </div>
+
+      {addError && <p className="form-error" role="alert">{addError}</p>}
+
+      {trendingLoading && (
+        <div className="rec-loading" role="status" aria-label="Loading trending titles">
+          <IconSpinner />
+          <span>Loading trending titles…</span>
+        </div>
+      )}
+
+      {!trendingLoading && trendingError && (
+        <div className="home__empty" role="status">
+          <p>Trending titles are unavailable right now. {trendingError}</p>
+        </div>
+      )}
+
+      {!trendingLoading && !trendingError && trending.length > 0 && (
+        <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
+          {trending.map((item) => (
+            <TrendingCard
+              key={`${item.type}-${item.tmdb_id}`}
+              item={item}
+              catalogId={catalogByTmdbId.get(item.tmdb_id)}
+              adding={addingTmdbId === item.tmdb_id}
+              onAdd={handleAddTrending}
+              onOpen={(id) => navigate(`/title/${id}`)}
+            />
+          ))}
+        </motion.div>
+      )}
+    </section>
+  );
+
   if (loading) return <PageLoading />;
-  if (error)   return <PageError message={`Failed to load: ${error}`} onRetry={() => { setLoading(true); setError(null); }} />;
+  if (error)   return <PageError message={`Failed to load: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />;
 
   return (
     <main className="page">
@@ -236,6 +346,11 @@ export default function Home() {
       {/* ── page heading ── */}
       <div className="home__header">
         <h1 className="page__heading">{greeting}</h1>
+        {!user && (
+          <p className="home__header-sub">
+            Browse what is trending. Log in to build your catalog, rate titles and get picks made for you.
+          </p>
+        )}
         {stats && (
           <p className="home__header-sub">
             {stats.total === 0
@@ -263,106 +378,11 @@ export default function Home() {
         </motion.div>
       )}
 
-      {/* ── recommendations ── */}
-      <section className="home__section" aria-label="Recommended for you">
-        <div className="section-header section-header--primary">
-          <div className="section-header__left">
-            <h2>Recommended for You</h2>
-            {!aiLoading && recommendations.length > 0 && (
-              <span className="section-header__sub">
-                {isAI
-                  ? <><span className="ai-badge"><IconAI /> AI-powered</span> · Personalized by Claude</>
-                  : 'Based on your highest-rated genres'}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* guests: personalized picks need an account */}
-        {!user && (
-          <div className="home__empty" role="status">
-            <div className="home__empty__icon-wrap"><IconSparkle /></div>
-            <p>Log in to get recommendations based on what you have watched and rated.</p>
-            <button className="btn btn--primary" onClick={() => openLoginModal()}>Log in</button>
-          </div>
-        )}
-
-        {/* loading skeleton while Claude is thinking */}
-        {aiLoading && (
-          <div className="rec-loading" role="status" aria-label="Generating recommendations">
-            <IconSpinner />
-            <span>Generating personalized recommendations…</span>
-          </div>
-        )}
-
-        {/* results */}
-        {!aiLoading && recommendations.length > 0 && (
-          <motion.div
-            className={`title-grid${isAI ? ' title-grid--ai' : ''}`}
-            variants={gridVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {recommendations.map((t) =>
-              isAI
-                ? <AIRecCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-                : <TitleCard  key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-            )}
-          </motion.div>
-        )}
-
-        {/* empty state */}
-        {user && !aiLoading && recommendations.length === 0 && (
-          <div className="home__empty" role="status">
-            <div className="home__empty__icon-wrap"><IconSparkle /></div>
-            <p>{NO_REC_MSG[recReason] ?? 'No recommendations available yet.'}</p>
-          </div>
-        )}
-      </section>
-
-      {/* ── trending on TMDB ── */}
-      {(trendingLoading || trendingError || trending.length > 0) && (
-        <section className="home__section" aria-label="Trending this week">
-          <div className="section-header">
-            <div className="section-header__left">
-              <h2>Trending This Week</h2>
-              <span className="section-header__sub">From TMDB</span>
-            </div>
-          </div>
-
-          {addError && <p className="form-error" role="alert">{addError}</p>}
-
-          {trendingLoading && (
-            <div className="rec-loading" role="status" aria-label="Loading trending titles">
-              <IconSpinner />
-              <span>Loading trending titles…</span>
-            </div>
-          )}
-
-          {!trendingLoading && trendingError && (
-            <div className="home__empty" role="status">
-              <p>Trending titles are unavailable right now. {trendingError}</p>
-            </div>
-          )}
-
-          {!trendingLoading && !trendingError && trending.length > 0 && (
-            <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
-              {trending.map((item) => (
-                <TrendingCard
-                  key={`${item.type}-${item.tmdb_id}`}
-                  item={item}
-                  catalogId={catalogByTmdbId.get(item.tmdb_id)}
-                  adding={addingTmdbId === item.tmdb_id}
-                  onAdd={handleAddTrending}
-                  onOpen={(id) => navigate(`/title/${id}`)}
-                />
-              ))}
-            </motion.div>
-          )}
-        </section>
-      )}
+      {/* guests: trending leads; users: personal picks first */}
+      {user ? <>{recommendationsSection}{trendingSection}</> : <>{trendingSection}{recommendationsSection}</>}
 
       {/* ── recently added ── */}
+      {user && (
       <section className="home__section" aria-label="Recently added">
         <div className="section-header">
           <div className="section-header__left">
@@ -389,6 +409,7 @@ export default function Home() {
           </motion.div>
         )}
       </section>
+      )}
 
     </main>
   );

@@ -1,5 +1,4 @@
 const path = require('path');
-const fs   = require('fs');
 
 // Resolve @anthropic-ai/sdk from frontend/node_modules (same pattern as bcryptjs)
 const frontendModules = path.resolve(__dirname, '../../frontend/node_modules');
@@ -8,20 +7,12 @@ if (!module.paths.includes(frontendModules)) {
 }
 
 const titleRepository        = require('../repositories/titleRepository.js');
+const { getEnv }             = require('../utils/env.js');
 const { getRecommendations } = require('./recommendationService.js');
 
 const MODEL      = 'claude-sonnet-4-6';
 const TOP_N      = 5;
 const MIN_RATED  = 3; // minimum watched+rated titles before using AI
-
-function loadApiKey() {
-  const envPath = path.join(__dirname, '../.env');
-  if (!fs.existsSync(envPath)) return null;
-  const raw = fs.readFileSync(envPath, 'utf-8');
-  const match = raw.match(/^ANTHROPIC_API_KEY\s*=\s*(.+)$/m);
-  const key = match?.[1]?.trim();
-  return key && key.length > 10 ? key : null;
-}
 
 function parseGenres(raw) {
   if (!raw) return [];
@@ -50,21 +41,21 @@ function buildPrompt(watched, pending) {
   return `The user has watched and rated these titles:\n${watchedList}\n\nFrom the following unwatched titles, pick the ${TOP_N} best matches for this user's taste:\n${pendingList}\n\nReturn ONLY a JSON array with exactly this shape, no markdown, no explanation:\n[{"title_id": <number>, "reason": "<one sentence>"}]`;
 }
 
-async function getAIRecommendations() {
-  const apiKey = loadApiKey();
+async function getAIRecommendations(userId) {
+  const apiKey = getEnv('ANTHROPIC_API_KEY');
 
   // Fallback: no key configured
   if (!apiKey) {
-    return { ...getRecommendations(), source: 'rule-based', fallbackReason: 'no-api-key' };
+    return { ...getRecommendations(userId), source: 'rule-based', fallbackReason: 'no-api-key' };
   }
 
-  const allTitles = titleRepository.findAll();
+  const allTitles = titleRepository.findAll(userId);
   const watched   = allTitles.filter((t) => t.status === 'completed' && t.rating != null);
   const pending   = allTitles.filter((t) => t.status === 'pending');
 
   // Fallback: not enough data
   if (watched.length < MIN_RATED || pending.length === 0) {
-    return { ...getRecommendations(), source: 'rule-based', fallbackReason: 'insufficient-data' };
+    return { ...getRecommendations(userId), source: 'rule-based', fallbackReason: 'insufficient-data' };
   }
 
   try {
@@ -100,13 +91,13 @@ async function getAIRecommendations() {
       }));
 
     if (recommendations.length === 0) {
-      return { ...getRecommendations(), source: 'rule-based', fallbackReason: 'empty-ai-response' };
+      return { ...getRecommendations(userId), source: 'rule-based', fallbackReason: 'empty-ai-response' };
     }
 
     return { recommendations, reason: 'ok', source: 'ai' };
   } catch (err) {
     console.error('[aiRecommendationService] Claude call failed, falling back:', err.message);
-    return { ...getRecommendations(), source: 'rule-based', fallbackReason: err.message };
+    return { ...getRecommendations(userId), source: 'rule-based', fallbackReason: err.message };
   }
 }
 

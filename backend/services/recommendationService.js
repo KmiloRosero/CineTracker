@@ -24,8 +24,8 @@ function buildGenreFrequency(titles) {
   return freq;
 }
 
-function getRecommendations() {
-  const titles = titleRepository.findAll();
+function getRecommendations(userId) {
+  const titles = titleRepository.findAll(userId);
   const freq = buildGenreFrequency(titles);
 
   if (Object.keys(freq).length === 0) {

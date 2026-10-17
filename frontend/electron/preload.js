@@ -42,6 +42,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRecommendations: () => ipcRenderer.invoke('recommendations:get'),
   getAIRecommendations: () => ipcRenderer.invoke('recommendations:getAI'),
 
+  // ── TMDB (proxied through the main process; the key never reaches the renderer) ──
+  /** @param {string} query — Returns up to 8 normalized movie/series results */
+  tmdbSearch:      (query)        => ipcRenderer.invoke('tmdb:search', query),
+  /** @param {number} tmdbId @param {'movie'|'series'} type — Returns full details */
+  tmdbGetDetails:  (tmdbId, type) => ipcRenderer.invoke('tmdb:getDetails', tmdbId, type),
+  /** @param {number} [limit] — Returns titles trending this week */
+  tmdbGetTrending: (limit)        => ipcRenderer.invoke('tmdb:getTrending', limit),
+
   // ── App settings ─────────────────────────────────────────────────────────
   getTheme: ()        => ipcRenderer.invoke('app:getTheme'),
   setTheme: (theme)   => ipcRenderer.invoke('app:setTheme', theme),

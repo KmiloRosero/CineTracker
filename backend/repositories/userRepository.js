@@ -17,4 +17,18 @@ function findById(id) {
   return getDb().prepare('SELECT * FROM users WHERE id = ?').get(id);
 }
 
-module.exports = { create, findByEmail, findById };
+function count() {
+  return getDb().prepare('SELECT COUNT(*) AS n FROM users').get().n;
+}
+
+/** Gives rows without an owner (data from before accounts existed) to `userId`. */
+function claimUnownedData(userId) {
+  const db = getDb();
+  db.transaction(() => {
+    db.prepare('UPDATE titles  SET user_id = ? WHERE user_id IS NULL').run(userId);
+    db.prepare('UPDATE records SET user_id = ? WHERE user_id IS NULL').run(userId);
+    db.prepare('UPDATE lists   SET user_id = ? WHERE user_id IS NULL').run(userId);
+  })();
+}
+
+module.exports = { create, findByEmail, findById, count, claimUnownedData };
