@@ -24,9 +24,24 @@ function validateRating(rating) {
   if (!Number.isFinite(num)) {
     throw new Error(`Rating must be a finite number. Received: "${rating}".`);
   }
-  if (num < 1 || num > 5) {
-    throw new Error(`Rating must be between 1 and 5. Received: ${num}.`);
+  if (num < 1 || num > 10) {
+    throw new Error(`Rating must be between 1 and 10. Received: ${num}.`);
   }
+}
+
+// Partial update: only validates the fields that are present.
+function validateTitleUpdate(data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Update data must be a non-null object.');
+  }
+  if ('title' in data && (typeof data.title !== 'string' || data.title.trim() === '')) {
+    throw new Error('Title cannot be empty.');
+  }
+  if ('type' in data && !VALID_TYPES.includes(data.type)) {
+    throw new Error(`Type must be one of: ${VALID_TYPES.join(', ')}. Received: "${data.type}".`);
+  }
+  if ('status' in data) validateStatus(data.status);
+  if (data.rating !== undefined && data.rating !== null) validateRating(data.rating);
 }
 
 function validateStatus(status) {
@@ -42,4 +57,4 @@ function validateId(id, label = 'id') {
   }
 }
 
-module.exports = { validateTitleInput, validateRating, validateStatus, validateId };
+module.exports = { validateTitleInput, validateTitleUpdate, validateRating, validateStatus, validateId };

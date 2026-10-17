@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { searchTitle, getTitleDetails } from '../services/tmdbApi';
+import { searchTitle, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 
 // ── Icons ─────────────────────────────────────────────────────────────────
@@ -166,26 +166,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
     setSaving(true);
     setSaveError(null);
     try {
-      const payload = {
-        tmdb_id:        preview.tmdb_id        ?? null,
-        type:           preview.type,
-        title:          preview.title,
-        original_title: preview.original_title ?? null,
-        overview:       preview.overview       ?? null,
-        poster_path:    preview.poster_path    ?? null,
-        backdrop_path:  preview.backdrop_path  ?? null,
-        release_year:   preview.release_year   ?? null,
-        runtime:        preview.runtime        ?? null,
-        genres: JSON.stringify(
-          typeof preview.genres === 'string'
-            ? preview.genres.split(',').map((g) => g.trim()).filter(Boolean)
-            : (Array.isArray(preview.genres) ? preview.genres : [])
-        ),
-        status: 'pending',
-        rating: null,
-        notes:  null,
-      };
-      const result = await window.electronAPI.addTitle(payload);
+      const result = await window.electronAPI.addTitle(toCatalogPayload(preview));
       if (result?.error) throw new Error(result.error);
 
       // reset
@@ -382,7 +363,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
                 <div className="tac__preview-actions">
                   <motion.button
                     className="btn btn--primary"
-                    onClick={handleSave}
+                    onClick={() => requireAuth(handleSave)}
                     disabled={saving}
                     whileTap={{ scale: 0.97 }}
                   >

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import RatingStars from '../components/RatingStars';
 import { PageLoading } from '../components/PageLoading';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 
 // ── constants — untouched ─────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -97,6 +98,7 @@ export default function TitleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isNew = id === 'new';
+  const requireAuth = useRequireAuth();
 
   // ── state — untouched ──────────────────────────────────────────────────
   const [title,   setTitle]   = useState(null);
@@ -120,6 +122,7 @@ export default function TitleDetail() {
           window.electronAPI.getRecordsByTitle(Number(id)),
         ]);
         if (!data) { navigate('/catalog'); return; }
+        if (data.error) throw new Error(data.error);
         const titleData   = data.title   ?? data;
         const recordsData = data.records ?? recs ?? [];
         setTitle(titleData);
@@ -150,8 +153,12 @@ export default function TitleDetail() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
+    requireAuth(saveForm);
+  }
+
+  async function saveForm() {
     setSaving(true);
     setError(null);
     try {
@@ -164,9 +171,11 @@ export default function TitleDetail() {
       };
       if (isNew) {
         const created = await window.electronAPI.addTitle(payload);
+        if (created?.error) throw new Error(created.error);
         navigate(`/title/${created.id}`, { replace: true });
       } else {
         const updated = await window.electronAPI.updateTitle(Number(id), payload);
+        if (updated?.error) throw new Error(updated.error);
         setTitle(updated);
         setEditing(false);
       }
@@ -177,13 +186,28 @@ export default function TitleDetail() {
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm('Permanently delete this title?')) return;
-    await window.electronAPI.deleteTitle(Number(id));
-    navigate('/catalog');
+  function handleDelete() {
+    requireAuth(async () => {
+      if (!window.confirm('Permanently delete this title?')) return;
+      const result = await window.electronAPI.deleteTitle(Number(id));
+      if (result?.error) { setError(result.error); return; }
+      navigate('/catalog');
+    });
   }
 
-  async function handleMarkWatched() {
+  function handleRate(val) {
+    requireAuth(async () => {
+      const updated = await window.electronAPI.updateTitle(Number(id), { rating: val });
+      if (updated?.error) { setError(updated.error); return; }
+      setTitle(updated);
+    });
+  }
+
+  function handleMarkWatched() {
+    requireAuth(markWatched);
+  }
+
+  async function markWatched() {
     setMarking(true);
     try {
       const record = {
@@ -195,9 +219,11 @@ export default function TitleDetail() {
         note:         null,
       };
       const newRecord = await window.electronAPI.addRecord(record);
+      if (newRecord?.error) throw new Error(newRecord.error);
       setRecords((prev) => [newRecord, ...prev]);
       if (title.status !== 'completed') {
         const updated = await window.electronAPI.updateTitle(Number(id), { status: 'completed' });
+        if (updated?.error) throw new Error(updated.error);
         setTitle(updated);
         setForm((prev) => ({ ...prev, status: 'completed' }));
       }
@@ -247,7 +273,7 @@ export default function TitleDetail() {
         {isNew && <h1 className="page__heading title-detail__bar-heading">{`New Title`}</h1>}
         {!isNew && (
           <div className="title-detail__bar-actions">
-            <button className="btn btn--ghost btn--sm" onClick={() => setEditing((v) => !v)}>
+            <button className="btn btn--ghost btn--sm" onClick={() => (editing ? setEditing(false) : requireAuth(() => setEditing(true)))}>
               {editing ? <><IconClose /> Cancel</> : <><IconEdit /> Edit</>}
             </button>
             <button className="btn btn--danger btn--sm" onClick={handleDelete}>
@@ -330,10 +356,7 @@ export default function TitleDetail() {
                 <div className="title-detail__rating-row">
                   <RatingStars
                     value={Number(title.rating) || 0}
-                    onChange={async (val) => {
-                      const updated = await window.electronAPI.updateTitle(Number(id), { rating: val });
-                      setTitle(updated);
-                    }}
+                    onChange={handleRate}
                   />
                   {title.rating > 0 && (
                     <span className="title-detail__rating-value">{title.rating} / 10</span>

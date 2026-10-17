@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import TitleCard from '../components/TitleCard';
+import TrendingCard from '../components/TrendingCard';
+import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 import { gridVariants, cardVariants } from '../components/cardAnimations';
 import { useAuth } from '../context/AuthContext';
 import { PageLoading, PageError } from '../components/PageLoading';
@@ -107,7 +110,8 @@ function AIRecCard({ title, onClick }) {
 // ── Home ──────────────────────────────────────────────────────────────────
 export default function Home() {
   const navigate = useNavigate();
-  const { user }  = useAuth();
+  const { user, openLoginModal } = useAuth();
+  const requireAuth = useRequireAuth();
 
   const [titles,     setTitles]     = useState([]);
   const [stats,      setStats]      = useState(null);
@@ -119,12 +123,25 @@ export default function Home() {
   const [aiLoading,  setAiLoading]  = useState(false);
   const [aiSource,   setAiSource]   = useState(null);   // 'ai' | 'rule-based'
 
+  // TMDB trending — the main content for guests, also handy for adding titles
+  const [trending,        setTrending]        = useState([]);
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingError,   setTrendingError]   = useState(null);
+  const [addingTmdbId,    setAddingTmdbId]    = useState(null);
+  const [addError,        setAddError]        = useState(null);
+
   // ── load catalog data ─────────────────────────────────────────────────
+  async function refreshTitles() {
+    const allTitles = await window.electronAPI.getAllTitles({});
+    if (allTitles?.error) throw new Error(allTitles.error);
+    setTitles(allTitles);
+    return allTitles;
+  }
+
   useEffect(() => {
     async function load() {
       try {
-        const allTitles = await window.electronAPI.getAllTitles({});
-        setTitles(allTitles);
+        const allTitles = await refreshTitles();
 
         const completed = allTitles.filter((t) => t.status === 'completed').length;
         const watching  = allTitles.filter((t) => t.status === 'watching').length;
@@ -144,12 +161,18 @@ export default function Home() {
     load();
   }, []);
 
-  // ── load AI recommendations after catalog is ready ────────────────────
+  // ── load AI recommendations after catalog is ready (logged-in only) ───
   useEffect(() => {
     if (loading) return; // wait for catalog
+    if (!user) {
+      setAiRec(null);
+      setAiSource(null);
+      return;
+    }
     setAiLoading(true);
     window.electronAPI.getAIRecommendations()
       .then((result) => {
+        if (result?.error) throw new Error(result.error);
         setAiRec(result ?? { recommendations: [], reason: 'no-ratings' });
         setAiSource(result?.source ?? 'rule-based');
       })
@@ -159,7 +182,40 @@ export default function Home() {
         setAiSource('rule-based');
       })
       .finally(() => setAiLoading(false));
-  }, [loading]);
+  }, [loading, user]);
+
+  // ── load TMDB trending ────────────────────────────────────────────────
+  useEffect(() => {
+    setTrendingLoading(true);
+    getTrending()
+      .then(setTrending)
+      .catch((err) => setTrendingError(err.message))
+      .finally(() => setTrendingLoading(false));
+  }, []);
+
+  // tmdb_id -> local title id, so trending cards know what is already saved
+  const catalogByTmdbId = useMemo(() => {
+    const map = new Map();
+    titles.forEach((t) => { if (t.tmdb_id != null) map.set(t.tmdb_id, t.id); });
+    return map;
+  }, [titles]);
+
+  function handleAddTrending(item) {
+    requireAuth(async () => {
+      setAddingTmdbId(item.tmdb_id);
+      setAddError(null);
+      try {
+        const detail = await getTitleDetails(item.tmdb_id, item.type);
+        const result = await window.electronAPI.addTitle(toCatalogPayload(detail));
+        if (result?.error) throw new Error(result.error);
+        await refreshTitles();
+      } catch (err) {
+        setAddError(`Could not add "${item.title}": ${err.message}`);
+      } finally {
+        setAddingTmdbId(null);
+      }
+    });
+  }
 
   const recent = useMemo(() => titles.slice(0, 6), [titles]);
 
@@ -169,7 +225,7 @@ export default function Home() {
 
   const greeting = user
     ? `Good ${getTimeOfDay()}, ${user.name.split(' ')[0]}`
-    : 'Your collection';
+    : 'Discover what to watch';
 
   if (loading) return <PageLoading />;
   if (error)   return <PageError message={`Failed to load: ${error}`} onRetry={() => { setLoading(true); setError(null); }} />;
@@ -222,6 +278,15 @@ export default function Home() {
           </div>
         </div>
 
+        {/* guests: personalized picks need an account */}
+        {!user && (
+          <div className="home__empty" role="status">
+            <div className="home__empty__icon-wrap"><IconSparkle /></div>
+            <p>Log in to get recommendations based on what you have watched and rated.</p>
+            <button className="btn btn--primary" onClick={() => openLoginModal()}>Log in</button>
+          </div>
+        )}
+
         {/* loading skeleton while Claude is thinking */}
         {aiLoading && (
           <div className="rec-loading" role="status" aria-label="Generating recommendations">
@@ -247,13 +312,55 @@ export default function Home() {
         )}
 
         {/* empty state */}
-        {!aiLoading && recommendations.length === 0 && (
+        {user && !aiLoading && recommendations.length === 0 && (
           <div className="home__empty" role="status">
             <div className="home__empty__icon-wrap"><IconSparkle /></div>
             <p>{NO_REC_MSG[recReason] ?? 'No recommendations available yet.'}</p>
           </div>
         )}
       </section>
+
+      {/* ── trending on TMDB ── */}
+      {(trendingLoading || trendingError || trending.length > 0) && (
+        <section className="home__section" aria-label="Trending this week">
+          <div className="section-header">
+            <div className="section-header__left">
+              <h2>Trending This Week</h2>
+              <span className="section-header__sub">From TMDB</span>
+            </div>
+          </div>
+
+          {addError && <p className="form-error" role="alert">{addError}</p>}
+
+          {trendingLoading && (
+            <div className="rec-loading" role="status" aria-label="Loading trending titles">
+              <IconSpinner />
+              <span>Loading trending titles…</span>
+            </div>
+          )}
+
+          {!trendingLoading && trendingError && (
+            <div className="home__empty" role="status">
+              <p>Trending titles are unavailable right now. {trendingError}</p>
+            </div>
+          )}
+
+          {!trendingLoading && !trendingError && trending.length > 0 && (
+            <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
+              {trending.map((item) => (
+                <TrendingCard
+                  key={`${item.type}-${item.tmdb_id}`}
+                  item={item}
+                  catalogId={catalogByTmdbId.get(item.tmdb_id)}
+                  adding={addingTmdbId === item.tmdb_id}
+                  onAdd={handleAddTrending}
+                  onOpen={(id) => navigate(`/title/${id}`)}
+                />
+              ))}
+            </motion.div>
+          )}
+        </section>
+      )}
 
       {/* ── recently added ── */}
       <section className="home__section" aria-label="Recently added">
@@ -270,7 +377,7 @@ export default function Home() {
           <div className="home__empty" role="status">
             <div className="home__empty__icon-wrap"><IconPlus /></div>
             <p>No titles yet.</p>
-            <button className="btn btn--primary" onClick={() => navigate('/catalog')}>
+            <button className="btn btn--primary" onClick={() => requireAuth(() => navigate('/catalog'))}>
               Add your first title
             </button>
           </div>

@@ -523,6 +523,28 @@ a:hover { text-decoration: underline; }
 .title-card:hover .title-card__delete { opacity: 1; }
 .title-card__delete:hover { background: var(--status-dropped); }
 
+/* TMDB card not yet saved: the Add button is the action, not the card */
+.title-card--static { cursor: default; }
+.title-card--static:hover { border-color: var(--border-strong); }
+.title-card--static:hover .title-card__poster img { transform: none; }
+
+.trending-card__add {
+  margin-top: 4px;
+  justify-content: center;
+  gap: 5px;
+}
+.trending-card__add svg { width: 12px; height: 12px; flex-shrink: 0; }
+.trending-card__saved {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--status-completed);
+}
+.trending-card__saved svg { width: 11px; height: 11px; }
+
 /* status badge */
 .status-badge {
   position: absolute; bottom: 7px; left: 7px;

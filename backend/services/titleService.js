@@ -1,6 +1,19 @@
 const titleRepository  = require('../repositories/titleRepository.js');
 const recordRepository = require('../repositories/recordRepository.js');
-const { validateTitleInput } = require('../utils/validators.js');
+const { validateTitleInput, validateTitleUpdate } = require('../utils/validators.js');
+
+// Columns the renderer may change. The repository builds SQL from the keys it
+// receives, so anything else (id, added_at, updated_at, unknown keys) is dropped.
+const UPDATABLE_FIELDS = [
+  'tmdb_id', 'type', 'title', 'original_title', 'overview', 'poster_path',
+  'backdrop_path', 'release_year', 'genres', 'runtime', 'status', 'rating', 'notes',
+];
+
+function pickUpdatable(data) {
+  return Object.fromEntries(
+    Object.entries(data).filter(([key]) => UPDATABLE_FIELDS.includes(key))
+  );
+}
 
 function addTitle(titleData) {
   validateTitleInput(titleData);
@@ -21,7 +34,10 @@ function getTitleWithRecords(id) {
 function updateTitle(id, data) {
   const existing = titleRepository.findById(id);
   if (!existing) throw new Error(`Title not found: ${id}`);
-  return titleRepository.update(id, data);
+  validateTitleUpdate(data);
+  const fields = pickUpdatable(data);
+  if (Object.keys(fields).length === 0) return existing;
+  return titleRepository.update(id, fields);
 }
 
 function deleteTitle(id) {

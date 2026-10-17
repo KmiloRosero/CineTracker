@@ -5,6 +5,8 @@ import TitleCard from '../components/TitleCard';
 import TitleAutocomplete from '../components/TitleAutocomplete';
 import { gridVariants } from '../components/cardAnimations';
 import { PageLoading, PageError } from '../components/PageLoading';
+import { useAuth } from '../context/AuthContext';
+import { useRequireAuth } from '../hooks/useRequireAuth';
 
 const STATUS_OPTIONS = ['watching', 'completed', 'pending', 'dropped'];
 
@@ -119,6 +121,8 @@ function ToastContainer({ toasts, onDismiss }) {
 export default function Catalog() {
   const navigate = useNavigate();
   const { toasts, showToast, dismissToast } = useToast();
+  const { user } = useAuth();
+  const requireAuth = useRequireAuth();
 
   // catalog data
   const [titles,  setTitles]  = useState([]);
@@ -144,6 +148,7 @@ export default function Catalog() {
     setError(null);
     try {
       const data = await window.electronAPI.getAllTitles({});
+      if (data?.error) throw new Error(data.error);
       setTitles(data);
     } catch (err) {
       setError(err.message);
@@ -181,10 +186,20 @@ export default function Catalog() {
   }, [titles, search, activeStatus, activeGenre]);
 
   // ── handlers ─────────────────────────────────────────────────────────
-  async function handleDelete(id) {
-    if (!window.confirm('Delete this title?')) return;
-    await window.electronAPI.deleteTitle(id);
-    loadTitles();
+  function handleDelete(id) {
+    requireAuth(async () => {
+      if (!window.confirm('Delete this title?')) return;
+      const result = await window.electronAPI.deleteTitle(id);
+      if (result?.error) {
+        showToast({ message: result.error, type: 'error' });
+        return;
+      }
+      loadTitles();
+    });
+  }
+
+  function openAddModal() {
+    requireAuth(() => setModalMode('autocomplete'));
   }
 
   function handleFormChange(e) {
@@ -210,7 +225,8 @@ export default function Catalog() {
         status:       form.status,
         genres: JSON.stringify(form.genres.split(',').map((g) => g.trim()).filter(Boolean)),
       };
-      await window.electronAPI.addTitle(payload);
+      const result = await window.electronAPI.addTitle(payload);
+      if (result?.error) throw new Error(result.error);
       closeModal();
       loadTitles();
       showToast({ message: `"${form.title}" added to your catalog.` });
@@ -239,7 +255,7 @@ export default function Catalog() {
       {/* ── page header ── */}
       <div className="page__header">
         <h1 className="page__heading">Catalog</h1>
-        <button className="btn btn--primary" onClick={() => setModalMode('autocomplete')}>
+        <button className="btn btn--primary" onClick={openAddModal}>
           <IconPlus /> Add Title
         </button>
       </div>
@@ -308,7 +324,7 @@ export default function Catalog() {
             <>
               <h3>Your catalog is empty</h3>
               <p>Search TMDB or add a title manually to get started.</p>
-              <button className="btn btn--primary" onClick={() => setModalMode('autocomplete')}>
+              <button className="btn btn--primary" onClick={openAddModal}>
                 <IconPlus /> Add your first title
               </button>
             </>
@@ -329,7 +345,7 @@ export default function Catalog() {
         <>
           <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
             {filtered.map((t) => (
-              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} onDelete={handleDelete} />
+              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} onDelete={user ? handleDelete : undefined} />
             ))}
           </motion.div>
           <p className="catalog__count" aria-live="polite">

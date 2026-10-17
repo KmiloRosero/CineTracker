@@ -65,8 +65,39 @@ export async function searchTitle(query) {
     .map(normalizeSearchResult);
 }
 
+/** Movies and series trending this week, normalized like search results. */
+export async function getTrending(limit = 12) {
+  const data = await tmdbFetch('/trending/all/week');
+  return (data.results ?? [])
+    .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+    .slice(0, limit)
+    .map(normalizeSearchResult);
+}
+
 export async function getTitleDetails(tmdbId, type) {
   const endpoint = type === 'movie' ? `/movie/${tmdbId}` : `/tv/${tmdbId}`;
   const data = await tmdbFetch(endpoint);
   return normalizeDetails(data, type);
+}
+
+/** Maps a TMDB detail object to the shape `electronAPI.addTitle` expects. */
+export function toCatalogPayload(detail) {
+  const genres = typeof detail.genres === 'string'
+    ? detail.genres.split(',').map((g) => g.trim()).filter(Boolean)
+    : (Array.isArray(detail.genres) ? detail.genres : []);
+  return {
+    tmdb_id:        detail.tmdb_id        ?? null,
+    type:           detail.type,
+    title:          detail.title,
+    original_title: detail.original_title ?? null,
+    overview:       detail.overview       ?? null,
+    poster_path:    detail.poster_path    ?? null,
+    backdrop_path:  detail.backdrop_path  ?? null,
+    release_year:   detail.release_year   ?? null,
+    runtime:        detail.runtime        ?? null,
+    genres:         JSON.stringify(genres),
+    status:         'pending',
+    rating:         null,
+    notes:          null,
+  };
 }
