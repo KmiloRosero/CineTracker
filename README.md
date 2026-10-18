@@ -30,34 +30,6 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 - A full-screen page per title: the poster tilted over a colour field sampled from the poster, a 1–10 score bug, status, "Mark as watched", watch history, cast and notes.
 - Round side controls (and arrow keys) move to the previous or next title. Add-to-list, edit and delete are on the same rail.
 
-**Recommendations**
-- With a Google Gemini API key, Gemini picks up to 5 of your pending titles from what you rated and explains each pick in one sentence ("Why this?"). An Anthropic key (Claude) works too and is used when there is no Gemini key.
-- Without a key, without internet, on an API error or with fewer than 3 rated titles, it falls back to a rule-based engine that ranks pending titles by your favourite genres and explains the match.
-
-**Statistics**
-- Key numbers with month-over-month changes, completed watches per month (last 12 months), titles by status, top-rated genres and titles per genre, each with a table view.
-
-**Lists, profile and settings**
-- Named lists you can rename, delete and fill from your catalogue.
-- Edit name and photo, switch light/dark theme, change password, delete the account with all its data.
-
-**Interface**
-- A "match-night broadcast" visual system: black and pitch green (#018751), Anton headlines, condensed numerals, lower-thirds and score bugs. Light and dark themes.
-- Page transitions, staggered grids and animated charts that respect the system's reduced-motion setting.
-- Keyboard focus states, labelled controls, 44 px targets for primary actions, AA contrast in both themes.
-
----
-
-## Tech stack
-
-| Layer | Technology |
-|---|---|
-| Desktop shell | Electron 29, packaged with electron-builder |
-| Interface | React 18, Vite 5, React Router 6, framer-motion, Recharts; plain CSS with custom properties (`frontend/src/styles/theme.css`) |
-| Fonts | Anton, Barlow, Barlow Condensed (self-hosted through Fontsource) |
-| Backend | Runs in Electron's main process: services and repositories over SQLite (better-sqlite3), bcryptjs for passwords |
-| External APIs | TMDB (metadata, posters, trending); Google Gemini (REST `generateContent`, JSON schema output) for AI recommendations, with Anthropic Claude (`@anthropic-ai/sdk`) as an alternative |
-| Tests | Vitest, run with Electron's Node so the native SQLite module matches |
 
 ---
 
