@@ -14,21 +14,6 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 
 ---
 
-## Features
-
-**Browse as a guest, act with an account**
-- Guests can browse Home with this week's trending titles from TMDB. Catalog, Lists, Statistics and Profile ask them to log in.
-- Anything that changes data (add, edit, delete, rate, change status, lists) opens a login modal. After login, the original action continues on its own.
-- Several accounts per installation; each account only sees its own titles, watch history and lists.
-
-**Catalog**
-- TMDB search with a 400 ms debounce, keyboard navigation, poster thumbnails, type and year badges, loading and error states, and manual entry when a title is not on TMDB.
-- Choosing a result saves its poster, backdrop, synopsis, genres, runtime and top-billed cast locally. Posters are cached on disk, so the catalogue keeps working offline.
-- Grid and list views, search, status chips with counts, genre filter and five sort orders. Your view and sort are remembered.
-
-**Title showcase**
-- A full-screen page per title: the poster tilted over a colour field sampled from the poster, a 1–10 score bug, status, "Mark as watched", watch history, cast and notes.
-- Round side controls (and arrow keys) move to the previous or next title. Add-to-list, edit and delete are on the same rail.
 
 
 ---
@@ -55,10 +40,6 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- The renderer never touches SQL, Node or API keys (`contextIsolation`, `sandbox`, no `nodeIntegration`). Everything goes through the methods exposed in `frontend/electron/preload.js`.
-- Every IPC handler resolves the logged-in user from the in-memory session. Read channels return empty results to guests; channels that change data reject them.
-- Services validate input and throw readable messages. Database and programming errors are logged in the main process and reach the interface only as a generic message.
-- The database lives in Electron's `userData` folder. Schema changes are versioned migrations (`backend/db/migrations.js`) that run once, in a transaction, after copying the database file.
 
 ---
 
@@ -88,17 +69,6 @@ Vite serves the interface on `http://localhost:5173` and Electron opens it (DevT
 
 > If `npm run dev` fails with `Cannot read properties of undefined (reading 'whenReady')`, your shell has `ELECTRON_RUN_AS_NODE=1` set (some editor terminals set it). Clear it and run again.
 
-### Environment variables (`backend/.env`)
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `TMDB_API_KEY` | Yes, for search and trending | TMDB API key (v3). Get one at <https://www.themoviedb.org/settings/api>. Titles already in your catalogue keep working without it. |
-| `GEMINI_API_KEY` | No | Enables AI recommendations with Google Gemini. Get one at <https://aistudio.google.com/apikey>. Without an AI key, recommendations use the rule-based engine. |
-| `GEMINI_MODEL` | No | Gemini model to call. Defaults to `gemini-3.8-flash`. |
-| `ANTHROPIC_API_KEY` | No | Uses Claude for AI recommendations instead, only when `GEMINI_API_KEY` is empty. Get one at <https://console.anthropic.com>. |
-
-`backend/.env` is gitignored. Never commit real keys.
-
 ---
 
 ## Scripts
@@ -118,17 +88,6 @@ Packages are written to `C:/CineTracker-release` (see `frontend/electron-builder
 
 ---
 
-## Tests
-
-`npm test` runs 105 tests in `backend/tests/` against temporary SQLite files:
-
-- **Migrations**: fresh databases, upgrades of databases from before accounts existed, backups and idempotency.
-- **Auth and profile**: registration, login, password change, avatars, account deletion with cascading data.
-- **Catalogue**: title, watch-record and list rules, validation messages, and isolation between users.
-- **Statistics**: totals, completion rate, hours, monthly activity, month-over-month trends, merged movie/series genres.
-- **Recommendations**: the rule-based engine and every AI fallback path. These tests use a fake Gemini `fetch` and a fake Claude client, and the test config blanks the real keys, so they make no paid calls.
-- **TMDB and image cache**: normalisation and error messages (with mocked `fetch`), path safety, and offline reuse of cached images.
-- **IPC**: guest restrictions, session handling and hiding internal errors.
 
 ---
 
@@ -164,22 +123,6 @@ CineTracker/
 ```
 
 ---
-
-## Security notes
-
-- Passwords are hashed with bcrypt; the session lives only in memory, so you log in again after restarting the app.
-- The renderer is sandboxed, cannot navigate away from the app or open new windows, and every permission request (camera, location…) is denied.
-- A Content Security Policy allows scripts only from the app itself. Images come from the app, the local `ctimg://` cache or `image.tmdb.org`.
-- All IPC input is validated in the services. SQL is parameterised, and the columns that can be updated are whitelisted.
-- **API keys and packaged builds:** `npm run dist:*` copies `backend/.env` into the installer so the app works out of the box. Anyone who has your installer can extract those keys, so only share builds with people you trust, or build without your keys.
-
----
-
-## Credits
-
-Movie and series information and images come from [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not endorsed or certified by TMDB.
-
-AI recommendations use [Gemini](https://ai.google.dev) by Google, or [Claude](https://www.anthropic.com) by Anthropic.
 
 ## License
 
