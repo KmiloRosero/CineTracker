@@ -57,7 +57,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Recommendations ──────────────────────────────────────────────────────
   /** Returns { recommendations: Title[], reason: string } */
   getRecommendations: () => ipcRenderer.invoke('recommendations:get'),
-  getAIRecommendations: () => ipcRenderer.invoke('recommendations:getAI'),
+  /** @param {{ refresh?: boolean }} [options] — Returns { recommendations, reason, source, fallbackReason?, generatedAt? }.
+   *  Each recommendation carries an `explanation` sentence. `refresh` skips the cached AI result. */
+  getAIRecommendations: (options) => ipcRenderer.invoke('recommendations:getAI', options),
 
   // ── TMDB (proxied through the main process; the key never reaches the renderer) ──
   /** @param {string} query — Returns up to 8 normalized movie/series results */

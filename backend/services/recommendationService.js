@@ -15,6 +15,18 @@ function buildGenreFrequency(titles) {
   return freq;
 }
 
+function joinNames(names) {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** One sentence saying which of the user's favourite genres a title shares. */
+function explain(matchedGenres) {
+  const top = matchedGenres.slice(0, 3);
+  const noun = top.length === 1 ? 'a genre' : 'genres';
+  return `It matches ${joinNames(top)}, ${noun} you rated ${MIN_RATING} or higher.`;
+}
+
 function getRecommendations(userId) {
   const titles = titleRepository.findAll(userId);
   const freq = buildGenreFrequency(titles);
@@ -30,16 +42,16 @@ function getRecommendations(userId) {
   }
 
   const scored = pending.map((t) => {
-    const genres = parseGenres(t.genres);
-    const score = genres.reduce((sum, g) => sum + (freq[g] || 0), 0);
-    return { ...t, _score: score };
+    const matched = parseGenres(t.genres).filter((g) => freq[g]);
+    const score = matched.reduce((sum, g) => sum + freq[g], 0);
+    return { ...t, _score: score, _matched: matched.sort((a, b) => freq[b] - freq[a]) };
   });
 
   const recommendations = scored
     .filter((t) => t._score > 0)
     .sort((a, b) => b._score - a._score)
     .slice(0, TOP_N)
-    .map(({ _score, ...t }) => t);
+    .map(({ _score, _matched, ...t }) => ({ ...t, explanation: explain(_matched) }));
 
   if (recommendations.length === 0) {
     return { recommendations: [], reason: 'no-match' };

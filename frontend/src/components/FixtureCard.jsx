@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
 import { cardVariants } from './cardAnimations';
@@ -26,7 +26,8 @@ function IconPoster() {
  * face, and a scoreline (status slab + score bug). Works for catalog titles
  * (`title`) and TMDB results (`item`, with an Add action until saved).
  */
-export default function FixtureCard({ title, item, catalogId, reason, adding, onOpen, onAdd }) {
+export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, adding, onOpen, onAdd }) {
+  const [whyOpen, setWhyOpen] = useState(false);
   const source  = title ?? item;
   const localId = title?.id ?? catalogId ?? null;
   const meta = [
@@ -67,6 +68,7 @@ export default function FixtureCard({ title, item, catalogId, reason, adding, on
               type="button"
               className="btn btn--primary btn--sm"
               onClick={(e) => { e.stopPropagation(); onAdd(item); }}
+              onKeyDown={(e) => e.stopPropagation()}
               disabled={adding}
               aria-label={`Add ${source.title} to your catalog`}
             >
@@ -75,7 +77,21 @@ export default function FixtureCard({ title, item, catalogId, reason, adding, on
           )}
         </div>
 
-        {reason && <p className="fixture__reason">{reason}</p>}
+        {explanation && (
+          <div className="fixture__why">
+            <button
+              type="button"
+              className="fixture__why-toggle"
+              aria-expanded={whyOpen}
+              onClick={(e) => { e.stopPropagation(); setWhyOpen((v) => !v); }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {whyOpen ? 'Hide reason' : 'Why this?'}
+            </button>
+            <p className={`fixture__reason${whyOpen ? ' is-open' : ''}`}>{explanation}</p>
+            {whyOpen && explanationSource && <p className="fixture__why-source">{explanationSource}</p>}
+          </div>
+        )}
       </div>
     </motion.article>
   );

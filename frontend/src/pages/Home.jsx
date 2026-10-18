@@ -11,6 +11,23 @@ import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdb
 import { parseGenres } from '../utils/genres';
 import { tmdbImage } from '../utils/tmdbImage';
 
+// Why the AI picks were replaced by genre-based ones, in the user's terms.
+const FALLBACK_NOTE = {
+  'no-api-key':        'Add an Anthropic API key to get picks written by Claude. Showing genre-based picks.',
+  'insufficient-data': 'Rate at least 3 titles and keep some as Pending to get picks from Claude.',
+  'offline':           'Claude could not be reached (check your connection). Showing genre-based picks.',
+  'rate-limited':      'Claude is busy right now. Showing genre-based picks; try Refresh in a minute.',
+  'invalid-api-key':   'The Anthropic API key was rejected. Showing genre-based picks.',
+  'api-permission':    'The Anthropic API key cannot use this model. Showing genre-based picks.',
+  'api-error':         'Claude returned an error. Showing genre-based picks.',
+  'refused':           'Claude declined this request. Showing genre-based picks.',
+  'invalid-response':  'The answer from Claude could not be used. Showing genre-based picks.',
+  'empty-ai-response': 'Claude did not find a match in your list. Showing genre-based picks.',
+};
+
+const AI_SOURCE   = 'Written by Claude after comparing this title with the ones you rated.';
+const RULE_SOURCE = 'Based on how often you rated these genres 8 or higher.';
+
 const NO_REC_MSG = {
   'no-ratings': 'Rate completed titles 8 or higher to unlock recommendations.',
   'no-pending': 'Add titles as Pending to get suggestions from your own list.',
@@ -317,7 +334,7 @@ function StageSkeleton() {
 }
 
 // ── Rails (rows below the stage) ──────────────────────────────────────────
-function Rail({ title, sub, action, children, empty }) {
+function Rail({ title, sub, action, note, children, empty }) {
   return (
     <section className="rail" aria-label={title}>
       <header className="rail__header">
@@ -325,6 +342,7 @@ function Rail({ title, sub, action, children, empty }) {
         {sub && <span className="rail__tag">{sub}</span>}
         {action && <div className="rail__action">{action}</div>}
       </header>
+      {note && <p className="rail__note" role="status">{note}</p>}
       {empty ?? (
         <motion.div className="fixture-grid" variants={gridVariants} initial="hidden" animate="visible">
           {children}
@@ -352,6 +370,7 @@ export default function Home() {
 
   const [recs,        setRecs]        = useState(null);
   const [recsLoading, setRecsLoading] = useState(false);
+  const [recsError,   setRecsError]   = useState(null);
 
   const [trending,        setTrending]        = useState([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
@@ -384,13 +403,21 @@ export default function Home() {
   }, [user, reloadKey]);
 
   // ── recommendations, after the catalog is ready ──────────────────────
+  async function loadRecommendations({ refresh = false } = {}) {
+    setRecsLoading(true);
+    setRecsError(null);
+    try {
+      setRecs(unwrap(await window.electronAPI.getAIRecommendations({ refresh })));
+    } catch (err) {
+      setRecsError(err.message);
+    } finally {
+      setRecsLoading(false);
+    }
+  }
+
   useEffect(() => {
     if (!user || loading) return;
-    setRecsLoading(true);
-    window.electronAPI.getAIRecommendations()
-      .then((result) => setRecs(unwrap(result) ?? { recommendations: [], reason: 'no-ratings' }))
-      .catch(() => setRecs({ recommendations: [], reason: 'no-ratings', source: 'rule-based' }))
-      .finally(() => setRecsLoading(false));
+    loadRecommendations();
   }, [user, loading]);
 
   // ── TMDB trending (public) ────────────────────────────────────────────
@@ -510,14 +537,35 @@ export default function Home() {
         {user && (
           <Rail
             title="Recommended for you"
-            sub={recs?.source === 'ai' ? 'Picked by Claude from your ratings' : 'Based on your highest-rated genres'}
+            sub={recs ? (recs.source === 'ai' ? 'Picked by Claude' : 'By your top genres') : undefined}
+            action={
+              <button
+                className="btn btn--ghost btn--sm"
+                onClick={() => loadRecommendations({ refresh: true })}
+                disabled={recsLoading}
+                aria-label="Refresh recommendations"
+              >
+                {recsLoading && <IconSpinner />}
+                {recsLoading ? 'Refreshing…' : 'Refresh'}
+              </button>
+            }
+            note={recs?.source === 'rule-based' ? FALLBACK_NOTE[recs.fallbackReason] : null}
             empty={
-              recsLoading ? <RailEmpty>Finding titles that fit your taste…</RailEmpty>
+              recsError ? <RailEmpty>Recommendations failed to load: {recsError}</RailEmpty>
+              : !recs && recsLoading ? <RailEmpty>Finding titles that fit your taste…</RailEmpty>
               : recommendations.length === 0 ? <RailEmpty>{NO_REC_MSG[recs?.reason] ?? 'No recommendations yet.'}</RailEmpty>
               : undefined
             }
           >
-            {recommendations.map((t) => <FixtureCard key={t.id} title={t} reason={t.ai_reason} onOpen={openTitle} />)}
+            {recommendations.map((t) => (
+              <FixtureCard
+                key={t.id}
+                title={t}
+                explanation={t.explanation}
+                explanationSource={recs.source === 'ai' ? AI_SOURCE : RULE_SOURCE}
+                onOpen={openTitle}
+              />
+            ))}
           </Rail>
         )}
 

@@ -81,7 +81,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('stats:getOverview',       authed((userId)   => statisticsService.getOverview(userId)));
 
   ipcMain.handle('recommendations:get',   authed((userId) => recommendationService.getRecommendations(userId)));
-  ipcMain.handle('recommendations:getAI', authed((userId) => aiRecommendationService.getAIRecommendations(userId)));
+  ipcMain.handle('recommendations:getAI', authed((userId, options) =>
+    aiRecommendationService.getAIRecommendations(userId, { refresh: options?.refresh === true })));
 
   // TMDB metadata is public, so guests can browse trending titles and search.
   ipcMain.handle('tmdb:search',      safe((query)        => tmdbService.search(query)));
