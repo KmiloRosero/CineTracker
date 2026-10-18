@@ -12,6 +12,11 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 
 <sub>Captured with a test account and real TMDB titles.</sub>
 
+## Documentación
+
+- [Manual de usuario](docs/MANUAL_DE_USUARIO.md): instalación, uso de cada pantalla, tráilers, claves de API y problemas frecuentes.
+- [Informe técnico](docs/INFORME_TECNICO.md): arquitectura, modelo de datos, integraciones (TMDB, YouTube, Gemini), seguridad, pruebas y decisiones.
+
 ---
 
 
@@ -78,10 +83,11 @@ Run from `frontend/`:
 | Script | What it does |
 |---|---|
 | `npm run dev` | Vite dev server and Electron with hot reload |
-| `npm test` | Backend test suite (Vitest under Electron's Node) |
+| `npm test` | All tests: backend and interface (Vitest under Electron's Node) |
 | `npm run test:watch` | Tests in watch mode |
 | `npm run build` | Production build of the interface into `frontend/dist` |
-| `npm run dist:win` | Windows installer (NSIS) and portable `.exe` |
+| `npm run dist:win` | Windows installer (NSIS) and portable `.exe`, with the keys in `backend/.env` |
+| `npm run dist:win:nokeys` | The same, without any API keys (`-sin-claves`), safe to share |
 | `npm run dist:mac` / `npm run dist:linux` | macOS DMG / Linux AppImage |
 
 Packages are written to `C:/CineTracker-release` (see `frontend/electron-builder.json`).

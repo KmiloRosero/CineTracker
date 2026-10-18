@@ -316,7 +316,7 @@ A broadcast palette: near-black ground, one saturated pitch green, chalk type, p
 ### Primary
 - **Pitch Green** (#018751): the only owned colour. Fills slabs, never outlines them: lower-third labels, score bugs and filled score segments, the sliding active-nav slab, the active sidebar profile block, the ticker tag, rail tags, primary buttons, the avatar slab, the success toast icon, the watching chip and chart series, the TRACKER half of the wordmark, text selection, the green top bars on modals, empty states and the login card, the fallback showcase field and the horizon band (at 50% to 12% alpha). White on it passes 4.57:1, so it carries uppercase condensed labels and large type only.
 - **Deep Pitch** (#016e42): primary hover; in the light theme also the readable green for links, focus outlines and green text on chalk.
-- **Floodlight Green** (#1fb574): the readable green on black: links, focus outline, active stage dot, upward ticker deltas, the top ranking position, the "watching" status colour in the dark theme (7.5:1 on black).
+- **Floodlight Green** (#1fb574, token `--slab-green`): the readable green on black, fixed in both themes for anything on an on-air black surface (stage countdown bar, stage and trailer focus rings, crawl separators, the trailer language tag); in the dark theme also links, focus outline, upward ticker deltas, the top ranking position, the "watching" status colour in the dark theme (7.5:1 on black).
 
 ### Neutral
 - **Broadcast Black** (#0a0a0a): dark-theme ground and every slab that reads "black" in both themes (lower-third meta, wordmark CINE, stage, tickers, login page ground, poster labels, pressed primary buttons, edit-form label tags, the initials slab inside the active profile block, the movie type badge).
@@ -481,6 +481,14 @@ Identity as a square slab. On Profile a 96px green square with the initial in An
 ### Modal and confirm dialog
 - **Modal:** a surface-tone panel, 480px (720px wide variant), square, a strong 1px border and a 6px green top bar, no shadow, over a 72% black scrim; it rises 16px and fades in over 240ms. Header is an Anton 1.9rem title with a 40px circular close. Escape and the scrim close it, Tab is trapped inside, focus goes to the control marked as the preferred first control and returns to the trigger on close.
 - **Confirm dialog:** a modal with a body message, any form error, and the actions right-aligned: ghost Cancel first, which receives focus, then the outlined danger button with the confirm label and a spinner while busy.
+
+### Trailer screen and YouTube player
+- **YouTube player (reusable):** a 16:9 black screen holding YouTube's privacy-enhanced embed in a sandboxed frame. Until the embed reports ready, a green strip sweeps along the bottom edge like a buffering bar, then the frame fades in over 400ms. Empty, missing and error states use the same screen with a low pitch-green horizon band and one centred line of body text (plus a ghost Retry when it failed).
+- **Trailer screen:** a modal that is always on-air black whatever the theme (92% scrim, 1120px max): a lower-third (green "TRÁILER" or "AVANCE" slab, black slab with the title) beside a circular close, the player, then a footer with the video's name in condensed numerals, its language in floodlight green and a ghost "Ver en YouTube" with an external-link icon. Opening it holds the Home stage's rotation; closing unmounts the player, which stops the video.
+- **"Ver tráiler" buttons:** ghost large buttons with a filled play triangle, after the primary action on the Home stage and the showcase.
+
+### API key rows (Perfil)
+An Anton label with a square status tag beside it: outlined "Sin configurar", or a pitch-green slab naming where the key comes from. Below it, a hint line, a 44px password field with the green primary Guardar, then ghost Probar clave / Quitar and an underlined "Conseguir una clave" link pushed right. The test result sits under the row with a check (green) or alert (red card) icon. Rows are split by a hairline.
 
 ### Toast
 A surface-tone strip (240-360px, 3px corners, strong hairline) at the bottom-right, sliding in 24px from the right over 220ms. The icon sits on its own 28px square slab: pitch green with a check for success, red card with an alert for errors. Message in body 500, a 32px dismiss at the end. No coloured side stripe.

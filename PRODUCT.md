@@ -35,6 +35,8 @@ Used at home, typically right after finishing or starting a title. Sessions are 
 - Records: watch-history entries per title (watched date, platform, rating, note), full CRUD.
 - Lists: named collections per user (create, rename, delete, add/remove titles).
 - Statistics: totals by status and type, completion rate, average rating, hours watched, genre distribution, top and top-rated genres, 12 months of activity.
+- Trailers: the best YouTube trailer from TMDB (Spanish first) plays in a reusable YouTubePlayer on an on-air screen, from the Home stage and the title showcase.
+- API keys can be typed in Perfil (sealed with the OS) and a remembered session keeps the user signed in for 30 days.
 - Recommendations: AI (Google Gemini; Anthropic Claude when only its key is set) with fallback to the rule-based engine when there is no key, no network, an API error, or fewer than 3 rated titles.
 - Theme: light/dark toggle persisted locally; dark is the default.
 
