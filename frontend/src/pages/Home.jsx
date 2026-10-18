@@ -12,20 +12,23 @@ import { canonicalGenres } from '../utils/genres';
 import { tmdbImage } from '../utils/tmdbImage';
 
 // Why the AI picks were replaced by genre-based ones, in the user's terms.
+// `ai` is the provider's display name (Gemini or Claude).
 const FALLBACK_NOTE = {
-  'no-api-key':        'Add an Anthropic API key to get picks written by Claude. Showing genre-based picks.',
-  'insufficient-data': 'Rate at least 3 titles and keep some as Pending to get picks from Claude.',
-  'offline':           'Claude could not be reached (check your connection). Showing genre-based picks.',
-  'rate-limited':      'Claude is busy right now. Showing genre-based picks; try Refresh in a minute.',
-  'invalid-api-key':   'The Anthropic API key was rejected. Showing genre-based picks.',
-  'api-permission':    'The Anthropic API key cannot use this model. Showing genre-based picks.',
-  'api-error':         'Claude returned an error. Showing genre-based picks.',
-  'refused':           'Claude declined this request. Showing genre-based picks.',
-  'invalid-response':  'The answer from Claude could not be used. Showing genre-based picks.',
-  'empty-ai-response': 'Claude did not find a match in your list. Showing genre-based picks.',
+  'no-api-key':        () => 'Add a Gemini API key to get AI-written picks. Showing genre-based picks.',
+  'insufficient-data': (ai) => `Rate at least 3 titles and keep some as Pending to get picks from ${ai}.`,
+  'offline':           (ai) => `${ai} could not be reached (check your connection). Showing genre-based picks.`,
+  'rate-limited':      (ai) => `${ai} is busy right now. Showing genre-based picks; try Refresh in a minute.`,
+  'invalid-api-key':   (ai) => `The ${ai} API key was rejected. Showing genre-based picks.`,
+  'api-permission':    (ai) => `The ${ai} API key cannot use this model. Showing genre-based picks.`,
+  'api-error':         (ai) => `${ai} returned an error. Showing genre-based picks.`,
+  'refused':           (ai) => `${ai} declined this request. Showing genre-based picks.`,
+  'invalid-response':  (ai) => `The answer from ${ai} could not be used. Showing genre-based picks.`,
+  'empty-ai-response': (ai) => `${ai} did not find a match in your list. Showing genre-based picks.`,
 };
 
-const AI_SOURCE   = 'Written by Claude after comparing this title with the ones you rated.';
+const AI_NAME = { gemini: 'Gemini', claude: 'Claude' };
+const aiName  = (recs) => AI_NAME[recs?.provider] ?? 'the AI';
+const aiSource = (ai) => `Written by ${ai} after comparing this title with the ones you rated.`;
 const RULE_SOURCE = 'Based on how often you rated these genres 8 or higher.';
 
 const NO_REC_MSG = {
@@ -499,7 +502,7 @@ export default function Home() {
         {user && (
           <Rail
             title="Recommended for you"
-            sub={recs ? (recs.source === 'ai' ? 'Picked by Claude' : 'By your top genres') : undefined}
+            sub={recs ? (recs.source === 'ai' ? `Picked by ${aiName(recs)}` : 'By your top genres') : undefined}
             action={
               <button
                 className="btn btn--ghost btn--sm"
@@ -511,7 +514,7 @@ export default function Home() {
                 {recsLoading ? 'Refreshing…' : 'Refresh'}
               </button>
             }
-            note={recs?.source === 'rule-based' ? FALLBACK_NOTE[recs.fallbackReason] : null}
+            note={recs?.source === 'rule-based' ? FALLBACK_NOTE[recs.fallbackReason]?.(aiName(recs)) ?? null : null}
             empty={
               recsError ? <RailEmpty>Recommendations failed to load: {recsError}</RailEmpty>
               : !recs && recsLoading ? <RailEmpty>Finding titles that fit your taste…</RailEmpty>
@@ -524,7 +527,7 @@ export default function Home() {
                 key={t.id}
                 title={t}
                 explanation={t.explanation}
-                explanationSource={recs.source === 'ai' ? AI_SOURCE : RULE_SOURCE}
+                explanationSource={recs.source === 'ai' ? aiSource(aiName(recs)) : RULE_SOURCE}
                 onOpen={openTitle}
               />
             ))}

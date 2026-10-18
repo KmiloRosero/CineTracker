@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Electron 29 + React 18 + Vite 5 + better-sqlite3. Renderer is a Chromium web view; all IPC goes through `window.electronAPI` (contextBridge, contextIsolation on, nodeIntegration off). CSS lives in a single `theme.css` with CSS custom properties for light/dark; no Tailwind or UI library. Framer Motion for animation, Recharts for charts. TMDB and Anthropic are called from the main process; keys live in the gitignored `backend/.env`.
+Electron 29 + React 18 + Vite 5 + better-sqlite3. Renderer is a Chromium web view; all IPC goes through `window.electronAPI` (contextBridge, contextIsolation on, nodeIntegration off). CSS lives in a single `theme.css` with CSS custom properties for light/dark; no Tailwind or UI library. Framer Motion for animation, Recharts for charts. TMDB and the AI provider (Gemini, or Anthropic Claude) are called from the main process; keys live in the gitignored `backend/.env`.
 
 ## Users
 
@@ -35,7 +35,7 @@ Used at home, typically right after finishing or starting a title. Sessions are 
 - Records: watch-history entries per title (watched date, platform, rating, note), full CRUD.
 - Lists: named collections per user (create, rename, delete, add/remove titles).
 - Statistics: totals by status and type, completion rate, average rating, hours watched, genre distribution, top and top-rated genres, 12 months of activity.
-- Recommendations: AI (Anthropic) with fallback to the rule-based engine when there is no key, no network, an API error, or fewer than 3 rated titles.
+- Recommendations: AI (Google Gemini; Anthropic Claude when only its key is set) with fallback to the rule-based engine when there is no key, no network, an API error, or fewer than 3 rated titles.
 - Theme: light/dark toggle persisted locally; dark is the default.
 
 ## Brand Commitments

@@ -31,7 +31,7 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 - Round side controls (and arrow keys) move to the previous or next title. Add-to-list, edit and delete are on the same rail.
 
 **Recommendations**
-- With an Anthropic API key, Claude picks up to 5 of your pending titles from what you rated and explains each pick in one sentence ("Why this?").
+- With a Google Gemini API key, Gemini picks up to 5 of your pending titles from what you rated and explains each pick in one sentence ("Why this?"). An Anthropic key (Claude) works too and is used when there is no Gemini key.
 - Without a key, without internet, on an API error or with fewer than 3 rated titles, it falls back to a rule-based engine that ranks pending titles by your favourite genres and explains the match.
 
 **Statistics**
@@ -56,7 +56,7 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 | Interface | React 18, Vite 5, React Router 6, framer-motion, Recharts; plain CSS with custom properties (`frontend/src/styles/theme.css`) |
 | Fonts | Anton, Barlow, Barlow Condensed (self-hosted through Fontsource) |
 | Backend | Runs in Electron's main process: services and repositories over SQLite (better-sqlite3), bcryptjs for passwords |
-| External APIs | TMDB (metadata, posters, trending), Anthropic Claude (`@anthropic-ai/sdk`) for AI recommendations |
+| External APIs | TMDB (metadata, posters, trending); Google Gemini (REST `generateContent`, JSON schema output) for AI recommendations, with Anthropic Claude (`@anthropic-ai/sdk`) as an alternative |
 | Tests | Vitest, run with Electron's Node so the native SQLite module matches |
 
 ---
@@ -78,7 +78,7 @@ Final project for Software Engineering at Universidad Cooperativa de Colombia (U
 │        │                                         │                       │             │
 │  repositories/     SQL only, scoped by user      │  TMDB API (key in     │  disk cache │
 │        │                                         │  backend/.env)        │  of images  │
-│  db/  SQLite (better-sqlite3) + versioned        │  Anthropic API        │             │
+│  db/  SQLite (better-sqlite3) + versioned        │  Gemini / Claude API  │             │
 │       migrations, one-time backup before each    │  (optional)           │             │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -121,7 +121,9 @@ Vite serves the interface on `http://localhost:5173` and Electron opens it (DevT
 | Variable | Required | Purpose |
 |---|---|---|
 | `TMDB_API_KEY` | Yes, for search and trending | TMDB API key (v3). Get one at <https://www.themoviedb.org/settings/api>. Titles already in your catalogue keep working without it. |
-| `ANTHROPIC_API_KEY` | No | Enables AI recommendations. Get one at <https://console.anthropic.com>. Without it, recommendations use the rule-based engine. |
+| `GEMINI_API_KEY` | No | Enables AI recommendations with Google Gemini. Get one at <https://aistudio.google.com/apikey>. Without an AI key, recommendations use the rule-based engine. |
+| `GEMINI_MODEL` | No | Gemini model to call. Defaults to `gemini-3.8-flash`. |
+| `ANTHROPIC_API_KEY` | No | Uses Claude for AI recommendations instead, only when `GEMINI_API_KEY` is empty. Get one at <https://console.anthropic.com>. |
 
 `backend/.env` is gitignored. Never commit real keys.
 
@@ -146,13 +148,13 @@ Packages are written to `C:/CineTracker-release` (see `frontend/electron-builder
 
 ## Tests
 
-`npm test` runs 86 tests in `backend/tests/` against temporary SQLite files:
+`npm test` runs 105 tests in `backend/tests/` against temporary SQLite files:
 
 - **Migrations**: fresh databases, upgrades of databases from before accounts existed, backups and idempotency.
 - **Auth and profile**: registration, login, password change, avatars, account deletion with cascading data.
 - **Catalogue**: title, watch-record and list rules, validation messages, and isolation between users.
 - **Statistics**: totals, completion rate, hours, monthly activity, month-over-month trends, merged movie/series genres.
-- **Recommendations**: the rule-based engine and every AI fallback path. These tests use a fake Claude client and make no paid calls.
+- **Recommendations**: the rule-based engine and every AI fallback path. These tests use a fake Gemini `fetch` and a fake Claude client, and the test config blanks the real keys, so they make no paid calls.
 - **TMDB and image cache**: normalisation and error messages (with mocked `fetch`), path safety, and offline reuse of cached images.
 - **IPC**: guest restrictions, session handling and hiding internal errors.
 
@@ -205,7 +207,7 @@ CineTracker/
 
 Movie and series information and images come from [TMDB](https://www.themoviedb.org). This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-AI recommendations use [Claude](https://www.anthropic.com) by Anthropic.
+AI recommendations use [Gemini](https://ai.google.dev) by Google, or [Claude](https://www.anthropic.com) by Anthropic.
 
 ## License
 

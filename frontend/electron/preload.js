@@ -57,7 +57,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── Recommendations ──────────────────────────────────────────────────────
   /** Returns { recommendations: Title[], reason: string } */
   getRecommendations: () => ipcRenderer.invoke('recommendations:get'),
-  /** @param {{ refresh?: boolean }} [options] — Returns { recommendations, reason, source, fallbackReason?, generatedAt? }.
+  /** @param {{ refresh?: boolean }} [options] — Returns { recommendations, reason, source, provider, fallbackReason?, generatedAt? }.
    *  Each recommendation carries an `explanation` sentence. `refresh` skips the cached AI result. */
   getAIRecommendations: (options) => ipcRenderer.invoke('recommendations:getAI', options),
 

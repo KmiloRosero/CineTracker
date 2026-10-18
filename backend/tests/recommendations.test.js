@@ -45,11 +45,9 @@ describe('rule-based recommendations', () => {
 });
 
 describe('AI recommendations fallback', () => {
-  const saved = process.env.ANTHROPIC_API_KEY;
-  afterEach(() => { process.env.ANTHROPIC_API_KEY = saved ?? ''; });
+  afterEach(() => { process.env.GEMINI_API_KEY = ''; process.env.ANTHROPIC_API_KEY = ''; });
 
   it('falls back to rule-based results when no API key is configured', async () => {
-    process.env.ANTHROPIC_API_KEY = '';
     const user = await createUser();
     add(user.id, { title: 'Loved', genres: '["Drama"]', status: 'completed', rating: 9 });
     add(user.id, { title: 'Next',  genres: '["Drama"]', status: 'pending' });
@@ -60,7 +58,7 @@ describe('AI recommendations fallback', () => {
   });
 
   it('falls back without calling the API when fewer than 3 titles are rated', async () => {
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-key-not-real';
+    process.env.GEMINI_API_KEY = 'gemini-test-key-not-real';
     const user = await createUser();
     add(user.id, { title: 'Loved', genres: '["Drama"]', status: 'completed', rating: 9 });
     add(user.id, { title: 'Next',  genres: '["Drama"]', status: 'pending' });
