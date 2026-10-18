@@ -36,6 +36,7 @@ export function toCatalogPayload(detail) {
     release_year:   detail.release_year   ?? null,
     runtime:        detail.runtime        ?? null,
     genres:         JSON.stringify(genres),
+    cast_members:   Array.isArray(detail.cast) && detail.cast.length ? JSON.stringify(detail.cast) : null,
     status:         'pending',
     rating:         null,
     notes:          null,

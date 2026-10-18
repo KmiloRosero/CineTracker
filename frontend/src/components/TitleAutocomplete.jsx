@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { searchTitle, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { tmdbImage } from '../utils/tmdbImage';
 
 // ── Icons ─────────────────────────────────────────────────────────────────
 function IconSearch() {
@@ -70,6 +71,8 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
   const listRef     = useRef(null);
   const debounceRef = useRef(null);
   const containerRef = useRef(null);
+  // each search gets a number; a response is applied only if it is still the latest
+  const requestRef  = useRef(0);
 
   // ── debounced search ─────────────────────────────────────────────────
   useEffect(() => {
@@ -77,6 +80,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
     setSearchError(null);
 
     if (!query.trim()) {
+      requestRef.current += 1; // drop any search still in flight
       setResults([]);
       setOpen(false);
       setSearching(false);
@@ -85,17 +89,20 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
 
     setSearching(true);
     debounceRef.current = setTimeout(async () => {
+      const requestId = ++requestRef.current;
       try {
         const data = await searchTitle(query);
+        if (requestId !== requestRef.current) return;
         setResults(data);
         setOpen(true);
         setActiveIdx(-1);
       } catch (err) {
+        if (requestId !== requestRef.current) return;
         setSearchError(err.message);
         setResults([]);
         setOpen(true);
       } finally {
-        setSearching(false);
+        if (requestId === requestRef.current) setSearching(false);
       }
     }, 400);
 
@@ -197,10 +204,8 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
         : preview.genres)
     : [];
 
-  const posterUrl = (url) => {
-    if (!url) return null;
-    return url.startsWith('http') ? url : `https://image.tmdb.org/t/p/w300${url}`;
-  };
+  const posterUrl = (url) => tmdbImage(url, 'w342');
+  const cast = Array.isArray(preview?.cast) ? preview.cast : [];
 
   return (
     <div className="tac" ref={containerRef}>
@@ -218,9 +223,12 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
           onKeyDown={handleKeyDown}
           autoComplete="off"
           aria-label="Search TMDB"
+          role="combobox"
           aria-expanded={open}
+          aria-controls="tac-results"
           aria-haspopup="listbox"
           aria-autocomplete="list"
+          aria-activedescendant={open && activeIdx >= 0 ? `tac-option-${activeIdx}` : undefined}
         />
         {searching && (
           <span className="tac__input-spinner"><IconSpinner /></span>
@@ -237,6 +245,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
         {open && (
           <motion.ul
             ref={listRef}
+            id="tac-results"
             className="tac__dropdown"
             role="listbox"
             aria-label="Search results"
@@ -263,12 +272,11 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
             )}
 
             {results.map((r, i) => {
-              const thumb = r.poster_path
-                ? `https://image.tmdb.org/t/p/w92${r.poster_path}`
-                : null;
+              const thumb = tmdbImage(r.poster_path, 'w92');
               return (
                 <li
-                  key={r.tmdb_id}
+                  key={`${r.type}-${r.tmdb_id}`}
+                  id={`tac-option-${i}`}
                   className={`tac__result${i === activeIdx ? ' tac__result--active' : ''}`}
                   role="option"
                   aria-selected={i === activeIdx}
@@ -354,6 +362,13 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
 
                 {preview.overview && (
                   <p className="tac__preview-overview">{preview.overview}</p>
+                )}
+
+                {cast.length > 0 && (
+                  <p className="tac__preview-cast">
+                    <span className="tac__preview-cast-label">Cast</span>
+                    {cast.slice(0, 5).map((c) => c.name).join(', ')}
+                  </p>
                 )}
 
                 {saveError && (

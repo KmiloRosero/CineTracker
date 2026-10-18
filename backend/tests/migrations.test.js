@@ -34,6 +34,7 @@ describe('migrations', () => {
     expect(db.pragma('user_version', { simple: true })).toBe(latestVersion());
     const cols = db.prepare('PRAGMA table_info(titles)').all().map((c) => c.name);
     expect(cols).toContain('user_id');
+    expect(cols).toContain('cast_members');
   });
 
   it('gives legacy data to the oldest account and keeps every row', () => {

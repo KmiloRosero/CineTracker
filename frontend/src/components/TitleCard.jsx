@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
+import { tmdbImage } from '../utils/tmdbImage';
 import { cardVariants } from './cardAnimations';
 
 const STATUS_LABELS = {
@@ -61,11 +62,7 @@ function IconClose() {
 
 // ── TitleCard ─────────────────────────────────────────────────────────────
 export default function TitleCard({ title, onClick, onDelete }) {
-  const posterUrl = title.poster_path
-    ? title.poster_path.startsWith('http')
-      ? title.poster_path
-      : `https://image.tmdb.org/t/p/w300${title.poster_path}`
-    : null;
+  const posterUrl = tmdbImage(title.poster_path, 'w342');
 
   const rating = title.rating != null ? Number(title.rating) : null;
   const isMovie = title.type === 'movie';

@@ -99,6 +99,15 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 2,
+    name: 'cast members on titles',
+    rebuildsTables: false,
+    up(db) {
+      // JSON array of { name, character } for the top-billed cast (from TMDB credits).
+      db.exec('ALTER TABLE titles ADD COLUMN cast_members TEXT');
+    },
+  },
 ];
 
 function runMigrations(db) {

@@ -9,6 +9,7 @@ import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
 import { parseGenres } from '../utils/genres';
+import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
 
 const STATUS_OPTIONS = [
@@ -64,6 +65,7 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
   const reduceMotion = useReducedMotion();
   const [listsOpen, setListsOpen] = useState(false);
   const genres    = parseGenres(title.genres);
+  const cast      = parseCast(title.cast_members).slice(0, 6);
   const posterSrc = tmdbImage(title.poster_path, 'w780');
   const field     = usePosterColor(tmdbImage(title.poster_path, 'w185'));
   const meta = [
@@ -120,6 +122,20 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
           )}
 
           {title.overview && <p className="showcase__overview">{title.overview}</p>}
+
+          {cast.length > 0 && (
+            <div className="showcase__cast">
+              <span className="showcase__label">Starring</span>
+              <ul>
+                {cast.map((c) => (
+                  <li key={`${c.name}-${c.character ?? ''}`}>
+                    <span className="showcase__cast-name">{c.name}</span>
+                    {c.character && <span className="showcase__cast-role">{c.character}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="showcase__score">
             <span className="showcase__label">Your score</span>

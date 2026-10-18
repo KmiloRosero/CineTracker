@@ -1,7 +1,35 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol } = require('electron');
 const path = require('path');
 const { initDatabase } = require('../../backend/db/database.js');
 const { registerIpcHandlers } = require('../../backend/ipc/handlers.js');
+const imageCache = require('../../backend/services/imageCacheService.js');
+
+// Posters and backdrops load through ctimg://<size>/<file> so they are cached
+// on disk and keep working offline. Must be registered before app is ready.
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'ctimg', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
+]);
+
+function registerImageProtocol() {
+  const cacheDir = path.join(app.getPath('userData'), 'image-cache');
+  protocol.handle('ctimg', async (request) => {
+    const ref = imageCache.parseImageUrl(request.url);
+    if (!ref) return new Response('Bad image reference', { status: 400 });
+    try {
+      const { buffer, contentType } = await imageCache.getImage(ref, { cacheDir });
+      return new Response(buffer, {
+        headers: {
+          'content-type': contentType,
+          // lets the renderer sample poster colours on a canvas
+          'access-control-allow-origin': '*',
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      });
+    } catch {
+      return new Response('Image unavailable', { status: 404 });
+    }
+  });
+}
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -33,6 +61,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   initDatabase();
+  registerImageProtocol();
   registerIpcHandlers(ipcMain);
   createWindow();
 

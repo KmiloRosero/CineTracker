@@ -8,6 +8,7 @@ import { PageLoading, PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import GuestPrompt from '../components/GuestPrompt';
+import { tmdbImage } from '../utils/tmdbImage';
 
 const STATUS_OPTIONS = ['watching', 'completed', 'pending', 'dropped'];
 
@@ -483,7 +484,7 @@ export default function Catalog() {
                   {form.poster_path && (
                     <img
                       className="tmdb-poster-preview"
-                      src={form.poster_path.startsWith('http') ? form.poster_path : `https://image.tmdb.org/t/p/w92${form.poster_path}`}
+                      src={tmdbImage(form.poster_path, 'w92')}
                       alt="Poster preview"
                     />
                   )}

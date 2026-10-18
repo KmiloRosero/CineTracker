@@ -5,6 +5,7 @@ const { getDb } = require('../db/database.js');
 const WRITABLE_COLUMNS = [
   'tmdb_id', 'type', 'title', 'original_title', 'overview', 'poster_path',
   'backdrop_path', 'release_year', 'genres', 'runtime', 'status', 'rating', 'notes',
+  'cast_members',
 ];
 
 function create(userId, title) {
@@ -15,10 +16,10 @@ function create(userId, title) {
   const result = getDb().prepare(`
     INSERT INTO titles
       (user_id, tmdb_id, type, title, original_title, overview, poster_path,
-       backdrop_path, release_year, genres, runtime, status, rating, notes)
+       backdrop_path, release_year, genres, runtime, status, rating, notes, cast_members)
     VALUES
       (@user_id, @tmdb_id, @type, @title, @original_title, @overview, @poster_path,
-       @backdrop_path, @release_year, @genres, @runtime, @status, @rating, @notes)
+       @backdrop_path, @release_year, @genres, @runtime, @status, @rating, @notes, @cast_members)
   `).run(row);
   return findById(userId, result.lastInsertRowid);
 }

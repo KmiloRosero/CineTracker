@@ -57,6 +57,19 @@ function validateGenres(genres) {
   }
 }
 
+const MAX_CAST = 20;
+
+function validateCast(cast) {
+  if (cast === undefined || cast === null) return;
+  let parsed;
+  try { parsed = typeof cast === 'string' ? JSON.parse(cast) : cast; } catch { parsed = null; }
+  const valid = Array.isArray(parsed)
+    && parsed.length <= MAX_CAST
+    && parsed.every((m) => m && typeof m.name === 'string' && m.name.length <= 120
+      && (m.character == null || (typeof m.character === 'string' && m.character.length <= 200)));
+  if (!valid) throw new Error(`Cast must be a list of up to ${MAX_CAST} people with a name and an optional character.`);
+}
+
 // Shared checks for the optional title columns, used by create and update.
 function validateTitleFields(data) {
   if ('type' in data && !VALID_TYPES.includes(data.type)) {
@@ -69,6 +82,7 @@ function validateTitleFields(data) {
   validateOptionalInt(data.release_year, 'Release year', 1870, 2100);
   validateOptionalInt(data.runtime, 'Runtime', 0, 2000);
   validateGenres(data.genres);
+  validateCast(data.cast_members);
 }
 
 function validateTitleText(title) {

@@ -5,6 +5,7 @@ const { validateId } = require('../utils/validators.js');
 // renderer bundle and the renderer CSP can keep connect-src 'self'.
 const BASE_URL   = 'https://api.themoviedb.org/3';
 const TIMEOUT_MS = 8000;
+const CAST_LIMIT = 10;
 
 function apiKey() {
   const key = getEnv('TMDB_API_KEY');
@@ -49,6 +50,19 @@ function normalizeSearchResult(item) {
   };
 }
 
+// Top-billed cast; series use aggregate credits so long-running casts are complete.
+function normalizeCast(item) {
+  const people = item.aggregate_credits?.cast ?? item.credits?.cast ?? [];
+  return people
+    .filter((p) => p && p.name)
+    .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+    .slice(0, CAST_LIMIT)
+    .map((p) => ({
+      name: String(p.name).slice(0, 120),
+      character: (p.character ?? p.roles?.[0]?.character ?? null)?.slice(0, 200) || null,
+    }));
+}
+
 function normalizeDetails(item, type) {
   const isMovie = type === 'movie';
   return {
@@ -62,6 +76,7 @@ function normalizeDetails(item, type) {
     release_year:   parseYear(item.release_date ?? item.first_air_date),
     runtime:        isMovie ? (item.runtime ?? null) : (item.episode_run_time?.[0] ?? null),
     genres:         (item.genres ?? []).map((g) => g.name),
+    cast:           normalizeCast(item),
   };
 }
 
@@ -78,7 +93,8 @@ async function getDetails(tmdbId, type) {
   validateId(tmdbId, 'TMDB id');
   if (type !== 'movie' && type !== 'series') throw new Error('Type must be "movie" or "series".');
   const endpoint = type === 'movie' ? `/movie/${Number(tmdbId)}` : `/tv/${Number(tmdbId)}`;
-  return normalizeDetails(await tmdbFetch(endpoint), type);
+  const credits = type === 'movie' ? 'credits' : 'aggregate_credits';
+  return normalizeDetails(await tmdbFetch(endpoint, { append_to_response: credits }), type);
 }
 
 async function getTrending(limit = 12) {
@@ -87,4 +103,4 @@ async function getTrending(limit = 12) {
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending };
+module.exports = { search, getDetails, getTrending, normalizeDetails };

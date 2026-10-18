@@ -33,8 +33,16 @@ describe('titles', () => {
     [{ title: 'X', type: 'movie', release_year: 1700 }, 'Release year'],
     [{ title: 'X', type: 'movie', genres: '{"not":"a list"}' }, 'Genres must be a list'],
     [{ title: 'X'.repeat(201), type: 'movie' }, '200 characters'],
+    [{ title: 'X', type: 'movie', cast_members: '[{"character":"no name"}]' }, 'Cast must be a list'],
+    [{ title: 'X', type: 'movie', cast_members: 'not json' }, 'Cast must be a list'],
   ])('rejects invalid input %#', (input, message) => {
     expect(() => titleService.addTitle(ana.id, input)).toThrow(message);
+  });
+
+  it('stores the cast as given by TMDB', () => {
+    const cast = JSON.stringify([{ name: 'Al Pacino', character: 'Vincent Hanna' }]);
+    const t = titleService.addTitle(ana.id, { title: 'Heat (1995)', type: 'movie', cast_members: cast });
+    expect(JSON.parse(t.cast_members)).toEqual([{ name: 'Al Pacino', character: 'Vincent Hanna' }]);
   });
 
   it("hides other users' titles from reads, updates and deletes", () => {

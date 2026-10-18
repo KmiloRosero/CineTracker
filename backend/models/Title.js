@@ -17,6 +17,7 @@
  * @property {'pending'|'watching'|'completed'|'dropped'} status
  * @property {number|null} rating    1-10
  * @property {string|null} notes
+ * @property {string|null} cast_members  JSON array of { name, character }, top-billed first
  * @property {string}  added_at
  * @property {string}  updated_at
  */
