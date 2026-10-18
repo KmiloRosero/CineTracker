@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, session } = require('electron');
 const path = require('path');
 const { initDatabase } = require('../../backend/db/database.js');
 const { registerIpcHandlers } = require('../../backend/ipc/handlers.js');
@@ -32,8 +32,20 @@ function registerImageProtocol() {
 }
 
 const isDev = process.env.NODE_ENV === 'development';
+const DEV_URL = 'http://localhost:5173';
 
 let mainWindow;
+
+// The renderer may only ever show the app itself: no navigation elsewhere,
+// no new windows, no permission prompts (camera, location, notifications...).
+function lockDown(contents) {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.on('will-navigate', (event, url) => {
+    const allowed = isDev ? url.startsWith(DEV_URL) : url.startsWith('file://');
+    if (!allowed) event.preventDefault();
+  });
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -45,13 +57,18 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
+      webSecurity: true,
+      devTools: isDev,
     },
     show: false,
   });
 
+  lockDown(mainWindow.webContents);
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
+    mainWindow.loadURL(DEV_URL);
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -60,6 +77,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   initDatabase();
   registerImageProtocol();
   registerIpcHandlers(ipcMain);

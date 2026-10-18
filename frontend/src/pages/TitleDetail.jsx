@@ -4,11 +4,13 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import ScoreBug from '../components/ScoreBug';
 import ListMenu from '../components/ListMenu';
 import { PageLoading } from '../components/PageLoading';
+import { ConfirmDialog } from '../components/Modal';
+import { useToast } from '../components/Toast';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
-import { parseGenres } from '../utils/genres';
+import { parseGenres, canonicalGenres } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
 
@@ -64,7 +66,7 @@ function formatDate(iso) {
 function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
   const reduceMotion = useReducedMotion();
   const [listsOpen, setListsOpen] = useState(false);
-  const genres    = parseGenres(title.genres);
+  const genres    = canonicalGenres(title.genres);
   const cast      = parseCast(title.cast_members).slice(0, 6);
   const posterSrc = tmdbImage(title.poster_path, 'w780');
   const field     = usePosterColor(tmdbImage(title.poster_path, 'w185'));
@@ -259,6 +261,8 @@ export default function TitleDetail() {
   const [marking,   setMarking]   = useState(false);
   const [error,     setError]     = useState(null);
   const [editing,   setEditing]   = useState(isNew);
+  const [deleting,  setDeleting]  = useState(false);
+  const showToast = useToast();
 
   useEffect(() => { setEditing(isNew); }, [isNew, id]);
 
@@ -362,12 +366,13 @@ export default function TitleDetail() {
   }
 
   function handleDelete() {
-    requireAuth(async () => {
-      if (!window.confirm(`Delete "${title.title}" and its watch history? This cannot be undone.`)) return;
-      const result = await window.electronAPI.deleteTitle(Number(id));
-      if (result?.error) { setError(result.error); return; }
-      navigate('/catalog');
-    });
+    requireAuth(() => setDeleting(true));
+  }
+
+  async function confirmDelete() {
+    unwrap(await window.electronAPI.deleteTitle(Number(id)));
+    showToast({ message: `"${title.title}" deleted.` });
+    navigate('/catalog');
   }
 
   function patchTitle(fields) {
@@ -449,6 +454,16 @@ export default function TitleDetail() {
           onDeleteRecord={handleDeleteRecord}
           onNavigate={goTo}
           onBack={() => navigate(-1)}
+        />
+      )}
+
+      {title && (
+        <ConfirmDialog
+          open={deleting}
+          onClose={() => setDeleting(false)}
+          onConfirm={confirmDelete}
+          title="Delete title"
+          message={`Delete “${title.title}” and its watch history? This cannot be undone.`}
         />
       )}
 

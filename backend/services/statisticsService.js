@@ -1,48 +1,53 @@
 const { getDb } = require('../db/database.js');
+const { canonicalGenres } = require('../utils/genres.js');
 
 const MONTHS_OF_ACTIVITY = 12;
 
-function getGenreCounts(userId, limit = 10) {
+// Genre stats are computed in JS so movie and series genres share one vocabulary
+// (see canonicalGenres); SQLite's json_each would count "Sci-Fi & Fantasy" apart.
+function genreRows(userId) {
   return getDb()
-    .prepare(`
-      SELECT value AS genre, COUNT(*) AS n
-      FROM titles, json_each(titles.genres)
-      WHERE user_id = ? AND genres IS NOT NULL AND json_valid(genres)
-      GROUP BY value
-      ORDER BY n DESC, genre ASC
-      LIMIT ?
-    `)
-    .all(userId, limit);
+    .prepare('SELECT genres, status, rating FROM titles WHERE user_id = ? AND genres IS NOT NULL')
+    .all(userId)
+    .map((t) => ({ ...t, genres: canonicalGenres(t.genres) }));
+}
+
+function rank(counts, limit) {
+  return [...counts.entries()]
+    .map(([genre, n]) => ({ genre, n }))
+    .sort((a, b) => b.n - a.n || a.genre.localeCompare(b.genre))
+    .slice(0, limit);
+}
+
+function getGenreCounts(userId, limit = 10) {
+  const counts = new Map();
+  genreRows(userId).forEach((t) => t.genres.forEach((g) => counts.set(g, (counts.get(g) ?? 0) + 1)));
+  return rank(counts, limit);
 }
 
 /** Genres of completed titles, most watched first. */
 function getTopGenres(userId, limit = 5) {
-  return getDb()
-    .prepare(`
-      SELECT value AS genre, COUNT(*) AS n
-      FROM titles, json_each(titles.genres)
-      WHERE user_id = ? AND genres IS NOT NULL AND json_valid(genres)
-        AND status = 'completed'
-      GROUP BY value
-      ORDER BY n DESC, genre ASC
-      LIMIT ?
-    `)
-    .all(userId, limit);
+  const counts = new Map();
+  genreRows(userId)
+    .filter((t) => t.status === 'completed')
+    .forEach((t) => t.genres.forEach((g) => counts.set(g, (counts.get(g) ?? 0) + 1)));
+  return rank(counts, limit);
 }
 
 /** Genres ranked by average rating, ignoring genres with fewer than `minTitles` rated titles. */
 function getTopRatedGenres(userId, limit = 5, minTitles = 2) {
-  return getDb()
-    .prepare(`
-      SELECT value AS genre, ROUND(AVG(rating), 1) AS avgRating, COUNT(*) AS n
-      FROM titles, json_each(titles.genres)
-      WHERE user_id = ? AND rating IS NOT NULL AND genres IS NOT NULL AND json_valid(genres)
-      GROUP BY value
-      HAVING COUNT(*) >= ?
-      ORDER BY avgRating DESC, n DESC, genre ASC
-      LIMIT ?
-    `)
-    .all(userId, minTitles, limit);
+  const sums = new Map();
+  genreRows(userId)
+    .filter((t) => t.rating != null)
+    .forEach((t) => t.genres.forEach((g) => {
+      const acc = sums.get(g) ?? { total: 0, n: 0 };
+      sums.set(g, { total: acc.total + t.rating, n: acc.n + 1 });
+    }));
+  return [...sums.entries()]
+    .filter(([, v]) => v.n >= minTitles)
+    .map(([genre, v]) => ({ genre, avgRating: Math.round((v.total / v.n) * 10) / 10, n: v.n }))
+    .sort((a, b) => b.avgRating - a.avgRating || b.n - a.n || a.genre.localeCompare(b.genre))
+    .slice(0, limit);
 }
 
 /** 'YYYY-MM' keys for the last `count` months, oldest first, in UTC like SQLite. */

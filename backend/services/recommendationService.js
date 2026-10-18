@@ -1,5 +1,5 @@
 const titleRepository = require('../repositories/titleRepository.js');
-const { parseGenres } = require('../utils/genres.js');
+const { canonicalGenres } = require('../utils/genres.js');
 
 const MIN_RATING = 8;
 const TOP_N = 5;
@@ -8,7 +8,7 @@ function buildGenreFrequency(titles) {
   const freq = {};
   titles.forEach((t) => {
     if (t.rating == null || Number(t.rating) < MIN_RATING) return;
-    parseGenres(t.genres).forEach((g) => {
+    canonicalGenres(t.genres).forEach((g) => {
       freq[g] = (freq[g] || 0) + 1;
     });
   });
@@ -42,7 +42,7 @@ function getRecommendations(userId) {
   }
 
   const scored = pending.map((t) => {
-    const matched = parseGenres(t.genres).filter((g) => freq[g]);
+    const matched = canonicalGenres(t.genres).filter((g) => freq[g]);
     const score = matched.reduce((sum, g) => sum + freq[g], 0);
     return { ...t, _score: score, _matched: matched.sort((a, b) => freq[b] - freq[a]) };
   });

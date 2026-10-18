@@ -1,268 +1,171 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { BarChartCard, LineChartCard } from '../components/StatsChart';
-import { PageLoading, PageError } from '../components/PageLoading';
+import { MonthlyColumns, GenreBars, StatusBar, ChartTable, STATUS_ORDER, monthLabel } from '../components/StatsChart';
+import ScoreBug from '../components/ScoreBug';
 import GuestPrompt from '../components/GuestPrompt';
+import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
-import { parseGenres } from '../utils/genres';
+import { StatTicker, trendOf } from '../components/Ticker';
 
-// ── helpers ───────────────────────────────────────────────────────────────
 function unwrap(result) {
   if (result?.error) throw new Error(result.error);
   return result;
 }
 
-
-// ── animation variants — untouched ───────────────────────────────────────
-const cardVariants = {
-  hidden:  { opacity: 0, y: 8 },
-  visible: (i) => ({ opacity: 1, y: 0, transition: { duration: 0.2, delay: i * 0.06 } }),
+const panelVariants = {
+  hidden:  { opacity: 0, y: 12 },
+  visible: (i) => ({ opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: i * 0.06 } }),
 };
 
-// ── SVG icons — drawn, no emoji ───────────────────────────────────────────
-function IconFilm() {
+function Panel({ title, sub, index, children, wide = false }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="20" height="20" rx="2"/>
-      <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-    </svg>
-  );
-}
-function IconCheck() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  );
-}
-function IconClock() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
-function IconStar() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  );
-}
-function IconTag() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-      <line x1="7" y1="7" x2="7.01" y2="7"/>
-    </svg>
-  );
-}
-function IconPlay() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
-    </svg>
-  );
-}
-function IconBarChart() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-    </svg>
+    <motion.section className={`panel${wide ? ' panel--wide' : ''}`} variants={panelVariants} custom={index} aria-label={title}>
+      <header className="panel__header">
+        <h2 className="panel__title">{title}</h2>
+        {sub && <span className="panel__sub">{sub}</span>}
+      </header>
+      {children}
+    </motion.section>
   );
 }
 
-// rank medal colours — semantic, not decorative
-const RANK_CLASS = ['gold', 'silver', 'bronze'];
+function StatisticsSkeleton() {
+  return (
+    <div className="stats" aria-busy="true" aria-label="Loading statistics">
+      <div className="ticker ticker--standalone skeleton" />
+      <div className="panels">
+        <div className="panel panel--wide skeleton panel--skeleton" />
+        <div className="panel skeleton panel--skeleton" />
+        <div className="panel skeleton panel--skeleton" />
+      </div>
+    </div>
+  );
+}
 
-// ── Statistics ────────────────────────────────────────────────────────────
 export default function Statistics() {
-  // ── state — untouched ──────────────────────────────────────────────────
-  const [titles,  setTitles]  = useState([]);
-  const [genres,  setGenres]  = useState([]);
-  const [monthly, setMonthly] = useState([]);
-  const [hours,   setHours]   = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
   const { user } = useAuth();
+  const [overview,  setOverview]  = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // ── data fetching ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    async function load() {
-      setLoading(true); setError(null);
-      try {
-        const [allTitles, genreCounts, monthlyWatched, totalHours] = await Promise.all([
-          window.electronAPI.getAllTitles({}).then(unwrap),
-          window.electronAPI.getGenreCounts().then(unwrap),
-          window.electronAPI.getMonthlyWatched().then(unwrap),
-          window.electronAPI.getTotalHours().then(unwrap),
-        ]);
-        setTitles(allTitles);
-        setGenres(genreCounts ?? []);
-        setMonthly(monthlyWatched ?? []);
-        setHours(totalHours?.totalHours ?? 0);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    if (!user) { setLoading(false); setOverview(null); return undefined; }
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    window.electronAPI.getStatsOverview()
+      .then((o) => { if (!cancelled) setOverview(unwrap(o)); })
+      .catch((err) => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [user, reloadKey]);
 
-  // ── derived — untouched ────────────────────────────────────────────────
-  const summary = useMemo(() => {
-    const completed = titles.filter((t) => t.status === 'completed').length;
-    const watching  = titles.filter((t) => t.status === 'watching').length;
-    const ratings   = titles.map((t) => t.rating).filter((r) => r != null);
-    const avgRating = ratings.length
-      ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-      : null;
-    return { total: titles.length, completed, watching, avgRating };
-  }, [titles]);
-
-  const topGenre = useMemo(() => genres[0]?.genre ?? null, [genres]);
-
-  const genreChartData   = useMemo(() => genres.map((g) => ({ name: g.genre, value: g.n })),  [genres]);
-  const monthlyChartData = useMemo(() => monthly.map((m) => ({ name: m.month, value: m.n })), [monthly]);
-
-  const topGenresByRating = useMemo(() => {
-    const map = {};
-    titles.forEach((t) => {
-      if (t.rating == null) return;
-      parseGenres(t.genres).forEach((g) => {
-        if (!map[g]) map[g] = { sum: 0, count: 0 };
-        map[g].sum += Number(t.rating);
-        map[g].count += 1;
-      });
-    });
-    return Object.entries(map)
-      .filter(([, v]) => v.count >= 1)
-      .map(([name, v]) => ({ name, avg: +(v.sum / v.count).toFixed(1) }))
-      .sort((a, b) => b.avg - a.avg)
-      .slice(0, 3);
-  }, [titles]);
-
-  // ── loading / error ────────────────────────────────────────────────────
   if (!user) {
     return (
       <main className="page">
         <h1 className="page__heading">Statistics</h1>
-        <GuestPrompt
-          title="Your viewing stats live here"
-          message="Log in to see your genres, monthly activity and hours watched."
-        />
-      </main>
-    );
-  }
-  if (loading) return <PageLoading message="Loading statistics…" />;
-  if (error)   return <PageError message={error} onRetry={() => setReloadKey((k) => k + 1)} />;
-
-  if (titles.length === 0) {
-    return (
-      <main className="page">
-        <h1 className="page__heading">Statistics</h1>
-        <div className="statistics__empty">
-          <div className="statistics__empty__icon-wrap"><IconBarChart /></div>
-          <p>Add some titles to your catalog to see statistics here.</p>
-        </div>
+        <GuestPrompt title="Your viewing stats live here" message="Log in to see your genres, monthly activity and hours watched." />
       </main>
     );
   }
 
-  // stat card definitions — icon components, no emoji
-  const summaryCards = [
-    { Icon: IconFilm,  value: summary.total,            label: 'Total Titles',  mod: 'accent', hero: true },
-    { Icon: IconCheck, value: summary.completed,         label: 'Completed',     mod: 'green'  },
-    { Icon: IconClock, value: `${hours ?? 0}h`,          label: 'Hours Watched', mod: null      },
-    summary.avgRating
-      ? { Icon: IconStar, value: summary.avgRating,      label: 'Avg Rating /10', mod: 'gold'  }
-      : null,
-    topGenre
-      ? { Icon: IconTag,  value: topGenre,               label: 'Top Genre',     mod: null, small: true }
-      : null,
-    { Icon: IconPlay,  value: summary.watching,          label: 'Watching',      mod: null      },
-  ].filter(Boolean);
+  const o = overview;
+  const t = o?.trends ?? {};
+  const activeMonths = o?.monthlyActivity.filter((m) => m.n > 0).length ?? 0;
 
   return (
-    <main className="page">
-      <h1 className="page__heading">Statistics</h1>
+    <main className="page statistics">
+      <header className="page__header">
+        <h1 className="page__heading">Statistics</h1>
+      </header>
 
-      {/* ── summary cards ── */}
-      <div className="stat-grid" aria-label="Summary statistics">
-        {summaryCards.map((c, i) => (
-          <motion.div
-            key={c.label}
-            className={[
-              'stat-card',
-              c.mod   ? `stat-card--${c.mod}` : '',
-              c.hero  ? 'stat-card--hero'     : '',
-            ].filter(Boolean).join(' ')}
-            custom={i}
-            variants={cardVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <span className="stat-card__icon"><c.Icon /></span>
-            <span className={`stat-card__value${c.small ? ' stat-card__value--sm' : ''}`}>
-              {c.value}
-            </span>
-            <span className="stat-card__label">{c.label}</span>
-          </motion.div>
-        ))}
-      </div>
+      {error && <PageError message={`Failed to load statistics: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />}
+      {!error && loading && <StatisticsSkeleton />}
 
-      {/* ── top genres by avg rating ── */}
-      {topGenresByRating.length > 0 && (
-        <section className="statistics__top-genres" aria-label="Top genres by average rating">
-          <h2 className="statistics__section-label">Top Genres by Avg Rating</h2>
-          <div className="top-genres__list">
-            {topGenresByRating.map((g, i) => (
-              <motion.div
-                key={g.name}
-                className="top-genres__item"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0, transition: { duration: 0.2, delay: i * 0.07 } }}
-              >
-                <span className={`top-genres__rank top-genres__rank--${RANK_CLASS[i]}`}>
-                  #{i + 1}
-                </span>
-                <span className="top-genres__name">{g.name}</span>
-                <span className="top-genres__avg">
-                  <div className="top-genres__avg-bar">
-                    <div
-                      className="top-genres__avg-fill"
-                      style={{ width: `${(g.avg / 10) * 100}%` }}
-                    />
-                  </div>
-                  {g.avg} / 10
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+      {!error && !loading && o && o.totals.titles === 0 && (
+        <div className="catalog__empty" role="status">
+          <h2 className="catalog__empty-title">No numbers yet</h2>
+          <p>Add titles, mark what you finish and rate them. Your genres, hours and monthly activity appear here.</p>
+          <Link className="btn btn--primary btn--lg" to="/catalog">Go to catalog</Link>
+        </div>
       )}
 
-      {/* ── charts ── */}
-      <div className="statistics__charts">
-        <div className="chart-card">
-          <h3 className="chart-card__title">Titles per Genre</h3>
-          <BarChartCard
-            data={genreChartData}
-            color="var(--accent)"
-          />
-        </div>
-        <div className="chart-card">
-          <h3 className="chart-card__title">Titles Watched per Month</h3>
-          <LineChartCard
-            data={monthlyChartData}
-            color="var(--status-completed)"
-          />
-        </div>
-      </div>
+      {!error && !loading && o && o.totals.titles > 0 && (
+        <motion.div className="stats" initial="hidden" animate="visible">
+          <motion.div variants={panelVariants} custom={0}>
+            <StatTicker
+              standalone
+              tag="Your numbers"
+              sub="± vs last month"
+              label="Your viewing in numbers"
+              items={[
+                { label: 'Titles',          value: o.totals.titles, trend: trendOf(t.titlesAdded) },
+                { label: 'Completed',       value: o.totals.completed, trend: trendOf(t.completed) },
+                { label: 'Hours',           value: o.totalHours, decimals: o.totalHours % 1 ? 1 : 0, trend: trendOf(t.hours, 1) },
+                { label: 'Completion rate', value: o.completionRate, decimals: o.completionRate % 1 ? 1 : 0, suffix: '%' },
+                { label: 'Avg score',       value: o.averageRating, decimals: 1 },
+              ]}
+            />
+            <p className="stats__caption">
+              {o.totals.movies} movies and {o.totals.series} series · completion rate counts finished titles out of every title you started · average score from {o.ratedCount} rated {o.ratedCount === 1 ? 'title' : 'titles'}.
+            </p>
+          </motion.div>
+
+          <div className="panels">
+            <Panel index={1} wide title="Monthly activity" sub={`Completed watches · ${activeMonths} active ${activeMonths === 1 ? 'month' : 'months'} in the last 12 months`}>
+              <MonthlyColumns data={o.monthlyActivity} />
+              <ChartTable
+                caption="Completed watches per month"
+                columns={['Month', 'Completed']}
+                rows={o.monthlyActivity.map((m) => [monthLabel(m.month, true), m.n])}
+              />
+            </Panel>
+
+            <Panel index={2} title="Your titles by status" sub={`${o.totals.titles} in total`}>
+              <StatusBar totals={o.totals} />
+              <ChartTable
+                caption="Titles by status"
+                columns={['Status', 'Titles']}
+                rows={STATUS_ORDER.map((s) => [s.label, o.totals[s.key] ?? 0])}
+              />
+            </Panel>
+
+            <Panel index={3} title="Top-rated genres" sub="Average score, genres with 2+ rated titles">
+              {o.topRatedGenres.length === 0 ? (
+                <p className="panel__empty">Rate at least two titles in the same genre to see this ranking.</p>
+              ) : (
+                <ol className="ranking">
+                  {o.topRatedGenres.map((g, i) => (
+                    <li key={g.genre} className="ranking__item">
+                      <span className="ranking__pos">{i + 1}</span>
+                      <span className="ranking__name">{g.genre}</span>
+                      <span className="ranking__count">{g.n} rated</span>
+                      <ScoreBug value={g.avgRating} readonly size="sm" />
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Panel>
+
+            <Panel index={4} wide title="Titles per genre" sub={`Top ${o.genreDistribution.length}`}>
+              {o.genreDistribution.length === 0 ? (
+                <p className="panel__empty">Titles added from TMDB come with genres. Add genres by hand to manual entries.</p>
+              ) : (
+                <>
+                  <GenreBars data={o.genreDistribution} />
+                  <ChartTable
+                    caption="Titles per genre"
+                    columns={['Genre', 'Titles']}
+                    rows={o.genreDistribution.map((g) => [g.genre, g.n])}
+                  />
+                </>
+              )}
+            </Panel>
+          </div>
+        </motion.div>
+      )}
     </main>
   );
 }

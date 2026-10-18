@@ -36,6 +36,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  /** Replaces the cached user after a profile change (name, avatar). */
+  const updateUser = useCallback((next) => setUser(next), []);
+
+  /** Clears local state after the account was deleted in the backend. */
+  const forgetUser = useCallback(() => setUser(null), []);
+
   /**
    * Opens the login modal. If `onSuccess` is provided, it will be called
    * after a successful login so the user's original action completes.
@@ -65,7 +71,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, loading,
-      login, register, logout,
+      login, register, logout, updateUser, forgetUser,
       loginModalOpen, openLoginModal, closeLoginModal, onLoginSuccess,
     }}>
       {children}

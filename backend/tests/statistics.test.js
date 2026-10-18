@@ -84,6 +84,16 @@ describe('statistics overview', () => {
     expect(t.averageRating).toEqual({ current: 8, previous: 6 });
   });
 
+  it('counts movie and series genres in one vocabulary', async () => {
+    const u = await createUser();
+    titleService.addTitle(u.id, { title: 'Dune', type: 'movie', genres: '["Science Fiction","Adventure"]' });
+    titleService.addTitle(u.id, { title: 'Severance', type: 'series', genres: '["Sci-Fi & Fantasy","Drama"]' });
+    const counts = Object.fromEntries(stats.getGenreCounts(u.id).map((g) => [g.genre, g.n]));
+    expect(counts['Science Fiction']).toBe(2);
+    expect(counts).not.toHaveProperty('Sci-Fi & Fantasy');
+    expect(counts.Fantasy).toBe(1);
+  });
+
   it('builds month keys across a year boundary', () => {
     expect(stats.lastMonths(3, new Date(Date.UTC(2026, 0, 10)))).toEqual(['2025-11', '2025-12', '2026-01']);
   });

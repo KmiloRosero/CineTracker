@@ -6,7 +6,7 @@ import { gridVariants } from '../components/cardAnimations';
 import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
-import { useCountUp } from '../hooks/useCountUp';
+import { StatTicker, CrawlTicker, trendOf } from '../components/Ticker';
 import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { parseGenres } from '../utils/genres';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -101,66 +101,28 @@ function fromTrending(item, rank, catalogId) {
   };
 }
 
-// ── Ticker (broadcast stats strip) ───────────────────────────────────────
-function trendOf(pair, decimals = 0) {
-  if (!pair || pair.current == null || pair.previous == null) return null;
-  const diff = Number((pair.current - pair.previous).toFixed(decimals));
-  return diff === 0 ? null : diff;
-}
-
-function TickerStat({ label, value, decimals = 0, suffix = '', trend }) {
-  const shown = useCountUp(value ?? 0, { decimals });
-  return (
-    <div className="ticker__stat">
-      <span className="ticker__value">{value == null ? '–' : `${shown}${suffix}`}</span>
-      <span className="ticker__label">{label}</span>
-      {trend != null && trend !== 0 && (
-        <span
-          className={`ticker__trend ${trend > 0 ? 'is-up' : 'is-down'}`}
-          title={`${Math.abs(trend)} ${trend > 0 ? 'more' : 'less'} than last month`}
-        >
-          {trend > 0 ? `+${trend}` : trend}
-          <span className="sr-only"> vs last month</span>
-        </span>
-      )}
-    </div>
-  );
-}
-
+// ── Ticker: the stats strip that closes the stage ─────────────────────────
 function Ticker({ overview, trending }) {
   if (overview) {
     const t = overview.trends ?? {};
-    const hourDecimals = overview.totalHours % 1 ? 1 : 0;
     return (
-      <div className="ticker" aria-label="Your catalog in numbers">
-        <span className="ticker__tag">Your catalog<small>± vs last month</small></span>
-        <div className="ticker__stats">
-          <TickerStat label="Titles"    value={overview.totals.titles}    trend={trendOf(t.titlesAdded)} />
-          {/* status changes are not dated, so "watching" has no monthly trend either */}
-          <TickerStat label="Watching"  value={overview.totals.watching} />
-          <TickerStat label="Completed" value={overview.totals.completed} trend={trendOf(t.completed)} />
-          <TickerStat label="Hours"     value={overview.totalHours}       decimals={hourDecimals} trend={trendOf(t.hours, 1)} />
-          {/* catalogue average has no dated history; a watch-average delta here would mislead */}
-          <TickerStat label="Avg score" value={overview.averageRating}    decimals={1} />
-        </div>
-      </div>
+      <StatTicker
+        tag="Your catalog"
+        sub="± vs last month"
+        label="Your catalog in numbers"
+        items={[
+          { label: 'Titles',    value: overview.totals.titles, trend: trendOf(t.titlesAdded) },
+          // status changes are not dated, so "watching" has no monthly trend
+          { label: 'Watching',  value: overview.totals.watching },
+          { label: 'Completed', value: overview.totals.completed, trend: trendOf(t.completed) },
+          { label: 'Hours',     value: overview.totalHours, decimals: overview.totalHours % 1 ? 1 : 0, trend: trendOf(t.hours, 1) },
+          // catalogue average has no dated history; a watch-average delta would mislead
+          { label: 'Avg score', value: overview.averageRating, decimals: 1 },
+        ]}
+      />
     );
   }
-  if (trending.length > 0) {
-    const names = trending.map((t) => t.title);
-    return (
-      <div className="ticker" aria-label="Trending this week">
-        <span className="ticker__tag">Trending</span>
-        <div className="ticker__crawl" aria-hidden="true">
-          {/* two copies make the crawl loop seamlessly */}
-          <div className="ticker__crawl-track">
-            {[...names, ...names].map((name, i) => <span key={i}>{name}</span>)}
-          </div>
-        </div>
-        <p className="sr-only">{names.join(', ')}</p>
-      </div>
-    );
-  }
+  if (trending.length > 0) return <CrawlTicker tag="Trending" names={trending.map((t) => t.title)} />;
   return null;
 }
 

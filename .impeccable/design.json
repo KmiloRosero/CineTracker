@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-18T03:14:33+00:00",
+  "generatedAt": "2026-10-18T19:45:36+00:00",
   "title": "Design System: CineTracker",
   "extensions": {
     "colorMeta": {
@@ -348,6 +348,21 @@
           "oklch(82% 0.17 27)",
           "oklch(95% 0.17 27)"
         ]
+      },
+      "chart-amber-studio": {
+        "role": "status",
+        "displayName": "Chart Amber (pending step, light theme)",
+        "canonical": "#b8860b",
+        "tonalRamp": [
+          "oklch(15% 0.14 85)",
+          "oklch(25% 0.14 85)",
+          "oklch(36% 0.14 85)",
+          "oklch(47% 0.14 85)",
+          "oklch(58% 0.14 85)",
+          "oklch(70% 0.14 85)",
+          "oklch(82% 0.14 85)",
+          "oklch(95% 0.14 85)"
+        ]
       }
     },
     "typographyMeta": {
@@ -357,15 +372,19 @@
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Page headings and the guest sign-up title."
+        "purpose": "Page headings on every page and the guest sign-up title."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Rail titles over a 2px rule; fixture titles step down to 1.45rem."
+        "purpose": "Rail titles over a 2px rule, list names, empty-state titles; modal titles 1.9rem; fixture titles 1.45rem."
+      },
+      "title-sm": {
+        "displayName": "Title small",
+        "purpose": "Statistics panel titles and Profile settings section titles."
       },
       "score": {
         "displayName": "Score",
-        "purpose": "Score-bug values and ticker values; any number big enough to be a score."
+        "purpose": "Score-bug values, ticker values (2.4rem standalone), ranking positions, the avatar initial; any number big enough to be a score."
       },
       "label": {
         "displayName": "Label",
@@ -398,10 +417,16 @@
         "purpose": "Quiet shadow under catalog poster cards."
       },
       {
-        "name": "popover",
+        "name": "floating-layer",
         "value": "0 18px 40px rgba(0,0,0,.65)",
         "light": "0 18px 40px rgba(10,10,10,.14)",
-        "purpose": "List menu popover, paired with a 4px green top edge."
+        "purpose": "List menu popover (with a 4px green top edge) and toasts: small layers floating over content without a scrim."
+      },
+      {
+        "name": "floating-layer-sm",
+        "value": "0 6px 18px rgba(0,0,0,.55)",
+        "light": "0 6px 18px rgba(10,10,10,.1)",
+        "purpose": "Autocomplete dropdown and chart tooltip; also the rotated edit-form and autocomplete preview posters."
       },
       {
         "name": "focus-ring",
@@ -418,13 +443,18 @@
         "name": "completed-slab-edge",
         "value": "inset 0 0 0 2px #0a0a0a",
         "purpose": "Keeps the white completed status slab a slab on the chalk studio."
+      },
+      {
+        "name": "top-bar",
+        "value": "border-top: 6px solid #018751",
+        "purpose": "Marks interrupting containers (modal, empty state, login card); the list menu uses 4px. Not a shadow; recorded here because it replaces elevation."
       }
     ],
     "motion": [
       {
         "name": "ease-broadcast",
         "value": "cubic-bezier(.16, 1, .3, 1)",
-        "purpose": "The one ease for wipes, settles and layout moves on migrated surfaces."
+        "purpose": "The one ease for wipes, settles, entrances and layout moves across the app."
       },
       {
         "name": "wipe-slab",
@@ -477,8 +507,33 @@
         "purpose": "Showcase sampled field changing between titles."
       },
       {
+        "name": "modal-enter",
+        "value": "scrim fade 160ms; panel y 16px to 0 and fade over 240ms; exit 140ms",
+        "purpose": "Modal and confirm dialog."
+      },
+      {
+        "name": "toast-enter",
+        "value": "x 24px to 0 and fade over 220ms; exit 150ms",
+        "purpose": "Toast notifications."
+      },
+      {
+        "name": "segment-grow",
+        "value": "600ms scaleX from the left, 80ms stagger",
+        "purpose": "Status part-to-whole bar segments."
+      },
+      {
+        "name": "chart-bars",
+        "value": "700ms ease-out",
+        "purpose": "Monthly columns and genre bars."
+      },
+      {
+        "name": "form-shake",
+        "value": "x 0,-8,8,-6,6,-3,3,0 over 360ms",
+        "purpose": "Auth form rejected submit."
+      },
+      {
         "name": "reduced-motion",
-        "value": "wipes become opacity fades; hover lifts dropped; count-up jumps; global CSS durations .01ms",
+        "value": "MotionConfig reducedMotion=\"user\"; wipes become opacity fades; hover lifts and form shake dropped; count-up jumps; chart animation off; global CSS durations .01ms",
         "purpose": "prefers-reduced-motion."
       }
     ],
@@ -492,20 +547,26 @@
         "value": "860px"
       }
     ],
-    "scope": {
-      "migrated": [
-        "Home",
-        "Title showcase",
-        "Title edit form",
-        "App shell (sidebar, wordmark, nav)"
+    "chartPalette": {
+      "order": [
+        "watching",
+        "completed",
+        "pending",
+        "dropped"
       ],
-      "notYetMigrated": [
-        "Catalog",
-        "Statistics",
-        "Login",
-        "Lists"
+      "dark": [
+        "#018751",
+        "#f4f4f0",
+        "#f2c14e",
+        "#f0675c"
       ],
-      "note": "Not-yet-migrated pages inherit tokens and faces only; their layouts are not part of this system."
+      "light": [
+        "#018751",
+        "#0a0a0a",
+        "#b8860b",
+        "#b83227"
+      ],
+      "note": "Validated per theme for colour-vision separation. Completed is the neutral step so green and amber are never adjacent. Single-series charts use #018751 alone."
     }
   },
   "components": [
@@ -537,9 +598,9 @@
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input-field",
-      "description": "44px field on the input tone; focus turns the border green with a spread ring.",
-      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Title</span><input class=\"ds-field__input\" placeholder=\"Search or type a title\"></label>",
-      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; } .ds-field__label { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary, #b6bab3); } .ds-field__input { min-height: 44px; padding: 10px 12px; background: var(--bg-input, #1c1f1d); color: var(--text-primary, #f4f4f0); border: 1px solid var(--border-strong, rgba(244,244,240,.18)); border-radius: 3px; font-family: 'Barlow', system-ui, sans-serif; font-size: .95rem; transition: border-color .15s ease, box-shadow .15s ease; } .ds-field__input::placeholder { color: var(--text-muted, #8b9088); } .ds-field__input:focus { outline: none; border-color: var(--border-focus, #1fb574); box-shadow: 0 0 0 3px rgba(31,181,116,.28); }"
+      "description": "44px field on the input tone; focus turns the border green with a spread ring; errors sit directly below in red, hints in muted text.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field__label\">Title</span><input class=\"ds-field__input\" placeholder=\"Search or type a title\"><span class=\"ds-field__hint\">Shown on your fixture cards.</span></label><label class=\"ds-field\"><span class=\"ds-field__label\">Current password</span><input class=\"ds-field__input\" type=\"password\" aria-invalid=\"true\"><span class=\"ds-field__err\" role=\"alert\">Enter your current password.</span></label>",
+      "css": ".ds-field { display: flex; flex-direction: column; gap: 6px; } .ds-field__label { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .85rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary, #b6bab3); } .ds-field__input { min-height: 44px; padding: 10px 12px; background: var(--bg-input, #1c1f1d); color: var(--text-primary, #f4f4f0); border: 1px solid var(--border-strong, rgba(244,244,240,.18)); border-radius: 3px; font-family: 'Barlow', system-ui, sans-serif; font-size: .95rem; transition: border-color .15s ease, box-shadow .15s ease; } .ds-field__input::placeholder { color: var(--text-muted, #8b9088); } .ds-field__input:focus { outline: none; border-color: var(--border-focus, #1fb574); box-shadow: 0 0 0 3px rgba(31,181,116,.28); } .ds-field + .ds-field { margin-top: 16px; } .ds-field__input[aria-invalid=\"true\"] { border-color: #f0675c; } .ds-field__err { color: #f0675c; font-family: 'Barlow', system-ui, sans-serif; font-size: .88rem; font-weight: 500; } .ds-field__hint { color: var(--text-muted, #8b9088); font-family: 'Barlow', system-ui, sans-serif; font-size: .85rem; }"
     },
     {
       "name": "Sidebar Nav",
@@ -574,6 +635,30 @@
       "css": ".ds-tag { display: inline-flex; padding: 3px 8px 2px; border-radius: 2px; font-family: 'Barlow Condensed', sans-serif; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; line-height: 1.2; } .ds-tag--pending { background: #f2c14e; color: #0a0a0a; } .ds-tag--watching { background: #018751; color: #fff; } .ds-tag--completed { background: #f4f4f0; color: #0a0a0a; } .ds-tag--dropped { background: #0a0a0a; color: #f0675c; box-shadow: inset 0 0 0 1px #f0675c; }"
     },
     {
+      "name": "Status Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Status filters with counts; the active chip inverts to a solid slab in its status colour.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip is-active\">All <span class=\"ds-chip__n\">10</span></button><button class=\"ds-chip ds-chip--watching\">Watching <span class=\"ds-chip__n\">2</span></button><button class=\"ds-chip ds-chip--pending is-active\">Pending <span class=\"ds-chip__n\">3</span></button><button class=\"ds-chip\">Completed <span class=\"ds-chip__n\">4</span></button><button class=\"ds-chip ds-chip--dropped\">Dropped <span class=\"ds-chip__n\">1</span></button></div>",
+      "css": ".ds-chips { display: flex; flex-wrap: wrap; gap: 8px; } .ds-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; background: transparent; border: 1px solid var(--border-strong, rgba(244,244,240,.18)); color: var(--text-secondary, #b6bab3); font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .92rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; } .ds-chip:hover { color: var(--text-primary, #f4f4f0); border-color: var(--text-secondary, #b6bab3); } .ds-chip:focus-visible { outline: 2px solid #1fb574; outline-offset: 2px; } .ds-chip__n { font-weight: 600; opacity: .8; } .ds-chip.is-active { background: var(--text-primary, #f4f4f0); border-color: var(--text-primary, #f4f4f0); color: var(--bg-base, #0a0a0a); } .ds-chip--watching.is-active { background: #018751; border-color: #018751; color: #fff; } .ds-chip--pending.is-active { background: #f2c14e; border-color: #f2c14e; color: #0a0a0a; } .ds-chip--dropped.is-active { background: #f0675c; border-color: #f0675c; color: #0a0a0a; }"
+    },
+    {
+      "name": "Panel with Status Bar",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Statistics module holding the status part-to-whole bar: validated chart steps, 2px gaps, labelled legend.",
+      "html": "<section class=\"ds-panel\"><header class=\"ds-panel__h\"><h2 class=\"ds-panel__t\">Your titles by status</h2><span class=\"ds-panel__s\">10 in total</span></header><div class=\"ds-sbar\"><span class=\"ds-sbar__seg ds-w\" style=\"flex-grow:2\"></span><span class=\"ds-sbar__seg ds-c\" style=\"flex-grow:4\"></span><span class=\"ds-sbar__seg ds-p\" style=\"flex-grow:3\"></span><span class=\"ds-sbar__seg ds-d\" style=\"flex-grow:1\"></span></div><ul class=\"ds-legend\"><li><span class=\"ds-sw ds-w\"></span><span class=\"ds-lg__n\">Watching</span><span class=\"ds-lg__c\">2</span><span class=\"ds-lg__p\">20%</span></li><li><span class=\"ds-sw ds-c\"></span><span class=\"ds-lg__n\">Completed</span><span class=\"ds-lg__c\">4</span><span class=\"ds-lg__p\">40%</span></li><li><span class=\"ds-sw ds-p\"></span><span class=\"ds-lg__n\">Pending</span><span class=\"ds-lg__c\">3</span><span class=\"ds-lg__p\">30%</span></li><li><span class=\"ds-sw ds-d\"></span><span class=\"ds-lg__n\">Dropped</span><span class=\"ds-lg__c\">1</span><span class=\"ds-lg__p\">10%</span></li></ul></section>",
+      "css": ".ds-panel { max-width: 520px; padding: 24px; background: var(--bg-module, #161816); color: var(--text-primary, #f4f4f0); border: 1px solid var(--border, rgba(244,244,240,.09)); } .ds-panel__h { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 20px; } .ds-panel__t { margin: 0; font-family: 'Anton', 'Barlow Condensed', sans-serif; font-weight: 400; font-size: 1.6rem; line-height: 1; text-transform: uppercase; } .ds-panel__s { font-family: 'Barlow', system-ui, sans-serif; font-size: .9rem; color: var(--text-secondary, #b6bab3); } .ds-sbar { display: flex; gap: 2px; height: 28px; } .ds-sbar__seg { min-width: 4px; transform-origin: left center; animation: ds-grow .6s cubic-bezier(.16,1,.3,1) both; } .ds-sbar__seg:first-child { border-radius: 4px 0 0 4px; } .ds-sbar__seg:last-child { border-radius: 0 4px 4px 0; } .ds-w { background: #018751; } .ds-c { background: #f4f4f0; } .ds-p { background: #f2c14e; } .ds-d { background: #f0675c; } .ds-legend { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 4px; } .ds-legend li { display: grid; grid-template-columns: 14px 1fr auto 48px; align-items: center; gap: 10px; min-height: 32px; border-bottom: 1px solid var(--border, rgba(244,244,240,.09)); } .ds-sw { width: 14px; height: 14px; border-radius: 2px; } .ds-lg__n { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; } .ds-lg__c { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: 1.1rem; font-weight: 700; } .ds-lg__p { font-family: 'Barlow Condensed', 'Barlow', sans-serif; text-align: right; font-weight: 600; color: var(--text-secondary, #b6bab3); } @keyframes ds-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } } @media (prefers-reduced-motion: reduce) { .ds-sbar__seg { animation: none; } }"
+    },
+    {
+      "name": "Standalone Ticker",
+      "kind": "custom",
+      "refersTo": "ticker-standalone",
+      "description": "The broadcast ticker opening Statistics: green tag, Anton values, condensed labels and deltas.",
+      "html": "<div class=\"ds-tk\"><span class=\"ds-tk__tag\">Your numbers<small>± vs last month</small></span><div class=\"ds-tk__stats\"><div class=\"ds-tk__stat\"><span class=\"ds-tk__v\">10</span><span class=\"ds-tk__l\">Titles</span><span class=\"ds-tk__d is-up\">+10</span></div><div class=\"ds-tk__stat\"><span class=\"ds-tk__v\">57.1%</span><span class=\"ds-tk__l\">Completion rate</span></div><div class=\"ds-tk__stat\"><span class=\"ds-tk__v\">7.6</span><span class=\"ds-tk__l\">Avg score</span></div></div></div>",
+      "css": ".ds-tk { display: flex; align-items: stretch; min-height: 88px; background: #0a0a0a; overflow: hidden; } .ds-tk__tag { display: flex; flex-direction: column; justify-content: center; padding: 0 20px 0 24px; background: #018751; color: #fff; font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; white-space: nowrap; } .ds-tk__tag small { display: block; margin-top: 2px; font-size: .72rem; font-weight: 600; letter-spacing: .06em; opacity: .9; } .ds-tk__stats { display: flex; flex: 1; flex-wrap: wrap; } .ds-tk__stat { display: flex; align-items: baseline; gap: 8px; padding: 0 28px; align-self: center; border-right: 1px solid rgba(244,244,240,.12); white-space: nowrap; } .ds-tk__v { font-family: 'Anton', 'Barlow Condensed', sans-serif; font-size: 2.4rem; line-height: 1; color: #f4f4f0; } .ds-tk__l { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .9rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #b6bab3; } .ds-tk__d { font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .85rem; font-weight: 700; letter-spacing: .04em; } .ds-tk__d.is-up { color: #1fb574; } .ds-tk__d.is-down { color: #f0675c; }"
+    },
+    {
       "name": "Fixture Card",
       "kind": "card",
       "refersTo": "fixture-card",
@@ -588,17 +673,33 @@
       "description": "48px icon-only circle on the showcase edge; hover inverts; delete is red and set apart.",
       "html": "<div class=\"ds-sc\"><button class=\"ds-sc__btn\" aria-label=\"Next title\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"9 6 15 12 9 18\"/></svg></button><button class=\"ds-sc__btn ds-sc__btn--danger\" aria-label=\"Delete title\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"3 6 21 6\"/><path d=\"M19 6l-1 14H6L5 6\"/><path d=\"M10 11v6M14 11v6\"/></svg></button></div>",
       "css": ".ds-sc { display: inline-flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px; background: #0a0a0a; } .ds-sc__btn { width: 48px; height: 48px; border-radius: 9999px; border: 1px solid rgba(244,244,240,.5); background: rgba(10,10,10,.5); color: #f4f4f0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease; } .ds-sc__btn:hover { background: #f4f4f0; color: #0a0a0a; border-color: #f4f4f0; } .ds-sc__btn:active { transform: scale(.94); } .ds-sc__btn:focus-visible { outline: 3px solid #1fb574; outline-offset: 3px; } .ds-sc__btn--danger { margin-top: 40px; border-color: #f0675c; color: #f0675c; } .ds-sc__btn--danger:hover, .ds-sc__btn--danger:focus-visible { background: #f0675c; color: #0a0a0a; border-color: #f0675c; }"
+    },
+    {
+      "name": "Modal with Confirm",
+      "kind": "custom",
+      "refersTo": "modal",
+      "description": "Square surface panel with a 6px green top bar and strong border, no shadow; Cancel takes focus, delete stays outlined.",
+      "html": "<div class=\"ds-modal\" role=\"dialog\" aria-label=\"Delete title\"><div class=\"ds-modal__h\"><h2 class=\"ds-modal__t\">Delete title?</h2><button class=\"ds-modal__x\" aria-label=\"Close\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/></svg></button></div><p class=\"ds-modal__m\">Crystal Lake and its watch history will be removed from your catalog.</p><div class=\"ds-modal__a\"><button class=\"ds-mb ds-mb--ghost\" autofocus>Cancel</button><button class=\"ds-mb ds-mb--danger\">Delete</button></div></div>",
+      "css": ".ds-modal { max-width: 480px; padding: 24px 28px 28px; background: var(--bg-surface, #101110); color: var(--text-primary, #f4f4f0); border: 1px solid var(--border-strong, rgba(244,244,240,.18)); border-top: 6px solid #018751; } .ds-modal__h { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; } .ds-modal__t { flex: 1; margin: 0; font-family: 'Anton', 'Barlow Condensed', sans-serif; font-weight: 400; font-size: 1.9rem; line-height: 1; text-transform: uppercase; } .ds-modal__x { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-strong, rgba(244,244,240,.18)); border-radius: 9999px; background: none; color: var(--text-secondary, #b6bab3); cursor: pointer; } .ds-modal__x:hover { color: var(--text-primary, #f4f4f0); border-color: var(--text-secondary, #b6bab3); } .ds-modal__m { margin: 0 0 16px; color: var(--text-secondary, #b6bab3); line-height: 1.55; font-family: 'Barlow', system-ui, sans-serif; } .ds-modal__a { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; } .ds-mb { display: inline-flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 3px; font-family: 'Barlow Condensed', 'Barlow', sans-serif; font-size: .95rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; transition: background .15s ease, color .15s ease; } .ds-mb--ghost { background: transparent; border: 1px solid var(--border-strong, rgba(244,244,240,.18)); color: var(--text-primary, #f4f4f0); } .ds-mb--ghost:hover { background: var(--bg-hover, #222623); } .ds-mb--danger { background: transparent; border: 1px solid #f0675c; color: #f0675c; } .ds-mb--danger:hover, .ds-mb--danger:focus-visible { background: #f0675c; color: #0a0a0a; } .ds-mb:focus-visible, .ds-modal__x:focus-visible { outline: 2px solid #1fb574; outline-offset: 2px; }"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Surface strip with the icon on its own square slab; no side stripe.",
+      "html": "<div class=\"ds-toast\" role=\"status\"><span class=\"ds-toast__i\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><polyline points=\"4 12 10 18 20 6\"/></svg></span><span class=\"ds-toast__m\">Profile saved.</span><button class=\"ds-toast__x\" aria-label=\"Dismiss notification\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/></svg></button></div>",
+      "css": ".ds-toast { display: flex; align-items: center; gap: 10px; min-width: 240px; max-width: 360px; padding: 10px 12px; background: var(--bg-surface, #101110); color: var(--text-primary, #f4f4f0); border: 1px solid var(--border-strong, rgba(244,244,240,.18)); border-radius: 3px; box-shadow: 0 18px 40px rgba(0,0,0,.65); font-family: 'Barlow', system-ui, sans-serif; font-size: .875rem; font-weight: 500; } .ds-toast__i { flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #018751; color: #fff; } .ds-toast__m { flex: 1; line-height: 1.4; } .ds-toast__x { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-muted, #8b9088); cursor: pointer; } .ds-toast__x:hover { color: var(--text-primary, #f4f4f0); } .ds-toast__x:focus-visible { outline: 2px solid #1fb574; outline-offset: 2px; }"
     }
   ],
   "narrative": {
     "northStar": "Match Night On Air",
-    "overview": "CineTracker reads as a football broadcast graphics package laid over your own catalogue. Titles are fixtures, status is the scoreline, the rating is the score bug, and the Home stage is the live feed: a backdrop graded to black, a low band of pitch-green light rising from the bottom edge, the title set as a heavy condensed on-air caption, and a ticker strip closing the frame. The vocabulary is square slabs of flat colour, condensed capitals and tabular numerals, all of it identical in weight whether the studio is dark or lit.\n\nDensity is broadcast density: few elements, each loud. One owned colour (pitch green) carries whole slabs rather than thin accents, black slabs follow it, and chalk-white type sits on top. Depth comes from overlapping flat things (posters over fields, slabs over photographs, rotated cards stacked in a deck), not from soft shading. Motion is the broadcast wipe: slabs grow in from the left, green first and black after, titles reveal behind a clip that slides open.\n\nThe dark theme is the booth at night (broadcast black ground); the light theme is a chalk studio set where the slabs stay exactly as they are on air. Home, the title showcase, the edit form and the app shell are the migrated surfaces. Catalog, Statistics, Login and Lists still carry legacy layout and have only inherited the tokens and faces; they are not a reference for this system until their own passes land.",
+    "overview": "CineTracker reads as a football broadcast graphics package laid over your own catalogue. Titles are fixtures, status is the scoreline, the rating is the score bug, and the Home stage is the live feed: a backdrop graded to black, a low band of pitch-green light rising from the bottom edge, the title set as a heavy condensed on-air caption, and a ticker strip closing the frame. The vocabulary is square slabs of flat colour, condensed capitals and tabular numerals, all of it identical in weight whether the studio is dark or lit.\n\nDensity is broadcast density: few elements, each loud. One owned colour (pitch green) carries whole slabs rather than thin accents, black slabs follow it, and chalk-white type sits on top. Depth comes from overlapping flat things (posters over fields, slabs over photographs, rotated cards stacked in a deck), not from soft shading. Motion is the broadcast wipe: slabs grow in from the left, green first and black after, titles reveal behind a clip that slides open.\n\nThe dark theme is the booth at night (broadcast black ground); the light theme is a chalk studio set where the slabs stay exactly as they are on air. Every surface is built in this world: Home, the title showcase and edit form, Catalog, Statistics, Lists and list detail, Profile and settings, Login, and the app shell with its modals and toasts. Working pages are the studio's graphics desk: Anton headings over a 2px rule, square modules on the module tone, chips and toggles that invert when chosen, and the same ticker and lower-third the stage uses.",
     "keyCharacteristics": [
-      "One owned colour, used as solid slabs (lower-thirds, score bugs, active nav, ticker tag, rail tags, primary buttons).",
+      "One owned colour, used as solid slabs (lower-thirds, score bugs, active nav, the active profile block, ticker tag, rail tags, avatar, primary buttons).",
       "Broadcast black slabs that never change with the theme.",
       "Anton capitals for every name and big number; Barlow Condensed capitals for every label and small number; Barlow for reading.",
-      "Square or near-square corners on everything that carries text; full circles only for icon-only controls.",
-      "Depth by overlap and rotation; soft shadows belong to posters treated as physical objects.",
+      "Square corners on modules, chips, fields and rows; 2-3px only on tags, buttons and fixture cards; full circles only for icon-only controls.",
+      "Depth by overlap and rotation; soft shadows belong to posters treated as physical objects and to small floating layers.",
       "Left-origin wipes at 280ms for slabs, clip wipes around 500ms for titles, fades under reduced motion."
     ],
     "rules": [
@@ -609,17 +710,22 @@
       },
       {
         "name": "The Slab Not Stroke Rule",
-        "body": "Green appears as a filled slab or as readable text, not as a thin decorative line. The one green stroke is the 3px inset frame drawn inside a hovered poster.",
+        "body": "Green appears as a filled slab or as readable text, not as a thin decorative line. The green strokes are the 3px inset frame drawn inside a hovered poster and the hover border of fixture cards and list rows.",
         "section": "colors"
       },
       {
         "name": "The On-Air Constancy Rule",
-        "body": "Slabs, status cards and the Home stage are theme-invariant: broadcast black stays #0a0a0a and the stage stays black in the light theme, the way on-air graphics do not follow the studio lights.",
+        "body": "Slabs, status cards, tickers and the Home stage are theme-invariant: broadcast black stays #0a0a0a and the stage stays black in the light theme, the way on-air graphics do not follow the studio lights.",
+        "section": "colors"
+      },
+      {
+        "name": "The Neutral Between Rule",
+        "body": "In any multi-status chart, completed sits between watching and pending as the neutral step, so green and amber are never adjacent.",
         "section": "colors"
       },
       {
         "name": "The Every Number Is Condensed Rule",
-        "body": "Counts, years, runtimes, scores, dates and deltas are set in Barlow Condensed or Anton, never in body Barlow.",
+        "body": "Counts, years, runtimes, scores, dates, shares and deltas are set in Barlow Condensed or Anton, never in body Barlow.",
         "section": "typography"
       },
       {
@@ -636,26 +742,33 @@
         "name": "The Inside Frame Rule",
         "body": "Hover on a poster card draws a 3px green frame inside the poster edge; it does not lift the card with a bigger shadow.",
         "section": "elevation"
+      },
+      {
+        "name": "The No Lift Rule",
+        "body": "Slabs, modules and modals never get a soft shadow to lift them. A modal is separated by its scrim, border and green top bar; a module by its tone and hairline.",
+        "section": "elevation"
       }
     ],
     "dos": [
       "**Do** put pitch green (#018751) on whole slabs: caption labels, score bugs, the active nav, the ticker tag, primary buttons.",
       "**Do** pair every green caption slab with a broadcast-black slab that follows it, and wipe them in from the left, green first (280ms, black 80ms behind).",
       "**Do** set every name and score in Anton capitals and every label, count, date and delta in Barlow Condensed capitals.",
-      "**Do** keep slabs, status cards and the Home stage identical in both themes.",
-      "**Do** show posters at a 2:3 frame and a single registered scale within any grid or rail.",
-      "**Do** make press feedback an inversion (green to black, outline to solid).",
-      "**Do** isolate destructive actions by space and keep them outlined in red until hovered or focused.",
+      "**Do** keep slabs, status cards, tickers and the Home stage identical in both themes.",
+      "**Do** show posters at a 2:3 frame and a single registered scale within any grid, rail or row.",
+      "**Do** make press and selection feedback an inversion (green to black, outline to solid).",
+      "**Do** isolate destructive actions by space, keep them outlined in red until hovered or focused, and focus Cancel first in a confirmation.",
       "**Do** give every stat its trend against the previous month only when the data supports it; omit the delta otherwise.",
-      "**Do** keep primary targets at 44px and replace wipes with fades under reduced motion."
+      "**Do** give every chart a labelled legend or direct labels and a table twin; keep completed as the neutral step between watching and pending.",
+      "**Do** keep primary targets at 44px and replace wipes with fades under reduced motion.",
+      "**Do** mark an interrupting container (modal, empty state, login card) with a 6px green top bar."
     ],
     "donts": [
       "**Don't** add a second brand hue; amber and red are status signals only.",
       "**Don't** put coloured glows or blurred halos around elements; light enters only through the horizon band and the sampled showcase field.",
-      "**Don't** use soft drop shadows to lift slabs, fixture cards or buttons; shadows belong to posters (and the one popover) only.",
-      "**Don't** round slabs or text buttons beyond 3px, and don't use full circles for anything but icon-only controls.",
-      "**Don't** set numbers in body Barlow or uppercase running text.",
-      "**Don't** treat the legacy Catalog, Statistics, Login and Lists layouts as patterns for new surfaces."
+      "**Don't** use soft drop shadows to lift slabs, modules, modals or buttons; shadows belong to posters and small floating layers only.",
+      "**Don't** put a coloured stripe on the side of a card, row, toast or alert.",
+      "**Don't** round slabs, modules or text buttons beyond 3px, and don't use full circles for anything but icon-only controls.",
+      "**Don't** set numbers in body Barlow or uppercase running text."
     ]
   }
 }
