@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { StatTicker, CrawlTicker, trendOf } from '../components/Ticker';
 import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
-import { parseGenres } from '../utils/genres';
+import { canonicalGenres } from '../utils/genres';
 import { tmdbImage } from '../utils/tmdbImage';
 
 // Why the AI picks were replaced by genre-based ones, in the user's terms.
@@ -77,7 +77,7 @@ function fromLocal(t, label) {
     year: t.release_year,
     runtime: t.runtime,
     type: t.type,
-    genres: parseGenres(t.genres),
+    genres: canonicalGenres(t.genres),
     label,
     localId: t.id,
     tmdbItem: null,

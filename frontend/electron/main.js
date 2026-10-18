@@ -1,8 +1,12 @@
 const { app, BrowserWindow, ipcMain, protocol, session } = require('electron');
 const path = require('path');
-const { initDatabase } = require('../../backend/db/database.js');
-const { registerIpcHandlers } = require('../../backend/ipc/handlers.js');
-const imageCache = require('../../backend/services/imageCacheService.js');
+
+// In development the backend lives beside frontend/; electron-builder copies it
+// into the app as <app>/backend (see electron-builder.json "files").
+const BACKEND = app.isPackaged ? path.join(__dirname, '../backend') : path.join(__dirname, '../../backend');
+const { initDatabase } = require(path.join(BACKEND, 'db/database.js'));
+const { registerIpcHandlers } = require(path.join(BACKEND, 'ipc/handlers.js'));
+const imageCache = require(path.join(BACKEND, 'services/imageCacheService.js'));
 
 // Posters and backdrops load through ctimg://<size>/<file> so they are cached
 // on disk and keep working offline. Must be registered before app is ready.

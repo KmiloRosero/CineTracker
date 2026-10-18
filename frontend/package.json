@@ -20,24 +20,24 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^9.6.0"
+  },
+  "devDependencies": {
     "@fontsource/anton": "^5.2.5",
     "@fontsource/barlow": "^5.2.5",
     "@fontsource/barlow-condensed": "^5.2.5",
-    "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^9.6.0",
-    "framer-motion": "^14.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3",
-    "recharts": "^2.15.4"
-  },
-  "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "electron": "^29.4.6",
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
+    "framer-motion": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.15.4",
     "vite": "^5.2.0",
     "vitest": "^2.1.9",
     "wait-on": "^7.2.0"
