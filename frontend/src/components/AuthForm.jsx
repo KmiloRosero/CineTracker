@@ -64,6 +64,7 @@ export default function AuthForm({ onSuccess, headingLevel = 'h1', idPrefix = 'a
   const [formError, setFormError] = useState(null);
   const [showPw, setShowPw]   = useState(false);
   const [busy, setBusy]       = useState(false);
+  const [remember, setRemember] = useState(true);
   const [shakeKey, setShakeKey] = useState(0);
 
   const copy = COPY[mode];
@@ -100,8 +101,8 @@ export default function AuthForm({ onSuccess, headingLevel = 'h1', idPrefix = 'a
     setBusy(true);
     setFormError(null);
     try {
-      if (mode === 'login') await login(values.email.trim(), values.password);
-      else await register(values.name, values.email.trim(), values.password);
+      if (mode === 'login') await login(values.email.trim(), values.password, remember);
+      else await register(values.name, values.email.trim(), values.password, remember);
       onSuccess?.();
     } catch (err) {
       setFormError(err.message);
@@ -175,6 +176,11 @@ export default function AuthForm({ onSuccess, headingLevel = 'h1', idPrefix = 'a
             <input id={id('confirm')} type={showPw ? 'text' : 'password'} autoComplete="new-password" value={values.confirm} onChange={(e) => update('confirm', e.target.value)} onBlur={() => blur('confirm')} {...invalid('confirm')} />
           </Field>
         )}
+
+        <label className="check-field" htmlFor={id('remember')}>
+          <input id={id('remember')} type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+          <span>Mantener la sesión iniciada en este equipo</span>
+        </label>
 
         <button type="submit" className="btn btn--primary btn--lg btn--full" disabled={busy}>
           {busy && <IconSpinner />} {busy ? copy.busy : copy.submit}

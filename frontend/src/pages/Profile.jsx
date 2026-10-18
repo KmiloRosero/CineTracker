@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GuestPrompt from '../components/GuestPrompt';
 import { ConfirmDialog } from '../components/Modal';
-import { IconUpload, IconSpinner, IconSun, IconMoon, IconTrash } from '../components/Icons';
+import { IconUpload, IconSpinner, IconSun, IconMoon, IconTrash, IconExternal, IconCheck, IconAlert } from '../components/Icons';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
@@ -114,6 +114,123 @@ function ProfileForm({ user, onSaved }) {
 }
 
 // ── Password ──────────────────────────────────────────────────────────────
+// ── API keys ──────────────────────────────────────────────────────────────
+const KEY_INFO = {
+  tmdb:   { label: 'TMDB',          need: 'Necesaria para buscar títulos, ver tendencias y tráilers.' },
+  gemini: { label: 'Google Gemini', need: 'Opcional: recomendaciones escritas por IA.' },
+};
+const SOURCE_LABEL = {
+  app:     'Guardada en esta app',
+  file:    'Incluida en la instalación',
+  process: 'Definida en el sistema',
+};
+
+function ApiKeyRow({ name, source, canSave, onChanged }) {
+  const showToast = useToast();
+  const [value,  setValue]  = useState('');
+  const [busy,   setBusy]   = useState(null); // 'save' | 'test' | 'clear'
+  const [result, setResult] = useState(null); // { ok, text }
+  const info = KEY_INFO[name];
+  const inputId = `apikey-${name}`;
+
+  async function test() {
+    setBusy('test');
+    const r = await window.electronAPI.testApiKey(name);
+    setResult(r?.error ? { ok: false, text: r.error } : { ok: true, text: 'La clave funciona.' });
+    setBusy(null);
+  }
+
+  async function save(e) {
+    e.preventDefault();
+    if (!value.trim()) { setResult({ ok: false, text: 'Pega la clave antes de guardarla.' }); return; }
+    setBusy('save');
+    setResult(null);
+    const r = await window.electronAPI.setApiKey(name, value);
+    if (r?.error) { setResult({ ok: false, text: r.error }); setBusy(null); return; }
+    setValue('');
+    showToast({ message: `Clave de ${info.label} guardada.` });
+    await onChanged();
+    await test();
+  }
+
+  async function clear() {
+    setBusy('clear');
+    const r = await window.electronAPI.clearApiKey(name);
+    setBusy(null);
+    if (r?.error) { setResult({ ok: false, text: r.error }); return; }
+    setResult(null);
+    showToast({ message: `Se quitó la clave de ${info.label} guardada en la app.` });
+    onChanged();
+  }
+
+  return (
+    <form className="api-key" onSubmit={save} noValidate>
+      <div className="api-key__head">
+        <label className="api-key__name" htmlFor={inputId}>{info.label}</label>
+        <span className={`api-key__status${source ? ' is-set' : ''}`}>{SOURCE_LABEL[source] ?? 'Sin configurar'}</span>
+      </div>
+      <p className="field-hint">{info.need}</p>
+      <div className="api-key__row">
+        <input
+          id={inputId}
+          type="password"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={source ? 'Pega una clave nueva para reemplazarla' : 'Pega tu clave aquí'}
+          value={value}
+          onChange={(e) => { setValue(e.target.value); setResult(null); }}
+          disabled={!canSave}
+          aria-describedby={result ? `${inputId}-result` : undefined}
+        />
+        <button type="submit" className="btn btn--primary" disabled={!canSave || busy !== null}>
+          {busy === 'save' && <IconSpinner />} Guardar
+        </button>
+      </div>
+      <div className="api-key__actions">
+        <button type="button" className="btn btn--ghost btn--sm" onClick={test} disabled={!source || busy !== null}>
+          {busy === 'test' && <IconSpinner />} Probar clave
+        </button>
+        {source === 'app' && (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={clear} disabled={busy !== null}>Quitar</button>
+        )}
+        <button type="button" className="api-key__link" onClick={() => window.electronAPI.openKeyPage(name)}>
+          Conseguir una clave <IconExternal size={14} />
+        </button>
+      </div>
+      {result && (
+        <p id={`${inputId}-result`} className={`api-key__result ${result.ok ? 'is-ok' : 'is-error'}`} role={result.ok ? 'status' : 'alert'}>
+          {result.ok ? <IconCheck size={16} /> : <IconAlert size={16} />} {result.text}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function ApiKeysForm() {
+  const [status, setStatus] = useState(null);
+  const [error,  setError]  = useState(null);
+
+  async function load() {
+    const r = await window.electronAPI.getApiKeys();
+    if (r?.error) setError(r.error);
+    else setStatus(r);
+  }
+  useEffect(() => { load(); }, []);
+
+  if (error) return <p className="form-error" role="alert">{error}</p>;
+  if (!status) return <p className="field-hint">Cargando…</p>;
+  return (
+    <div className="api-keys">
+      {!status.canSave && (
+        <p className="form-error" role="alert">Este equipo no permite guardar claves cifradas, así que no se pueden guardar aquí.</p>
+      )}
+      {Object.keys(KEY_INFO).map((name) => (
+        <ApiKeyRow key={name} name={name} source={status.keys[name]?.source ?? null} canSave={status.canSave} onChanged={load} />
+      ))}
+    </div>
+  );
+}
+
 function PasswordForm() {
   const showToast = useToast();
   const [current, setCurrent] = useState('');
@@ -229,7 +346,11 @@ export default function Profile() {
           <PasswordForm />
         </Section>
 
-        <Section index={3} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
+        <Section index={3} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
+          <ApiKeysForm />
+        </Section>
+
+        <Section index={4} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
           <p className="settings-about">
             La información y las imágenes de películas y series provienen de TMDB.
             Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
@@ -237,7 +358,7 @@ export default function Profile() {
           </p>
         </Section>
 
-        <Section index={4} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
+        <Section index={5} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
           <button className="btn btn--danger" onClick={() => { setDeletePassword(''); setDeleting(true); }}>
             <IconTrash size={16} /> Eliminar mi cuenta
           </button>

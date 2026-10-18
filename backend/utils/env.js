@@ -16,10 +16,32 @@ function parseEnvFile(filePath) {
   return vars;
 }
 
-/** Returns the variable from process.env or backend/.env, or null if unset. */
-function getEnv(name) {
-  const value = process.env[name] ?? parseEnvFile(ENV_PATH)[name];
-  return value && value.trim() ? value.trim() : null;
+const clean = (value) => (value && value.trim() ? value.trim() : null);
+
+// Keys typed in the app (sealed in the database). Loaded lazily: the
+// database may not be open yet, and the service requires this module's users.
+function appKey(name) {
+  try {
+    return require('../services/apiKeyService.js').getStoredKey(name);
+  } catch {
+    return null;
+  }
 }
 
-module.exports = { getEnv };
+/**
+ * Where a variable comes from: 'process' (environment, used by tests),
+ * 'app' (typed in the app), 'file' (backend/.env) or null when unset.
+ */
+function getEnvSource(name) {
+  if (process.env[name] !== undefined) return clean(process.env[name]) ? 'process' : null;
+  if (appKey(name)) return 'app';
+  return clean(parseEnvFile(ENV_PATH)[name]) ? 'file' : null;
+}
+
+/** Returns the variable from process.env, the app's saved keys or backend/.env, or null if unset. */
+function getEnv(name) {
+  if (process.env[name] !== undefined) return clean(process.env[name]);
+  return appKey(name) ?? clean(parseEnvFile(ENV_PATH)[name]);
+}
+
+module.exports = { getEnv, getEnvSource };

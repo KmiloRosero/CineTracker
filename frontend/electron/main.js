@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, session, shell, safeStorage } = require('electron');
 const path = require('path');
 
 // In development the backend lives beside frontend/; electron-builder copies it
@@ -7,6 +7,7 @@ const BACKEND = app.isPackaged ? path.join(__dirname, '../backend') : path.join(
 const { initDatabase } = require(path.join(BACKEND, 'db/database.js'));
 const { registerIpcHandlers } = require(path.join(BACKEND, 'ipc/handlers.js'));
 const imageCache = require(path.join(BACKEND, 'services/imageCacheService.js'));
+const { configureSecrets } = require(path.join(BACKEND, 'utils/secrets.js'));
 
 // Posters and backdrops load through ctimg://<size>/<file> so they are cached
 // on disk and keep working offline. Must be registered before app is ready.
@@ -97,6 +98,17 @@ ipcMain.handle('app:openYouTube', (_event, videoId) => {
   return { ok: true };
 });
 
+// Pages where each API key is created (Perfil > Claves de API).
+const KEY_PAGES = {
+  tmdb:   'https://www.themoviedb.org/settings/api',
+  gemini: 'https://aistudio.google.com/apikey',
+};
+ipcMain.handle('app:openKeyPage', (_event, name) => {
+  if (!Object.prototype.hasOwnProperty.call(KEY_PAGES, name)) return { error: 'Página no válida.' };
+  shell.openExternal(KEY_PAGES[name]);
+  return { ok: true };
+});
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -128,6 +140,14 @@ function createWindow() {
 
 app.whenReady().then(() => {
   configureSession(session.defaultSession);
+  // API keys typed in the app and the "keep me signed in" token are sealed
+  // with the OS (DPAPI on Windows); without it they are simply not saved.
+  if (safeStorage.isEncryptionAvailable()) {
+    configureSecrets({
+      encrypt: (text) => safeStorage.encryptString(text),
+      decrypt: (buffer) => safeStorage.decryptString(buffer),
+    });
+  }
   initDatabase();
   registerImageProtocol();
   registerIpcHandlers(ipcMain);

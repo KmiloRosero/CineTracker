@@ -6,6 +6,10 @@ const recommendationService   = require('../services/recommendationService.js');
 const aiRecommendationService = require('../services/aiRecommendationService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
+const apiKeyService           = require('../services/apiKeyService.js');
+const rememberService         = require('../services/rememberService.js');
+const { canSeal }             = require('../utils/secrets.js');
+const { getEnvSource }        = require('../utils/env.js');
 const { getDb }               = require('../db/database.js');
 const { setSession, getSession, clearSession } = require('../utils/session.js');
 
@@ -103,26 +107,33 @@ function registerIpcHandlers(ipcMain) {
   }));
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  ipcMain.handle('auth:register', safe(async (name, email, password) => {
-    const user = await authService.register(name, email, password);
+  // `remember` keeps the user signed in on this computer (rememberService).
+  function startSession(user, remember) {
     setSession(user.id);
+    if (remember === true) rememberService.remember(user.id);
+    else rememberService.forget();
     return user;
-  }));
+  }
 
-  ipcMain.handle('auth:login', safe(async (email, password) => {
-    const user = await authService.login(email, password);
-    setSession(user.id);
-    return user;
-  }));
+  ipcMain.handle('auth:register', safe(async (name, email, password, remember) =>
+    startSession(await authService.register(name, email, password), remember)));
+
+  ipcMain.handle('auth:login', safe(async (email, password, remember) =>
+    startSession(await authService.login(email, password), remember)));
 
   ipcMain.handle('auth:logout', safe(() => {
     clearSession();
+    rememberService.forget();
     return { ok: true };
   }));
 
   ipcMain.handle('auth:getCurrentUser', safe(() => {
-    const userId = getSession();
-    if (!userId) return null;
+    let userId = getSession();
+    if (!userId) {
+      userId = rememberService.restore();
+      if (!userId) return null;
+      setSession(userId);
+    }
     return authService.getCurrentUser(userId);
   }));
 
@@ -133,7 +144,32 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('auth:deleteAccount',  authed(async (userId, password) => {
     const result = await authService.deleteAccount(userId, password);
     clearSession();
+    rememberService.forget();
     return result;
+  }));
+
+  // ── API keys (Perfil > Claves de API) ─────────────────────────────────────
+  // The renderer never gets a key back: only where each one comes from.
+  ipcMain.handle('settings:getApiKeys', safe(() => ({
+    canSave: canSeal(),
+    keys: Object.fromEntries(Object.entries(apiKeyService.KEYS).map(([name, { env }]) =>
+      [name, { source: getEnvSource(env) }])),
+  })));
+  ipcMain.handle('settings:setApiKey', authed((_userId, name, value) => {
+    const result = apiKeyService.setKey(name, value);
+    aiRecommendationService.clearCache();
+    tmdbService.clearTrailerCache();
+    return result;
+  }));
+  ipcMain.handle('settings:clearApiKey', authed((_userId, name) => {
+    const result = apiKeyService.clearKey(name);
+    aiRecommendationService.clearCache();
+    return result;
+  }));
+  ipcMain.handle('settings:testApiKey', safe((name) => {
+    if (name === 'tmdb') return tmdbService.ping();
+    if (name === 'gemini') return aiRecommendationService.pingGemini();
+    throw new Error('Clave de API desconocida.');
   }));
 }
 

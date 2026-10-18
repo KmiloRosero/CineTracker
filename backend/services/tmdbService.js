@@ -151,6 +151,12 @@ async function getTrailer(tmdbId, type) {
   return trailer;
 }
 
+/** Checks that the configured key works (Perfil > Claves de API). */
+async function ping() {
+  await tmdbFetch('/configuration');
+  return { ok: true };
+}
+
 function clearTrailerCache() {
   trailerCache.clear();
 }
@@ -161,4 +167,4 @@ async function getTrending(limit = 12) {
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending, getTrailer, clearTrailerCache, normalizeDetails, YOUTUBE_ID };
+module.exports = { search, getDetails, getTrending, getTrailer, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };

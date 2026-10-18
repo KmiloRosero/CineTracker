@@ -108,6 +108,24 @@ const MIGRATIONS = [
       db.exec('ALTER TABLE titles ADD COLUMN cast_members TEXT');
     },
   },
+  {
+    version: 3,
+    name: 'remembered sessions',
+    rebuildsTables: false,
+    up(db) {
+      // "Keep me signed in": only a SHA-256 of the token is stored here; the
+      // token itself is kept encrypted with the OS (see rememberService).
+      db.exec(`
+        CREATE TABLE remembered_sessions (
+          token_hash  TEXT PRIMARY KEY,
+          user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          expires_at  TEXT NOT NULL,
+          created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX idx_remembered_sessions_user ON remembered_sessions(user_id);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

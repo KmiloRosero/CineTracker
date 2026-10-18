@@ -17,15 +17,15 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  async function login(email, password) {
-    const result = await window.electronAPI.login(email, password);
+  async function login(email, password, remember = false) {
+    const result = await window.electronAPI.login(email, password, remember);
     if (result?.error) throw new Error(result.error);
     setUser(result);
     return result;
   }
 
-  async function register(name, email, password) {
-    const result = await window.electronAPI.register(name, email, password);
+  async function register(name, email, password, remember = false) {
+    const result = await window.electronAPI.register(name, email, password, remember);
     if (result?.error) throw new Error(result.error);
     setUser(result);
     return result;

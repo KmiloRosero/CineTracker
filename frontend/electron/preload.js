@@ -77,9 +77,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTheme: ()        => ipcRenderer.invoke('app:getTheme'),
   setTheme: (theme)   => ipcRenderer.invoke('app:setTheme', theme),
 
+  // ── API keys (values go in, never come back out) ─────────────────────────
+  /** Returns { canSave, keys: { tmdb: { source }, gemini: { source } } }; source is 'app' | 'file' | 'process' | null */
+  getApiKeys:   ()            => ipcRenderer.invoke('settings:getApiKeys'),
+  /** @param {'tmdb'|'gemini'} name @param {string} value */
+  setApiKey:    (name, value) => ipcRenderer.invoke('settings:setApiKey', name, value),
+  clearApiKey:  (name)        => ipcRenderer.invoke('settings:clearApiKey', name),
+  /** Checks the key in use against its service; returns { ok } or { error } */
+  testApiKey:   (name)        => ipcRenderer.invoke('settings:testApiKey', name),
+  /** Opens the page where that key is created, in the browser */
+  openKeyPage:  (name)        => ipcRenderer.invoke('app:openKeyPage', name),
+
   // ── Auth ─────────────────────────────────────────────────────────────────
-  register:       (name, email, password) => ipcRenderer.invoke('auth:register', name, email, password),
-  login:          (email, password)       => ipcRenderer.invoke('auth:login', email, password),
+  /** `remember` keeps the session on this computer across restarts */
+  register:       (name, email, password, remember) => ipcRenderer.invoke('auth:register', name, email, password, remember),
+  login:          (email, password, remember)       => ipcRenderer.invoke('auth:login', email, password, remember),
   logout:         ()                      => ipcRenderer.invoke('auth:logout'),
   getCurrentUser: ()                      => ipcRenderer.invoke('auth:getCurrentUser'),
   /** @param {{ name?: string, avatarUrl?: string|null }} data */

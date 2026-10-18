@@ -251,8 +251,33 @@ async function getAIRecommendations(userId, options = {}) {
   return result;
 }
 
+const PING_MESSAGE = {
+  'invalid-api-key': 'Gemini rechazó la clave. Revisa que la copiaste completa.',
+  'api-permission':  'La clave de Gemini no tiene permiso para usar la API.',
+  'rate-limited':    'Gemini está ocupado ahora; prueba de nuevo en un minuto.',
+};
+
+/** Checks that the Gemini key works without spending a generation (Perfil > Claves de API). */
+async function pingGemini(fetchImpl = fetch) {
+  const apiKey = getEnv('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('No hay una clave de Gemini configurada.');
+  let res;
+  try {
+    res = await fetchImpl(`${GEMINI_URL}?pageSize=1`, {
+      headers: { 'x-goog-api-key': apiKey },
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    throw new Error('No se pudo conectar con Gemini. Revisa tu conexión a internet.');
+  }
+  if (res.ok) return { ok: true };
+  const body = await res.text().catch(() => '');
+  const reason = classifyGeminiStatus(res.status, body);
+  throw new Error(PING_MESSAGE[reason] ?? `Gemini no respondió bien (error ${res.status}).`);
+}
+
 function clearCache() {
   cache.clear();
 }
 
-module.exports = { getAIRecommendations, clearCache, GEMINI_MODEL, CLAUDE_MODEL, OUTPUT_SCHEMA };
+module.exports = { getAIRecommendations, pingGemini, clearCache, GEMINI_MODEL, CLAUDE_MODEL, OUTPUT_SCHEMA };
