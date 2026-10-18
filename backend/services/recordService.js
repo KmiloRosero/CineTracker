@@ -1,13 +1,12 @@
 const recordRepository = require('../repositories/recordRepository.js');
 const { requireTitle } = require('./titleService.js');
-const { validateId, validateStatus, validateRating } = require('../utils/validators.js');
+const { validateId, validateRecordFields } = require('../utils/validators.js');
 
-function validateRecordFields({ status, rating, watched_date: watchedDate }) {
-  if (status !== undefined) validateStatus(status);
-  if (rating !== undefined && rating !== null) validateRating(rating);
-  if (watchedDate !== undefined && watchedDate !== null && Number.isNaN(Date.parse(watchedDate))) {
-    throw new Error('Watched date is not a valid date.');
-  }
+function requireRecord(userId, id) {
+  validateId(id, 'Record id');
+  const record = recordRepository.findById(userId, Number(id));
+  if (!record) throw new Error('Watch record not found.');
+  return record;
 }
 
 function addRecord(userId, record) {
@@ -22,12 +21,20 @@ function getRecordsByTitle(userId, titleId) {
   return recordRepository.findByTitleId(userId, title.id);
 }
 
-function updateRecordStatus(userId, id, status, rating = null) {
-  validateId(id, 'Record id');
-  validateRecordFields({ status, rating });
-  const existing = recordRepository.findById(userId, Number(id));
-  if (!existing) throw new Error('Watch record not found.');
-  return recordRepository.updateStatus(userId, existing.id, status, rating);
+function updateRecord(userId, id, data) {
+  const existing = requireRecord(userId, id);
+  if (!data || typeof data !== 'object') throw new Error('Update data must be a non-null object.');
+  validateRecordFields(data);
+  return recordRepository.update(userId, existing.id, data);
 }
 
-module.exports = { addRecord, getRecordsByTitle, updateRecordStatus };
+function updateRecordStatus(userId, id, status, rating = null) {
+  return updateRecord(userId, id, { status, rating });
+}
+
+function deleteRecord(userId, id) {
+  const existing = requireRecord(userId, id);
+  return recordRepository.remove(userId, existing.id);
+}
+
+module.exports = { addRecord, getRecordsByTitle, updateRecord, updateRecordStatus, deleteRecord };

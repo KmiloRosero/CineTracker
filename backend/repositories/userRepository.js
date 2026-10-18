@@ -21,6 +21,20 @@ function count() {
   return getDb().prepare('SELECT COUNT(*) AS n FROM users').get().n;
 }
 
+function updateProfile(id, { name, avatarUrl }) {
+  getDb().prepare('UPDATE users SET name = ?, avatar_url = ? WHERE id = ?').run(name, avatarUrl, id);
+  return findById(id);
+}
+
+function updatePasswordHash(id, passwordHash) {
+  getDb().prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, id);
+}
+
+/** Deletes the user; titles, records and lists cascade through their user_id foreign keys. */
+function remove(id) {
+  getDb().prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
 /** Gives rows without an owner (data from before accounts existed) to `userId`. */
 function claimUnownedData(userId) {
   const db = getDb();
@@ -31,4 +45,7 @@ function claimUnownedData(userId) {
   })();
 }
 
-module.exports = { create, findByEmail, findById, count, claimUnownedData };
+module.exports = {
+  create, findByEmail, findById, count,
+  updateProfile, updatePasswordHash, remove, claimUnownedData,
+};

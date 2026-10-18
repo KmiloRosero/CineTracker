@@ -1,29 +1,85 @@
 const { getDb } = require('../db/database.js');
 
-function getGenreCounts(userId) {
+const MONTHS_OF_ACTIVITY = 12;
+
+function getGenreCounts(userId, limit = 10) {
   return getDb()
     .prepare(`
       SELECT value AS genre, COUNT(*) AS n
       FROM titles, json_each(titles.genres)
       WHERE user_id = ? AND genres IS NOT NULL AND json_valid(genres)
       GROUP BY value
-      ORDER BY n DESC
-      LIMIT 10
+      ORDER BY n DESC, genre ASC
+      LIMIT ?
     `)
-    .all(userId);
+    .all(userId, limit);
 }
 
-function getMonthlyWatched(userId) {
+/** Genres of completed titles, most watched first. */
+function getTopGenres(userId, limit = 5) {
   return getDb()
     .prepare(`
-      SELECT strftime('%Y-%m', updated_at) AS month, COUNT(*) AS n
-      FROM titles
-      WHERE user_id = ? AND status = 'completed'
-        AND updated_at >= datetime('now', '-12 months')
-      GROUP BY month
-      ORDER BY month ASC
+      SELECT value AS genre, COUNT(*) AS n
+      FROM titles, json_each(titles.genres)
+      WHERE user_id = ? AND genres IS NOT NULL AND json_valid(genres)
+        AND status = 'completed'
+      GROUP BY value
+      ORDER BY n DESC, genre ASC
+      LIMIT ?
     `)
-    .all(userId);
+    .all(userId, limit);
+}
+
+/** Genres ranked by average rating, ignoring genres with fewer than `minTitles` rated titles. */
+function getTopRatedGenres(userId, limit = 5, minTitles = 2) {
+  return getDb()
+    .prepare(`
+      SELECT value AS genre, ROUND(AVG(rating), 1) AS avgRating, COUNT(*) AS n
+      FROM titles, json_each(titles.genres)
+      WHERE user_id = ? AND rating IS NOT NULL AND genres IS NOT NULL AND json_valid(genres)
+      GROUP BY value
+      HAVING COUNT(*) >= ?
+      ORDER BY avgRating DESC, n DESC, genre ASC
+      LIMIT ?
+    `)
+    .all(userId, minTitles, limit);
+}
+
+/** 'YYYY-MM' keys for the last `count` months, oldest first, in UTC like SQLite. */
+function lastMonths(count, now = new Date()) {
+  const months = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+    months.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`);
+  }
+  return months;
+}
+
+/**
+ * Completed watches per month for the last 12 months, zero-filled.
+ * Uses each watch record's date; completed titles without any record fall
+ * back to the date they were last updated.
+ */
+function getMonthlyWatched(userId, now = new Date()) {
+  const months = lastMonths(MONTHS_OF_ACTIVITY, now);
+  const rows = getDb()
+    .prepare(`
+      SELECT month, COUNT(*) AS n FROM (
+        SELECT strftime('%Y-%m', watched_date) AS month
+        FROM records
+        WHERE user_id = ? AND status = 'completed'
+        UNION ALL
+        SELECT strftime('%Y-%m', updated_at) AS month
+        FROM titles t
+        WHERE t.user_id = ? AND t.status = 'completed'
+          AND NOT EXISTS (SELECT 1 FROM records r WHERE r.title_id = t.id)
+      )
+      WHERE month >= ?
+      GROUP BY month
+    `)
+    .all(userId, userId, months[0]);
+  const byMonth = Object.fromEntries(rows.map((r) => [r.month, r.n]));
+  return months.map((month) => ({ month, n: byMonth[month] ?? 0 }));
 }
 
 function getTotalHours(userId) {
@@ -37,18 +93,49 @@ function getTotalHours(userId) {
   return { totalHours: row?.totalHours ?? 0 };
 }
 
-function getTopGenres(userId, limit = 5) {
-  return getDb()
+function getTotals(userId) {
+  const row = getDb()
     .prepare(`
-      SELECT value AS genre, COUNT(*) AS n
-      FROM titles, json_each(titles.genres)
-      WHERE user_id = ? AND genres IS NOT NULL AND json_valid(genres)
-        AND status = 'completed'
-      GROUP BY value
-      ORDER BY n DESC
-      LIMIT ?
+      SELECT
+        COUNT(*)                                            AS titles,
+        COALESCE(SUM(type = 'movie'), 0)                    AS movies,
+        COALESCE(SUM(type = 'series'), 0)                   AS series,
+        COALESCE(SUM(status = 'pending'), 0)                AS pending,
+        COALESCE(SUM(status = 'watching'), 0)               AS watching,
+        COALESCE(SUM(status = 'completed'), 0)              AS completed,
+        COALESCE(SUM(status = 'dropped'), 0)                AS dropped,
+        COUNT(rating)                                       AS rated,
+        ROUND(AVG(rating), 1)                               AS averageRating
+      FROM titles
+      WHERE user_id = ?
     `)
-    .all(userId, limit);
+    .get(userId);
+  return row;
 }
 
-module.exports = { getGenreCounts, getMonthlyWatched, getTotalHours, getTopGenres };
+/** Everything the Statistics page needs in one call. */
+function getOverview(userId) {
+  const totals = getTotals(userId);
+  // Share of titles the user finished, out of everything they started or finished.
+  const started = totals.watching + totals.completed + totals.dropped;
+  return {
+    totals: {
+      titles: totals.titles, movies: totals.movies, series: totals.series,
+      pending: totals.pending, watching: totals.watching,
+      completed: totals.completed, dropped: totals.dropped,
+    },
+    completionRate: started ? Math.round((totals.completed / started) * 1000) / 10 : 0,
+    averageRating:  totals.averageRating ?? null,
+    ratedCount:     totals.rated,
+    totalHours:     getTotalHours(userId).totalHours,
+    genreDistribution: getGenreCounts(userId),
+    topGenres:         getTopGenres(userId),
+    topRatedGenres:    getTopRatedGenres(userId),
+    monthlyActivity:   getMonthlyWatched(userId),
+  };
+}
+
+module.exports = {
+  getGenreCounts, getTopGenres, getTopRatedGenres, getMonthlyWatched,
+  getTotalHours, getOverview, lastMonths,
+};

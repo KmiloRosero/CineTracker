@@ -1,5 +1,7 @@
 const { getDb } = require('../db/database.js');
 
+const WRITABLE_COLUMNS = ['watched_date', 'rating', 'platform', 'status', 'note'];
+
 function findById(userId, id) {
   return getDb().prepare('SELECT * FROM records WHERE id = ? AND user_id = ?').get(id, userId);
 }
@@ -26,11 +28,25 @@ function findByTitleId(userId, titleId) {
     .all(titleId, userId);
 }
 
-function updateStatus(userId, id, status, rating = null) {
+function update(userId, id, data) {
+  const columns = Object.keys(data).filter((k) => WRITABLE_COLUMNS.includes(k));
+  if (columns.length === 0) return findById(userId, id);
+
+  const params = { id, user_id: userId };
+  columns.forEach((k) => { params[k] = data[k]; });
   getDb()
-    .prepare('UPDATE records SET status = ?, rating = ? WHERE id = ? AND user_id = ?')
-    .run(status, rating, id, userId);
+    .prepare(`UPDATE records SET ${columns.map((k) => `${k} = @${k}`).join(', ')} WHERE id = @id AND user_id = @user_id`)
+    .run(params);
   return findById(userId, id);
 }
 
-module.exports = { findById, create, findByTitleId, updateStatus };
+function updateStatus(userId, id, status, rating = null) {
+  return update(userId, id, { status, rating });
+}
+
+function remove(userId, id) {
+  getDb().prepare('DELETE FROM records WHERE id = ? AND user_id = ?').run(id, userId);
+  return { deleted: true, id };
+}
+
+module.exports = { WRITABLE_COLUMNS, findById, create, findByTitleId, update, updateStatus, remove };

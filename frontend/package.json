@@ -9,6 +9,8 @@
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
+    "test": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs run",
+    "test:watch": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs",
     "build": "vite build",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win",
@@ -34,6 +36,7 @@
     "electron-builder": "^24.13.3",
     "electron-rebuild": "^3.2.9",
     "vite": "^5.2.0",
+    "vitest": "^2.1.9",
     "wait-on": "^7.2.0"
   }
 }

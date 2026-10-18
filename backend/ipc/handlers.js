@@ -63,14 +63,22 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('records:add',          authed((userId, record)             => recordService.addRecord(userId, record)));
   ipcMain.handle('records:getByTitle',   authed((userId, titleId)            => recordService.getRecordsByTitle(userId, titleId)));
   ipcMain.handle('records:updateStatus', authed((userId, id, status, rating) => recordService.updateRecordStatus(userId, id, status, rating)));
+  ipcMain.handle('records:update',       authed((userId, id, data)           => recordService.updateRecord(userId, id, data)));
+  ipcMain.handle('records:delete',       authed((userId, id)                 => recordService.deleteRecord(userId, id)));
 
   ipcMain.handle('lists:create',   authed((userId, name)            => listService.createList(userId, name)));
   ipcMain.handle('lists:addTitle', authed((userId, listId, titleId) => listService.addTitleToList(userId, listId, titleId)));
   ipcMain.handle('lists:getAll',   readable((userId)                => listService.getAllLists(userId), []));
+  ipcMain.handle('lists:getById',     authed((userId, id)               => listService.getList(userId, id)));
+  ipcMain.handle('lists:rename',      authed((userId, id, name)         => listService.renameList(userId, id, name)));
+  ipcMain.handle('lists:delete',      authed((userId, id)               => listService.deleteList(userId, id)));
+  ipcMain.handle('lists:removeTitle', authed((userId, listId, titleId)  => listService.removeTitleFromList(userId, listId, titleId)));
+  ipcMain.handle('lists:getForTitle', authed((userId, titleId)          => listService.getListIdsForTitle(userId, titleId)));
 
   ipcMain.handle('stats:getGenreCounts',    readable((userId) => statisticsService.getGenreCounts(userId), []));
   ipcMain.handle('stats:getMonthlyWatched', readable((userId) => statisticsService.getMonthlyWatched(userId), []));
   ipcMain.handle('stats:getTotalHours',     readable((userId) => statisticsService.getTotalHours(userId), { totalHours: 0 }));
+  ipcMain.handle('stats:getOverview',       authed((userId)   => statisticsService.getOverview(userId)));
 
   ipcMain.handle('recommendations:get',   authed((userId) => recommendationService.getRecommendations(userId)));
   ipcMain.handle('recommendations:getAI', authed((userId) => aiRecommendationService.getAIRecommendations(userId)));
@@ -114,6 +122,16 @@ function registerIpcHandlers(ipcMain) {
     const userId = getSession();
     if (!userId) return null;
     return authService.getCurrentUser(userId);
+  }));
+
+  // ── Profile & account ─────────────────────────────────────────────────────
+  ipcMain.handle('auth:updateProfile',  authed((userId, data) => authService.updateProfile(userId, data)));
+  ipcMain.handle('auth:changePassword', authed((userId, currentPassword, newPassword) =>
+    authService.changePassword(userId, currentPassword, newPassword)));
+  ipcMain.handle('auth:deleteAccount',  authed(async (userId, password) => {
+    const result = await authService.deleteAccount(userId, password);
+    clearSession();
+    return result;
   }));
 }
 

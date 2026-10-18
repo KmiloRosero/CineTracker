@@ -7,20 +7,13 @@ if (!module.paths.includes(frontendModules)) {
 }
 
 const titleRepository        = require('../repositories/titleRepository.js');
+const { parseGenres }        = require('../utils/genres.js');
 const { getEnv }             = require('../utils/env.js');
 const { getRecommendations } = require('./recommendationService.js');
 
 const MODEL      = 'claude-sonnet-4-6';
 const TOP_N      = 5;
 const MIN_RATED  = 3; // minimum watched+rated titles before using AI
-
-function parseGenres(raw) {
-  if (!raw) return [];
-  try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch { return []; }
-}
 
 function buildPrompt(watched, pending) {
   const watchedList = watched

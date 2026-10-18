@@ -1,17 +1,8 @@
 const titleRepository = require('../repositories/titleRepository.js');
+const { parseGenres } = require('../utils/genres.js');
 
 const MIN_RATING = 8;
 const TOP_N = 5;
-
-function parseGenres(raw) {
-  if (!raw) return [];
-  try {
-    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-}
 
 function buildGenreFrequency(titles) {
   const freq = {};

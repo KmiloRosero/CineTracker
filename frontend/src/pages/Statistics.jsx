@@ -4,6 +4,7 @@ import { BarChartCard, LineChartCard } from '../components/StatsChart';
 import { PageLoading, PageError } from '../components/PageLoading';
 import GuestPrompt from '../components/GuestPrompt';
 import { useAuth } from '../context/AuthContext';
+import { parseGenres } from '../utils/genres';
 
 // ── helpers ───────────────────────────────────────────────────────────────
 function unwrap(result) {
@@ -11,10 +12,6 @@ function unwrap(result) {
   return result;
 }
 
-function parseGenres(raw) {
-  if (!raw) return [];
-  try { return JSON.parse(raw); } catch { return []; }
-}
 
 // ── animation variants — untouched ───────────────────────────────────────
 const cardVariants = {

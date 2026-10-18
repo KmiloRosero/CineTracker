@@ -6,6 +6,7 @@ import { PageLoading } from '../components/PageLoading';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
+import { parseGenres } from '../utils/genres';
 
 // ── constants — untouched ─────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -147,10 +148,6 @@ export default function TitleDetail() {
     load();
   }, [id, isNew, navigate, user]);
 
-  function parseGenres(raw) {
-    if (!raw) return [];
-    try { return JSON.parse(raw); } catch { return []; }
-  }
 
   function handleChange(e) {
     const { name, value } = e.target;

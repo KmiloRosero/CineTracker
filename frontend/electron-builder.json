@@ -14,12 +14,21 @@
     {
       "from": "../backend",
       "to": "backend",
-      "filter": ["**/*"]
+      "filter": [
+        "**/*",
+        "!tests/**",
+        "!.env.example"
+      ]
     }
   ],
   "win": {
     "target": [
-      { "target": "portable", "arch": ["x64"] }
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
     ],
     "icon": "icons/icon.ico",
     "sign": null,
@@ -27,14 +36,22 @@
   },
   "mac": {
     "target": [
-      { "target": "dmg", "arch": ["x64", "arm64"] }
+      {
+        "target": "dmg",
+        "arch": [
+          "x64",
+          "arm64"
+        ]
+      }
     ],
     "icon": "icons/icon.icns",
     "category": "public.app-category.entertainment",
     "identity": null
   },
   "linux": {
-    "target": ["AppImage"],
+    "target": [
+      "AppImage"
+    ],
     "icon": "icons/icon.png",
     "category": "Video"
   },

@@ -1,19 +1,12 @@
 /**
+ * Shape of a row in the `lists` table. Types only.
+ *
  * @typedef {Object} List
  * @property {number}  id
- * @property {string}  name
+ * @property {number}  user_id
+ * @property {string}  name        unique per user
  * @property {string}  created_at
- * @property {import('./Title').Title[]} [titles]
+ * @property {import('./Title').Title[]} [titles]  present when loaded with its titles
  */
 
-function createList(fields = {}) {
-  return {
-    id: null,
-    name: '',
-    created_at: null,
-    titles: [],
-    ...fields,
-  };
-}
-
-module.exports = { createList };
+module.exports = {};

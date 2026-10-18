@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRecordsByTitle:  (titleId)             => ipcRenderer.invoke('records:getByTitle', titleId),
   /** @param {number} id @param {string} status @param {number|null} [rating] */
   updateRecordStatus: (id, status, rating)  => ipcRenderer.invoke('records:updateStatus', id, status, rating),
+  /** @param {number} id @param {{ watched_date?, rating?, platform?, status?, note? }} data */
+  updateRecord:       (id, data)              => ipcRenderer.invoke('records:update', id, data),
+  /** @param {number} id */
+  deleteRecord:       (id)                    => ipcRenderer.invoke('records:delete', id),
 
   // ── Lists ────────────────────────────────────────────────────────────────
   /** @param {string} name */
@@ -28,6 +32,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   addTitleToList: (listId, titleId)   => ipcRenderer.invoke('lists:addTitle', listId, titleId),
   /** Returns lists with their titles eagerly loaded */
   getAllLists:     ()                  => ipcRenderer.invoke('lists:getAll'),
+  /** @param {number} id — Returns the list with its titles */
+  getList:            (id)              => ipcRenderer.invoke('lists:getById', id),
+  /** @param {number} id @param {string} name */
+  renameList:         (id, name)        => ipcRenderer.invoke('lists:rename', id, name),
+  /** @param {number} id */
+  deleteList:         (id)              => ipcRenderer.invoke('lists:delete', id),
+  /** @param {number} listId @param {number} titleId */
+  removeTitleFromList: (listId, titleId) => ipcRenderer.invoke('lists:removeTitle', listId, titleId),
+  /** @param {number} titleId — Returns ids of lists that contain the title */
+  getListIdsForTitle: (titleId)         => ipcRenderer.invoke('lists:getForTitle', titleId),
 
   // ── Statistics ───────────────────────────────────────────────────────────
   /** Returns [{ genre, n }] — top 10 genres across all titles */
@@ -36,6 +50,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMonthlyWatched: () => ipcRenderer.invoke('stats:getMonthlyWatched'),
   /** Returns { totalHours } — total watch time for completed titles */
   getTotalHours:    () => ipcRenderer.invoke('stats:getTotalHours'),
+  /** Returns { totals, completionRate, averageRating, ratedCount, totalHours,
+   *  genreDistribution, topGenres, topRatedGenres, monthlyActivity } */
+  getStatsOverview: () => ipcRenderer.invoke('stats:getOverview'),
 
   // ── Recommendations ──────────────────────────────────────────────────────
   /** Returns { recommendations: Title[], reason: string } */
@@ -59,4 +76,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   login:          (email, password)       => ipcRenderer.invoke('auth:login', email, password),
   logout:         ()                      => ipcRenderer.invoke('auth:logout'),
   getCurrentUser: ()                      => ipcRenderer.invoke('auth:getCurrentUser'),
+  /** @param {{ name?: string, avatarUrl?: string|null }} data */
+  updateProfile:  (data)                  => ipcRenderer.invoke('auth:updateProfile', data),
+  changePassword: (currentPassword, newPassword) => ipcRenderer.invoke('auth:changePassword', currentPassword, newPassword),
+  /** Permanently deletes the account and all its data; requires the password */
+  deleteAccount:  (password)              => ipcRenderer.invoke('auth:deleteAccount', password),
 });
