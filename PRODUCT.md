@@ -8,59 +8,58 @@ web
 
 ## Stack
 
-Electron 29 + React 18 + Vite 5 + better-sqlite3. Renderer is a Chromium web view; all IPC goes through `window.electronAPI` (contextBridge). CSS lives in a single `theme.css` with CSS custom properties for light/dark. Framer Motion for animation. Recharts for data visualisation.
+Electron 29 + React 18 + Vite 5 + better-sqlite3. Renderer is a Chromium web view; all IPC goes through `window.electronAPI` (contextBridge, contextIsolation on, nodeIntegration off). CSS lives in a single `theme.css` with CSS custom properties for light/dark; no Tailwind or UI library. Framer Motion for animation, Recharts for charts. TMDB and Anthropic are called from the main process; keys live in the gitignored `backend/.env`.
 
 ## Users
 
-General consumers in Colombia — people who watch movies and series on streaming platforms (Netflix, Max, Disney+, etc.) who want a private, offline-first place to track what they've watched, what they're watching, and what they want to watch next. No technical background required. Single-user desktop app; one account per installation.
+General consumers in Colombia — people who watch movies and series on streaming platforms (Netflix, Max, Disney+, etc.) who want a private, offline-first place to track what they have watched, what they are watching, and what they want to watch next. No technical background required. University final project (Software Engineering, UCC Pasto) by Camilo Rosero; it is also evaluated by instructors.
 
 ## Product Purpose
 
-CineTracker is a personal desktop journal for tracking movies and series. It lets users log titles (manually or via TMDB search), set a watch status (pending / watching / completed / dropped), leave ratings and notes, organise titles into custom lists, and see statistics about their viewing habits. A recommendation engine surfaces pending titles that match the user's highest-rated genres. The app runs fully offline; TMDB is used only for metadata import.
+CineTracker is a personal desktop journal for movies and series. Users log titles (TMDB search or manual entry), set a watch status (pending / watching / completed / dropped), rate them 1–10, leave notes, keep a watch history, organise titles into lists, see statistics about their viewing habits, and get recommendations: rule-based by genre affinity, or AI-generated with a one-sentence reason when an Anthropic key is configured. Success: a user can register, find and add a title with its poster, rate it, see it reflected in statistics and recommendations, and find everything again after restarting the app.
 
 ## Positioning
 
-A private, local-first alternative to Letterboxd or Serializd: no social feed, no public profile, no server — just your own catalogue, ratings, and watch history on your machine.
+A private, local-first alternative to Letterboxd or Serializd: no social feed, no public profile, no server. Your own catalogue, ratings and watch history on your own machine.
 
 ## Operating Context
 
-Used at home, typically after finishing or starting a title. Sessions are short (1–5 minutes): mark something as watched, rate it, look up what to watch next. The app stays open in the background while the user is on another screen. Dark environments are common (home theatre, evening couch use); dark mode is the default.
+Used at home, typically right after finishing or starting a title. Sessions are short (1–5 minutes): mark something as watched, rate it, look up what to watch next. The app often stays open in the background. Low-light environments are common (evening, couch, home theatre).
 
 ## Capabilities and Constraints
 
-- Five pages: Login, Home, Catalog, TitleDetail (also new-title form), Statistics.
-- Auth: register / login / logout via bcrypt + in-memory session (single-user desktop, no JWT).
-- Titles: create (manual or TMDB import), read, update, delete. Fields: title, type (movie/series), status, rating (0–10), genres (JSON array), runtime, release year, overview, poster/backdrop paths, notes.
-- Records: watch-history entries per title (watched_date, platform, per-record rating).
-- Lists: named collections of titles.
-- Statistics: genre counts, monthly watched counts, total hours watched, top genres.
-- Recommendations: genre-affinity scoring over pending titles (MIN_RATING=8, TOP_N=5).
-- Theme: light/dark toggle persisted to SQLite settings table.
-- Primary brand color: #00BFFF (deep sky blue).
-- bcryptjs for password hashing; in-memory session (no JWT, no token refresh).
-- Framer Motion for animations; Recharts for charts; TMDB API key in `.env` (renderer only).
+- Pages: Home, Catalog, Title showcase (title detail; also the new-title form), Statistics, Lists, Profile & Settings, Login/Register (page and modal).
+- Accounts: several accounts per installation; each account sees only its own titles, records and lists. Session is in memory (log in again after restart). bcrypt passwords.
+- Guest-first: guests can browse Home (TMDB trending) and every page read-only; any change (add, edit, delete, rate, status, lists) and personalised recommendations require login, and the original action resumes after logging in.
+- Titles: CRUD; fields title, type (movie/series), status, rating 1–10, genres (JSON array), runtime, release year, overview, poster/backdrop paths, notes. TMDB metadata is saved locally so titles work offline afterwards.
+- Records: watch-history entries per title (watched date, platform, rating, note), full CRUD.
+- Lists: named collections per user (create, rename, delete, add/remove titles).
+- Statistics: totals by status and type, completion rate, average rating, hours watched, genre distribution, top and top-rated genres, 12 months of activity.
+- Recommendations: AI (Anthropic) with fallback to the rule-based engine when there is no key, no network, an API error, or fewer than 3 rated titles.
+- Theme: light/dark toggle persisted locally; dark is the default.
 
 ## Brand Commitments
 
 - Name: CineTracker.
-- Primary color: #00BFFF (non-negotiable; used for interactive elements, active states, and key accents).
+- Accent: green #018751 on near-black #0A0A0A (replaces the former #00BFFF blue; user decision, applies to both light and dark themes).
 - Both light and dark modes required.
+- All code and UI text in English.
 - No social features, no cloud sync, no public-facing content.
+- Must not look generic or "AI-made" (user's explicit concern).
 
 ## Evidence on Hand
 
-- Full working codebase in `frontend/src/` and `backend/`.
-- Existing CSS design system in `frontend/src/styles/theme.css`.
-- All pages functional with real IPC data.
+- Full working codebase in `frontend/src/` and `backend/`, with a Vitest suite in `backend/tests/`.
+- Real catalogue data comes from the user's own entries and TMDB (posters, backdrops, overviews, genres). No testimonials, metrics or user counts exist; never invent them.
 
 ## Product Principles
 
-1. **Clarity over decoration** — the user came to log a title or check their stats, not admire the interface.
-2. **Offline-first confidence** — every screen works with zero network; TMDB import is an enhancement, not a dependency.
-3. **Personal, not social** — the tone is a private journal, not a public profile. No vanity metrics.
-4. **Dark by default** — most use happens in low-light environments; dark mode is the primary target.
-5. **Delight in the details** — animations and micro-interactions should feel considered, never gratuitous.
+1. **Your catalogue is the hero** — real posters and the user's own titles carry the experience; nothing is mocked or hardcoded.
+2. **Practical stays one step away** — add, rate and mark watched must never get harder because of visual ambition.
+3. **Offline-first confidence** — every screen works without network; TMDB is an enhancement.
+4. **Personal, not social** — a private journal tone, no vanity metrics.
+5. **Considered motion** — animation makes browsing feel cinematic but stays fast (200–400ms) and respects reduced motion.
 
 ## Accessibility & Inclusion
 
-WCAG 2.1 AA contrast minimums. All interactive elements keyboard-accessible. Spanish and English copy both acceptable (UI currently in English).
+WCAG 2.1 AA contrast in both themes. Visible focus states, full keyboard navigation, aria labels, minimum 44px targets for primary controls, `prefers-reduced-motion` respected.

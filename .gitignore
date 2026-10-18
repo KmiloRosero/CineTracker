@@ -36,3 +36,9 @@ Thumbs.db
 
 # Impeccable temp files
 .impeccable/critique/*.tmp.md
+
+# Vitest cache
+.vite/
+
+# Impeccable review captures (regenerated on each review round)
+.impeccable/review/

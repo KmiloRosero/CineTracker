@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import RatingStars from '../components/RatingStars';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import ScoreBug from '../components/ScoreBug';
+import ListMenu from '../components/ListMenu';
 import { PageLoading } from '../components/PageLoading';
 import { useRequireAuth } from '../hooks/useRequireAuth';
+import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
 import { parseGenres } from '../utils/genres';
+import { tmdbImage } from '../utils/tmdbImage';
 
-// ── constants — untouched ─────────────────────────────────────────────────
 const STATUS_OPTIONS = [
   { value: 'pending',   label: 'Pending' },
   { value: 'watching',  label: 'Watching' },
   { value: 'completed', label: 'Completed' },
   { value: 'dropped',   label: 'Dropped' },
 ];
+const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]));
 
 const EMPTY_FORM = {
   title: '', original_title: '', type: 'movie', overview: '',
@@ -22,79 +25,205 @@ const EMPTY_FORM = {
   notes: '', poster_path: '', genres: '',
 };
 
-// ── SVG icons ─────────────────────────────────────────────────────────────
-function IconArrowLeft() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-    </svg>
-  );
-}
-function IconEdit() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  );
-}
-function IconTrash() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-      <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
-    </svg>
-  );
-}
-function IconCheck() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  );
-}
-function IconFilm() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
-    </svg>
-  );
-}
-function IconTv() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="3" width="20" height="14" rx="2"/>
-      <line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-    </svg>
-  );
-}
-function IconFilmLarge() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="2" width="20" height="20" rx="2"/>
-      <line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-      <line x1="2" y1="7" x2="7" y2="7"/><line x1="17" y1="7" x2="22" y2="7"/>
-      <line x1="17" y1="17" x2="22" y2="17"/><line x1="2" y1="17" x2="7" y2="17"/>
-    </svg>
-  );
-}
-function IconSpinner() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
-      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
-    </svg>
-  );
-}
-function IconClose() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  );
+const EASE = [0.16, 1, 0.3, 1];
+const POSTER_TILT = -7;
+
+function unwrap(result) {
+  if (result?.error) throw new Error(result.error);
+  return result;
 }
 
-const STATUS_LABEL = { pending: 'Pending', watching: 'Watching', completed: 'Completed', dropped: 'Dropped' };
+// ── Icons (one stroke family) ─────────────────────────────────────────────
+const svg = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'square', strokeLinejoin: 'miter', 'aria-hidden': true };
+const IconBack     = () => <svg {...svg}><line x1="20" y1="12" x2="5" y2="12"/><polyline points="11 6 5 12 11 18"/></svg>;
+const IconPrev     = () => <svg {...svg}><polyline points="15 5 8 12 15 19"/></svg>;
+const IconNext     = () => <svg {...svg}><polyline points="9 5 16 12 9 19"/></svg>;
+const IconEdit     = () => <svg {...svg}><path d="M4 20h4L19 9l-4-4L4 16v4z"/><line x1="13" y1="7" x2="17" y2="11"/></svg>;
+const IconList     = () => <svg {...svg}><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="4" y1="6" x2="5" y2="6"/><line x1="4" y1="12" x2="5" y2="12"/><line x1="4" y1="18" x2="5" y2="18"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>;
+const IconTrash    = () => <svg {...svg}><polyline points="4 7 20 7"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>;
+const IconCheck    = () => <svg {...svg} strokeWidth={2.5}><polyline points="5 12 10 17 19 7"/></svg>;
+const IconClose    = () => <svg {...svg}><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>;
+const IconSpinner  = () => (
+  <svg {...svg} strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+  </svg>
+);
+const IconFilmLarge = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+    <rect x="2" y="2" width="20" height="20"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/>
+    <line x1="2" y1="12" x2="22" y2="12"/>
+  </svg>
+);
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ── Showcase: the title "goes to replay" ──────────────────────────────────
+function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
+  const reduceMotion = useReducedMotion();
+  const [listsOpen, setListsOpen] = useState(false);
+  const genres    = parseGenres(title.genres);
+  const posterSrc = tmdbImage(title.poster_path, 'w780');
+  const field     = usePosterColor(tmdbImage(title.poster_path, 'w185'));
+  const meta = [
+    title.type === 'movie' ? 'Movie' : 'Series',
+    title.release_year,
+    title.runtime ? `${title.runtime} min` : null,
+  ].filter(Boolean);
+
+  const offset = direction * 80;
+  const wipe = (delay) => ({
+    hidden:  reduceMotion ? { opacity: 0 } : { scaleX: 0 },
+    visible: reduceMotion ? { opacity: 1 } : { scaleX: 1, transition: { duration: 0.28, ease: EASE, delay } },
+  });
+
+  return (
+    <div className="showcase" style={{ '--field': field }}>
+      <div className="showcase__field" aria-hidden="true" />
+
+      <motion.div
+        key={title.id}
+        className="showcase__stage"
+        initial="hidden"
+        animate="visible"
+      >
+        {/* ── left: the caption ── */}
+        <div className="showcase__copy">
+
+          <motion.h1
+            className="showcase__title"
+            variants={{
+              hidden:  reduceMotion ? { opacity: 0 } : { clipPath: 'inset(0 100% 0 0)' },
+              visible: reduceMotion ? { opacity: 1 } : { clipPath: 'inset(0 0% 0 0)', transition: { duration: 0.55, ease: EASE, delay: 0.05 } },
+            }}
+          >
+            {title.title}
+          </motion.h1>
+          {title.original_title && title.original_title !== title.title && (
+            <p className="showcase__original">{title.original_title}</p>
+          )}
+
+          <div className="lower-third">
+            <motion.span className={`lower-third__label status-slab status-slab--${title.status}`} variants={wipe(0.4)}>
+              <span>{STATUS_LABEL[title.status] ?? title.status}</span>
+            </motion.span>
+            <motion.span className="lower-third__meta" variants={wipe(0.48)}>
+              <span>{meta.join(' · ')}</span>
+            </motion.span>
+          </div>
+
+          {genres.length > 0 && (
+            <ul className="showcase__genres" aria-label="Genres">
+              {genres.map((g) => <li key={g}>{g}</li>)}
+            </ul>
+          )}
+
+          {title.overview && <p className="showcase__overview">{title.overview}</p>}
+
+          <div className="showcase__score">
+            <span className="showcase__label">Your score</span>
+            <ScoreBug value={title.rating} onChange={onRate} label={`Rate ${title.title}`} />
+          </div>
+
+          <div className="showcase__status">
+            <span className="showcase__label" id="status-label">Status</span>
+            <div className="segmented" role="radiogroup" aria-labelledby="status-label">
+              {STATUS_OPTIONS.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={title.status === o.value}
+                  className={`segmented__option${title.status === o.value ? ' is-active' : ''}`}
+                  onClick={() => title.status !== o.value && onStatus(o.value)}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="showcase__actions">
+            <button className="btn btn--primary btn--lg" onClick={onMarkWatched} disabled={marking}>
+              {marking ? <IconSpinner /> : <IconCheck />}
+              {marking ? 'Saving…' : 'Mark as watched'}
+            </button>
+          </div>
+
+          {title.notes && (
+            <div className="showcase__notes">
+              <span className="showcase__label">Notes</span>
+              <p>{title.notes}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── centre: the poster unfolds into its tilt ── */}
+        <motion.div
+          className="showcase__poster"
+          variants={{
+            hidden:  reduceMotion ? { opacity: 0 } : { opacity: 0, rotate: 0, scale: 0.86, x: offset, y: 24 },
+            visible: reduceMotion
+              ? { opacity: 1, rotate: POSTER_TILT }
+              : { opacity: 1, rotate: POSTER_TILT, scale: 1, x: 0, y: 0, transition: { duration: 0.7, ease: EASE } },
+          }}
+          whileHover={reduceMotion ? undefined : { rotate: POSTER_TILT + 3, scale: 1.02, transition: { duration: 0.35, ease: EASE } }}
+        >
+          {posterSrc
+            ? <img src={posterSrc} alt={`Poster for ${title.title}`} />
+            : <div className="showcase__poster-fallback" aria-hidden="true"><IconFilmLarge /></div>}
+          <ScoreBug value={title.rating} readonly size="lg" />
+        </motion.div>
+      </motion.div>
+
+      {/* ── right: round side controls ── */}
+      <nav className="side-controls" aria-label="Title controls">
+        <button className="side-controls__btn" onClick={onBack} aria-label="Back"><IconBack /></button>
+        <div className="side-controls__group">
+          <button className="side-controls__btn" onClick={() => onNavigate(-1)} disabled={!neighbours.prev} aria-label={neighbours.prev ? `Previous: ${neighbours.prev.title}` : 'No previous title'}><IconPrev /></button>
+          <span className="side-controls__count" aria-label={`Title ${neighbours.index + 1} of ${neighbours.total}`}>
+            {neighbours.total > 0 ? `${neighbours.index + 1}/${neighbours.total}` : ''}
+          </span>
+          <button className="side-controls__btn" onClick={() => onNavigate(1)} disabled={!neighbours.next} aria-label={neighbours.next ? `Next: ${neighbours.next.title}` : 'No next title'}><IconNext /></button>
+        </div>
+        <button className="side-controls__btn" onClick={onEdit} aria-label="Edit title"><IconEdit /></button>
+        <div className="side-controls__anchor">
+          <button className="side-controls__btn" onClick={() => setListsOpen((v) => !v)} aria-expanded={listsOpen} aria-label="Add to list"><IconList /></button>
+          <AnimatePresence>
+            {listsOpen && <ListMenu titleId={title.id} onClose={() => setListsOpen(false)} />}
+          </AnimatePresence>
+        </div>
+        {/* destructive action kept apart from the rest */}
+        <button className="side-controls__btn side-controls__btn--danger" onClick={onDelete} aria-label="Delete title"><IconTrash /></button>
+      </nav>
+
+      {/* ── below the fold: watch history ── */}
+      <section className="history" aria-label="Watch history">
+        <header className="rail__header">
+          <h2 className="rail__title">Watch history</h2>
+          <span className="rail__tag">{records.length === 0 ? 'Not watched yet' : `${records.length} ${records.length === 1 ? 'watch' : 'watches'}`}</span>
+        </header>
+        {records.length === 0 ? (
+          <p className="rail__empty">Use “Mark as watched” to log each time you watch it.</p>
+        ) : (
+          <ol className="history__list">
+            {records.map((r) => (
+              <li key={r.id} className="history__item">
+                <span className="history__date">{formatDate(r.watched_date)}</span>
+                <ScoreBug value={r.rating} readonly size="sm" />
+                <span className="history__meta">{[r.platform, r.note].filter(Boolean).join(' · ')}</span>
+                <button className="history__remove" onClick={() => onDeleteRecord(r.id)} aria-label={`Remove watch from ${formatDate(r.watched_date)}`}>
+                  <IconClose />
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </div>
+  );
+}
 
 // ── TitleDetail ───────────────────────────────────────────────────────────
 export default function TitleDetail() {
@@ -104,34 +233,37 @@ export default function TitleDetail() {
   const requireAuth = useRequireAuth();
   const { user } = useAuth();
 
-  // ── state — untouched ──────────────────────────────────────────────────
-  const [title,   setTitle]   = useState(null);
-  const [records, setRecords] = useState([]);
-  const [form,    setForm]    = useState(EMPTY_FORM);
-  const [loading, setLoading] = useState(!isNew);
-  const [saving,  setSaving]  = useState(false);
-  const [marking, setMarking] = useState(false);
-  const [error,   setError]   = useState(null);
-  const [editing, setEditing] = useState(isNew);
+  const [title,     setTitle]     = useState(null);
+  const [records,   setRecords]   = useState([]);
+  const [catalog,   setCatalog]   = useState([]);
+  const [direction, setDirection] = useState(1);
+  const [form,      setForm]      = useState(EMPTY_FORM);
+  const [loading,   setLoading]   = useState(!isNew);
+  const [saving,    setSaving]    = useState(false);
+  const [marking,   setMarking]   = useState(false);
+  const [error,     setError]     = useState(null);
+  const [editing,   setEditing]   = useState(isNew);
 
-  // ── data fetching — untouched ──────────────────────────────────────────
+  useEffect(() => { setEditing(isNew); }, [isNew, id]);
+
   useEffect(() => {
     if (isNew) return;
     if (!user) { setLoading(false); return; }
+    let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const [data, recs] = await Promise.all([
-          window.electronAPI.getTitleById(Number(id)),
-          window.electronAPI.getRecordsByTitle(Number(id)),
+        const [data, all] = await Promise.all([
+          window.electronAPI.getTitleById(Number(id)).then(unwrap),
+          window.electronAPI.getAllTitles({}).then(unwrap),
         ]);
+        if (cancelled) return;
         if (!data) { navigate('/catalog'); return; }
-        if (data.error) throw new Error(data.error);
-        const titleData   = data.title   ?? data;
-        const recordsData = data.records ?? recs ?? [];
+        const titleData = data.title ?? data;
         setTitle(titleData);
-        setRecords(recordsData);
+        setRecords(data.records ?? []);
+        setCatalog(all);
         setForm({
           ...titleData,
           genres:       parseGenres(titleData.genres).join(', '),
@@ -140,14 +272,42 @@ export default function TitleDetail() {
           rating:       titleData.rating  ?? 0,
         });
       } catch (err) {
-        setError(err.message);
+        if (!cancelled) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     load();
+    return () => { cancelled = true; };
   }, [id, isNew, navigate, user]);
 
+  // previous / next follow the catalog's order (newest first)
+  const index = catalog.findIndex((t) => t.id === Number(id));
+  const neighbours = {
+    index: Math.max(index, 0),
+    total: catalog.length,
+    prev:  index > 0 ? catalog[index - 1] : null,
+    next:  index >= 0 && index < catalog.length - 1 ? catalog[index + 1] : null,
+  };
+
+  function goTo(step) {
+    const target = step < 0 ? neighbours.prev : neighbours.next;
+    if (!target) return;
+    setDirection(step);
+    navigate(`/title/${target.id}`, { replace: true });
+  }
+
+  // arrow keys move through the catalog while nothing editable has focus
+  useEffect(() => {
+    if (editing || isNew) return undefined;
+    const onKey = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      if (e.key === 'ArrowLeft') goTo(-1);
+      if (e.key === 'ArrowRight') goTo(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -171,12 +331,10 @@ export default function TitleDetail() {
         genres: JSON.stringify(form.genres.split(',').map((g) => g.trim()).filter(Boolean)),
       };
       if (isNew) {
-        const created = await window.electronAPI.addTitle(payload);
-        if (created?.error) throw new Error(created.error);
+        const created = unwrap(await window.electronAPI.addTitle(payload));
         navigate(`/title/${created.id}`, { replace: true });
       } else {
-        const updated = await window.electronAPI.updateTitle(Number(id), payload);
-        if (updated?.error) throw new Error(updated.error);
+        const updated = unwrap(await window.electronAPI.updateTitle(Number(id), payload));
         setTitle(updated);
         setEditing(false);
       }
@@ -189,18 +347,32 @@ export default function TitleDetail() {
 
   function handleDelete() {
     requireAuth(async () => {
-      if (!window.confirm('Permanently delete this title?')) return;
+      if (!window.confirm(`Delete "${title.title}" and its watch history? This cannot be undone.`)) return;
       const result = await window.electronAPI.deleteTitle(Number(id));
       if (result?.error) { setError(result.error); return; }
       navigate('/catalog');
     });
   }
 
-  function handleRate(val) {
+  function patchTitle(fields) {
     requireAuth(async () => {
-      const updated = await window.electronAPI.updateTitle(Number(id), { rating: val });
-      if (updated?.error) { setError(updated.error); return; }
-      setTitle(updated);
+      try {
+        setTitle(unwrap(await window.electronAPI.updateTitle(Number(id), fields)));
+        setForm((prev) => ({ ...prev, ...fields }));
+      } catch (err) {
+        setError(err.message);
+      }
+    });
+  }
+
+  function handleDeleteRecord(recordId) {
+    requireAuth(async () => {
+      try {
+        unwrap(await window.electronAPI.deleteRecord(recordId));
+        setRecords((prev) => prev.filter((r) => r.id !== recordId));
+      } catch (err) {
+        setError(err.message);
+      }
     });
   }
 
@@ -211,21 +383,15 @@ export default function TitleDetail() {
   async function markWatched() {
     setMarking(true);
     try {
-      const record = {
+      const newRecord = unwrap(await window.electronAPI.addRecord({
         title_id:     Number(id),
         watched_date: new Date().toISOString(),
         rating:       title.rating ?? null,
-        platform:     null,
         status:       'completed',
-        note:         null,
-      };
-      const newRecord = await window.electronAPI.addRecord(record);
-      if (newRecord?.error) throw new Error(newRecord.error);
+      }));
       setRecords((prev) => [newRecord, ...prev]);
       if (title.status !== 'completed') {
-        const updated = await window.electronAPI.updateTitle(Number(id), { status: 'completed' });
-        if (updated?.error) throw new Error(updated.error);
-        setTitle(updated);
+        setTitle(unwrap(await window.electronAPI.updateTitle(Number(id), { status: 'completed' })));
         setForm((prev) => ({ ...prev, status: 'completed' }));
       }
     } catch (err) {
@@ -235,7 +401,6 @@ export default function TitleDetail() {
     }
   }
 
-  // ── derived values ────────────────────────────────────────────────────
   if (!user && !isNew) {
     return (
       <main className="page">
@@ -243,268 +408,133 @@ export default function TitleDetail() {
       </main>
     );
   }
-  if (loading) return <PageLoading />;
-  if (error && !title) return <div className="page-error">{error}</div>;
+  // keep showing the current title while the next one loads
+  if (loading && !title) return <PageLoading message="Loading title…" />;
+  if (error && !title && !isNew) return <div className="page-error" role="alert">{error}</div>;
 
-  const genres    = title ? parseGenres(title.genres) : [];
-  const isMovie   = (title?.type ?? form.type) === 'movie';
-  const posterSrc = (() => {
-    const p = title?.poster_path || form.poster_path;
-    if (!p) return null;
-    return p.startsWith('http') ? p : `https://image.tmdb.org/t/p/w300${p}`;
-  })();
-  const backdropSrc = (() => {
-    const p = title?.backdrop_path;
-    if (!p) return null;
-    return p.startsWith('http') ? p : `https://image.tmdb.org/t/p/w1280${p}`;
-  })();
+  const posterPreview = tmdbImage(form.poster_path, 'w342');
 
-  // ── render ────────────────────────────────────────────────────────────
   return (
     <div className="title-detail-page">
+      {error && <p className="form-error showcase__error" role="alert">{error}</p>}
 
-      {/* ── hero ── */}
-      {backdropSrc && !editing ? (
-        <div className="title-detail__hero" aria-hidden="true">
-          <img className="title-detail__hero-img" src={backdropSrc} alt="" />
-          <div className="title-detail__hero-gradient" />
-        </div>
-      ) : (
-        <div className="title-detail__hero title-detail__hero--plain" aria-hidden="true" />
-      )}
-
-      {/* ── top bar ── */}
-      <div className="title-detail__bar">
-        <button className="btn btn--ghost btn--sm" onClick={() => navigate(-1)}>
-          <IconArrowLeft /> Back
-        </button>
-        {isNew && <h1 className="page__heading title-detail__bar-heading">{`New Title`}</h1>}
-        {!isNew && (
-          <div className="title-detail__bar-actions">
-            <button className="btn btn--ghost btn--sm" onClick={() => (editing ? setEditing(false) : requireAuth(() => setEditing(true)))}>
-              {editing ? <><IconClose /> Cancel</> : <><IconEdit /> Edit</>}
-            </button>
-            <button className="btn btn--danger btn--sm" onClick={handleDelete}>
-              <IconTrash /> Delete
-            </button>
-          </div>
-        )}
-      </div>
-
-      {error && (
-        <div className="title-detail__error">
-          <p className="form-error" role="alert">{error}</p>
-        </div>
-      )}
-
-      {/* ── DETAIL VIEW ── */}
       {!editing && title && (
-        <motion.div
-          className="title-detail__content"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: 'easeOut' } }}
-        >
-          <div className="title-detail__layout">
-
-            {/* poster */}
-            <aside className="title-detail__poster">
-              {posterSrc ? (
-                <img src={posterSrc} alt={`Poster for ${title.title}`} />
-              ) : (
-                <div className="title-detail__poster--placeholder" aria-hidden="true">
-                  <IconFilmLarge />
-                </div>
-              )}
-            </aside>
-
-            {/* info */}
-            <div className="title-detail__info">
-
-              {/* title */}
-              <div className="title-detail__title-row">
-                <h1 className="title-detail__title-main">{title.title}</h1>
-                {title.original_title && title.original_title !== title.title && (
-                  <span className="title-detail__title-original">{title.original_title}</span>
-                )}
-              </div>
-
-              {/* meta strip */}
-              <div className="title-detail__meta">
-                <span className={`status-badge status-${title.status}`}>
-                  {STATUS_LABEL[title.status] ?? title.status}
-                </span>
-                <span className="title-detail__meta-sep">·</span>
-                <span className="title-detail__type">
-                  {isMovie ? <IconFilm /> : <IconTv />}
-                  {isMovie ? 'Movie' : 'Series'}
-                </span>
-                {title.release_year && (
-                  <><span className="title-detail__meta-sep">·</span><span>{title.release_year}</span></>
-                )}
-                {title.runtime && (
-                  <><span className="title-detail__meta-sep">·</span><span>{title.runtime} min</span></>
-                )}
-              </div>
-
-              {/* genres */}
-              {genres.length > 0 && (
-                <div className="title-detail__genres">
-                  {genres.map((g) => <span key={g} className="genre-tag">{g}</span>)}
-                </div>
-              )}
-
-              {/* overview */}
-              {title.overview && (
-                <p className="title-detail__overview">{title.overview}</p>
-              )}
-
-              {/* rating */}
-              <div className="title-detail__rating-block">
-                <span className="title-detail__rating-label">Your Rating</span>
-                <div className="title-detail__rating-row">
-                  <RatingStars
-                    value={Number(title.rating) || 0}
-                    onChange={handleRate}
-                  />
-                  {title.rating > 0 && (
-                    <span className="title-detail__rating-value">{title.rating} / 10</span>
-                  )}
-                </div>
-              </div>
-
-              {/* notes */}
-              {title.notes && (
-                <div className="title-detail__notes-block">
-                  <span className="title-detail__notes-label">Notes</span>
-                  <p className="title-detail__notes-text">{title.notes}</p>
-                </div>
-              )}
-
-              {/* actions */}
-              <div className="title-detail__actions">
-                <button
-                  className="btn btn--primary"
-                  onClick={handleMarkWatched}
-                  disabled={marking}
-                >
-                  {marking ? <><IconSpinner /> Saving…</> : <><IconCheck /> Mark as Watched</>}
-                </button>
-              </div>
-
-              {/* watch history */}
-              {records.length > 0 && (
-                <section className="watch-history">
-                  <h2 className="watch-history__heading">
-                    Watch History · {records.length} {records.length === 1 ? 'entry' : 'entries'}
-                  </h2>
-                  <ul className="watch-history__list">
-                    {records.map((r) => (
-                      <li key={r.id} className="watch-history__item">
-                        <span className="watch-history__date">
-                          {new Date(r.watched_date).toLocaleDateString('en-CO', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                          })}
-                        </span>
-                        <div className="watch-history__mid">
-                          {r.rating != null && <RatingStars value={r.rating} readonly size="sm" />}
-                          {r.note && <span className="watch-history__note">{r.note}</span>}
-                        </div>
-                        {r.platform && (
-                          <span className="watch-history__platform">{r.platform}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-            </div>
-          </div>
-        </motion.div>
+        <Showcase
+          title={title}
+          records={records}
+          direction={direction}
+          neighbours={neighbours}
+          marking={marking}
+          onRate={(rating) => patchTitle({ rating })}
+          onStatus={(status) => patchTitle({ status })}
+          onMarkWatched={handleMarkWatched}
+          onEdit={() => requireAuth(() => setEditing(true))}
+          onDelete={handleDelete}
+          onDeleteRecord={handleDeleteRecord}
+          onNavigate={goTo}
+          onBack={() => navigate(-1)}
+        />
       )}
 
-      {/* ── EDIT / NEW FORM ── */}
       {editing && (
-        <div className="title-detail__content title-detail__edit-container">
-          <form className="title-detail__form" onSubmit={handleSubmit} noValidate>
-            <div className="form-group">
-              <label htmlFor="title">Title *</label>
-              <input id="title" name="title" value={form.title} onChange={handleChange} required autoFocus />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="original_title">Original Title</label>
-              <input id="original_title" name="original_title" value={form.original_title ?? ''} onChange={handleChange} />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="type">Type *</label>
-                <select id="type" name="type" value={form.type} onChange={handleChange}>
-                  <option value="movie">Movie</option>
-                  <option value="series">Series</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="status">Status *</label>
-                <select id="status" name="status" value={form.status} onChange={handleChange}>
-                  {STATUS_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label htmlFor="release_year">Year</label>
-                <input id="release_year" name="release_year" type="number" min="1888" max="2100" value={form.release_year} onChange={handleChange} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="runtime">Runtime (min)</label>
-                <input id="runtime" name="runtime" type="number" min="1" value={form.runtime} onChange={handleChange} />
+        <main className="page title-edit">
+          <div className="page__header title-edit__header">
+            <div className="title-edit__heading">
+              <h1 className="page__heading">{isNew ? 'New title' : title?.title}</h1>
+              <div className="lower-third">
+                <span className="lower-third__label"><span>{isNew ? 'Manual entry' : 'Editing'}</span></span>
+                <span className="lower-third__meta">
+                  <span>{isNew ? 'Fill in what you know' : [form.type === 'movie' ? 'Movie' : 'Series', form.release_year].filter(Boolean).join(' · ')}</span>
+                </span>
               </div>
             </div>
-
-            <div className="form-group">
-              <label htmlFor="genres">Genres (comma separated)</label>
-              <input id="genres" name="genres" value={form.genres} onChange={handleChange} placeholder="Action, Drama, Sci-Fi" />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="overview">Overview</label>
-              <textarea id="overview" name="overview" rows={4} value={form.overview ?? ''} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label>Rating</label>
-              <RatingStars
-                value={Number(form.rating) || 0}
-                onChange={(val) => setForm((p) => ({ ...p, rating: val }))}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="notes">Personal Notes</label>
-              <textarea id="notes" name="notes" rows={3} value={form.notes ?? ''} onChange={handleChange} />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="poster_path">Poster URL</label>
-              <input id="poster_path" name="poster_path" value={form.poster_path ?? ''} onChange={handleChange} placeholder="https://… or TMDB path" />
-            </div>
-
-            <div className="form-actions">
-              {!isNew && (
-                <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)}>
-                  Cancel
-                </button>
-              )}
-              <button type="submit" className="btn btn--primary" disabled={saving}>
-                {saving ? <><IconSpinner /> Saving…</> : isNew ? 'Create Title' : 'Save Changes'}
+            {!isNew && (
+              <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)}>
+                <IconClose /> Cancel
               </button>
-            </div>
-          </form>
-        </div>
-      )}
+            )}
+          </div>
 
+          <div className="title-edit__layout">
+            <form className="title-edit__form" onSubmit={handleSubmit} noValidate>
+              <div className="form-group">
+                <label htmlFor="title">Title</label>
+                <input id="title" name="title" value={form.title} onChange={handleChange} required autoFocus />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="original_title">Original title</label>
+                <input id="original_title" name="original_title" value={form.original_title ?? ''} onChange={handleChange} />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="type">Type</label>
+                  <select id="type" name="type" value={form.type} onChange={handleChange}>
+                    <option value="movie">Movie</option>
+                    <option value="series">Series</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="status">Status</label>
+                  <select id="status" name="status" value={form.status} onChange={handleChange}>
+                    {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="release_year">Year</label>
+                  <input id="release_year" name="release_year" type="number" min="1870" max="2100" value={form.release_year} onChange={handleChange} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="runtime">Runtime (min)</label>
+                  <input id="runtime" name="runtime" type="number" min="1" value={form.runtime} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="genres">Genres (comma separated)</label>
+                <input id="genres" name="genres" value={form.genres} onChange={handleChange} placeholder="Action, Drama, Sci-Fi" />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="overview">Overview</label>
+                <textarea id="overview" name="overview" rows={4} value={form.overview ?? ''} onChange={handleChange} />
+              </div>
+
+              <div className="form-group">
+                <span className="form-group__label">Score</span>
+                <ScoreBug
+                  value={Number(form.rating) || 0}
+                  onChange={(val) => setForm((p) => ({ ...p, rating: val }))}
+                  label="Score"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="notes">Personal notes</label>
+                <textarea id="notes" name="notes" rows={3} value={form.notes ?? ''} onChange={handleChange} />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="poster_path">Poster URL</label>
+                <input id="poster_path" name="poster_path" value={form.poster_path ?? ''} onChange={handleChange} placeholder="https://… or a TMDB path" />
+              </div>
+
+              <div className="form-actions">
+                <button type="submit" className="btn btn--primary btn--lg" disabled={saving}>
+                  {saving ? <><IconSpinner /> Saving…</> : isNew ? 'Create title' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+
+            <aside className="title-edit__preview" aria-label="Poster preview">
+              {posterPreview
+                ? <img src={posterPreview} alt="" />
+                : <div className="showcase__poster-fallback"><IconFilmLarge /></div>}
+            </aside>
+          </div>
+        </main>
+      )}
     </div>
   );
 }

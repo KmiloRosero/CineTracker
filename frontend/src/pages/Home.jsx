@@ -1,110 +1,341 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import TitleCard from '../components/TitleCard';
-import TrendingCard from '../components/TrendingCard';
-import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
-import { useRequireAuth } from '../hooks/useRequireAuth';
-import { gridVariants, cardVariants } from '../components/cardAnimations';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import FixtureCard from '../components/FixtureCard';
+import { gridVariants } from '../components/cardAnimations';
+import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
-import { PageLoading, PageError } from '../components/PageLoading';
+import { useRequireAuth } from '../hooks/useRequireAuth';
+import { useCountUp } from '../hooks/useCountUp';
+import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
+import { parseGenres } from '../utils/genres';
+import { tmdbImage } from '../utils/tmdbImage';
 
 const NO_REC_MSG = {
   'no-ratings': 'Rate completed titles 8 or higher to unlock recommendations.',
-  'no-pending':  'Add titles with "Pending" status to start getting suggestions.',
-  'no-match':    'No pending titles match your top-rated genres yet. Keep rating.',
+  'no-pending': 'Add titles as Pending to get suggestions from your own list.',
+  'no-match':   'None of your pending titles match your top-rated genres yet. Keep rating.',
 };
 
-// ── Icon components ───────────────────────────────────────────────────────
-function IconFilm() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/>
-    </svg>
-  );
+const FEATURED_COUNT = 4;
+const ROTATE_MS      = 9000;
+const EASE           = [0.16, 1, 0.3, 1];
+
+function unwrap(result) {
+  if (result?.error) throw new Error(result.error);
+  return result;
 }
-function IconPlay() {
+
+// ── Icons ─────────────────────────────────────────────────────────────────
+function IconArrow() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
-    </svg>
-  );
-}
-function IconCheck() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  );
-}
-function IconClock() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
-  );
-}
-function IconStar() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  );
-}
-function IconSparkle() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.64 5.64l2.12 2.12M16.24 16.24l2.12 2.12M16.24 7.76l-2.12 2.12M7.76 16.24l-2.12 2.12"/>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" aria-hidden="true">
+      <line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>
     </svg>
   );
 }
 function IconPlus() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" aria-hidden="true">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
   );
 }
 function IconSpinner() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite' }}>
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
     </svg>
   );
 }
-function IconAI() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/>
-      <path d="M12 8v4l3 3"/>
-    </svg>
-  );
+
+// ── Featured-title model ──────────────────────────────────────────────────
+function fromLocal(t, label) {
+  return {
+    key: `local-${t.id}`,
+    title: t.title,
+    backdrop: t.backdrop_path,
+    poster: t.poster_path,
+    overview: t.overview,
+    year: t.release_year,
+    runtime: t.runtime,
+    type: t.type,
+    genres: parseGenres(t.genres),
+    label,
+    localId: t.id,
+    tmdbItem: null,
+  };
 }
 
-// ── StatPill ──────────────────────────────────────────────────────────────
-function StatPill({ label, value, icon: Icon, accent = false }) {
+function fromTrending(item, rank, catalogId) {
+  return {
+    key: `tmdb-${item.type}-${item.tmdb_id}`,
+    title: item.title,
+    backdrop: item.backdrop_path,
+    poster: item.poster_path,
+    overview: item.overview,
+    year: item.release_year,
+    runtime: null,
+    type: item.type,
+    genres: [],
+    label: `Trending #${rank}`,
+    localId: catalogId ?? null,
+    tmdbItem: item,
+  };
+}
+
+// ── Ticker (broadcast stats strip) ───────────────────────────────────────
+function trendOf(pair, decimals = 0) {
+  if (!pair || pair.current == null || pair.previous == null) return null;
+  const diff = Number((pair.current - pair.previous).toFixed(decimals));
+  return diff === 0 ? null : diff;
+}
+
+function TickerStat({ label, value, decimals = 0, suffix = '', trend }) {
+  const shown = useCountUp(value ?? 0, { decimals });
   return (
-    <div className={`stat-pill${accent ? ' stat-pill--accent' : ''}`}>
-      <span className="stat-pill__icon"><Icon /></span>
-      <span className="stat-pill__value">{value}</span>
-      <span className="stat-pill__label">{label}</span>
+    <div className="ticker__stat">
+      <span className="ticker__value">{value == null ? '–' : `${shown}${suffix}`}</span>
+      <span className="ticker__label">{label}</span>
+      {trend != null && trend !== 0 && (
+        <span
+          className={`ticker__trend ${trend > 0 ? 'is-up' : 'is-down'}`}
+          title={`${Math.abs(trend)} ${trend > 0 ? 'more' : 'less'} than last month`}
+        >
+          {trend > 0 ? `+${trend}` : trend}
+          <span className="sr-only"> vs last month</span>
+        </span>
+      )}
     </div>
   );
 }
 
-// ── AI recommendation card — TitleCard + reason caption ───────────────────
-function AIRecCard({ title, onClick }) {
+function Ticker({ overview, trending }) {
+  if (overview) {
+    const t = overview.trends ?? {};
+    const hourDecimals = overview.totalHours % 1 ? 1 : 0;
+    return (
+      <div className="ticker" aria-label="Your catalog in numbers">
+        <span className="ticker__tag">Your catalog<small>± vs last month</small></span>
+        <div className="ticker__stats">
+          <TickerStat label="Titles"    value={overview.totals.titles}    trend={trendOf(t.titlesAdded)} />
+          {/* status changes are not dated, so "watching" has no monthly trend either */}
+          <TickerStat label="Watching"  value={overview.totals.watching} />
+          <TickerStat label="Completed" value={overview.totals.completed} trend={trendOf(t.completed)} />
+          <TickerStat label="Hours"     value={overview.totalHours}       decimals={hourDecimals} trend={trendOf(t.hours, 1)} />
+          {/* catalogue average has no dated history; a watch-average delta here would mislead */}
+          <TickerStat label="Avg score" value={overview.averageRating}    decimals={1} />
+        </div>
+      </div>
+    );
+  }
+  if (trending.length > 0) {
+    const names = trending.map((t) => t.title);
+    return (
+      <div className="ticker" aria-label="Trending this week">
+        <span className="ticker__tag">Trending</span>
+        <div className="ticker__crawl" aria-hidden="true">
+          {/* two copies make the crawl loop seamlessly */}
+          <div className="ticker__crawl-track">
+            {[...names, ...names].map((name, i) => <span key={i}>{name}</span>)}
+          </div>
+        </div>
+        <p className="sr-only">{names.join(', ')}</p>
+      </div>
+    );
+  }
+  return null;
+}
+
+// ── Stage (first viewport) ────────────────────────────────────────────────
+function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, children }) {
+  const reduceMotion = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const keys = featured.map((f) => f.key).join('|');
+
+  useEffect(() => { setActive(0); }, [keys]);
+
+  useEffect(() => {
+    if (reduceMotion || paused || featured.length < 2) return undefined;
+    const id = setInterval(() => setActive((i) => (i + 1) % featured.length), ROTATE_MS);
+    return () => clearInterval(id);
+  }, [reduceMotion, paused, featured.length]);
+
+  const current = featured[active];
+  if (!current) return null;
+
+  // the deck shows the next titles in order, so the lineup reads left to right
+  const deck = featured.map((_, i) => featured[(active + 1 + i) % featured.length]).slice(0, featured.length - 1);
+  const meta = [
+    current.year,
+    current.runtime ? `${current.runtime} min` : null,
+    current.type === 'movie' ? 'Movie' : 'Series',
+    current.genres.slice(0, 2).join(' / ') || null,
+  ].filter(Boolean);
+  const backdrop = tmdbImage(current.backdrop, 'w1280') ?? tmdbImage(current.poster, 'w780');
+  const { label: actionLabel, icon: actionIcon, busy } = primaryState(current);
+
   return (
-    <motion.div className="ai-rec-card" variants={cardVariants}>
-      <TitleCard title={title} onClick={onClick} />
-      {title.ai_reason && (
-        <p className="ai-rec-card__reason">
-          <span className="ai-rec-card__reason-icon"><IconAI /></span>
-          {title.ai_reason}
-        </p>
+    <section
+      className="stage"
+      aria-roledescription="carousel"
+      aria-label="Featured titles"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <div className="stage__backdrop" aria-hidden="true">
+        <AnimatePresence initial={false}>
+          {backdrop && (
+            <motion.img
+              key={current.key}
+              src={backdrop}
+              alt=""
+              initial={{ opacity: 0, scale: reduceMotion ? 1 : 1.06 }}
+              animate={{ opacity: 1, scale: 1, transition: { duration: 1.6, ease: EASE } }}
+              exit={{ opacity: 0, transition: { duration: 1.2, ease: 'easeInOut' } }}
+            />
+          )}
+        </AnimatePresence>
+        <div className="stage__grade" />
+        <div className="stage__horizon" />
+      </div>
+
+      <div className="stage__copy">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={current.key}
+            className="stage__copy-inner"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            <motion.h1
+              className="stage__title"
+              variants={{
+                hidden:  reduceMotion ? { opacity: 0 } : { clipPath: 'inset(0 100% 0 0)' },
+                visible: reduceMotion ? { opacity: 1 } : { clipPath: 'inset(0 0% 0 0)', transition: { duration: 0.5, ease: EASE, delay: 0.12 } },
+                exit:    { opacity: 0, transition: { duration: 0.18 } },
+              }}
+            >
+              {current.title}
+            </motion.h1>
+
+            <div className="lower-third">
+              <motion.span
+                className="lower-third__label"
+                variants={{
+                  hidden:  reduceMotion ? { opacity: 0 } : { scaleX: 0 },
+                  visible: reduceMotion ? { opacity: 1 } : { scaleX: 1, transition: { duration: 0.28, ease: EASE } },
+                  exit:    { opacity: 0, transition: { duration: 0.15 } },
+                }}
+              >
+                <span>{current.label}</span>
+              </motion.span>
+              <motion.span
+                className="lower-third__meta"
+                variants={{
+                  hidden:  reduceMotion ? { opacity: 0 } : { scaleX: 0 },
+                  visible: reduceMotion ? { opacity: 1 } : { scaleX: 1, transition: { duration: 0.28, ease: EASE, delay: 0.08 } },
+                  exit:    { opacity: 0, transition: { duration: 0.15 } },
+                }}
+              >
+                <span>{meta.join(' · ')}</span>
+              </motion.span>
+            </div>
+
+            {current.overview && <p className="stage__overview">{current.overview}</p>}
+          </motion.div>
+        </AnimatePresence>
+
+        <div className="stage__actions">
+          <button className="btn btn--primary btn--lg" onClick={() => onPrimary(current)} disabled={busy}>
+            {busy ? <IconSpinner /> : actionIcon}
+            {actionLabel}
+          </button>
+          {user
+            ? <button className="btn btn--ghost btn--lg stage__ghost" onClick={onBrowse}>Browse catalog</button>
+            : <button className="btn btn--ghost btn--lg stage__ghost" onClick={onLogin}>Log in</button>}
+        </div>
+
+        {featured.length > 1 && (
+          <div className="stage__dots" role="tablist" aria-label="Choose featured title">
+            {featured.map((f, i) => (
+              <button
+                key={f.key}
+                role="tab"
+                aria-selected={i === active}
+                aria-label={f.title}
+                className={`stage__dot${i === active ? ' is-active' : ''}`}
+                onClick={() => setActive(i)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {deck.length > 0 && (
+        <div className="stage__deck" role="group" aria-label="Up next">
+          {deck.map((f, slot) => (
+            <motion.button
+              key={f.key}
+              layout={!reduceMotion}
+              type="button"
+              className={`stage__card stage__card--${slot}`}
+              onClick={() => setActive(featured.indexOf(f))}
+              aria-label={`Feature ${f.title}`}
+              transition={{ layout: { duration: 0.6, ease: EASE } }}
+              whileHover={reduceMotion ? undefined : { y: -10, rotate: 0, transition: { duration: 0.25, ease: EASE } }}
+              whileTap={{ scale: 0.97 }}
+            >
+              {f.poster
+                ? <img src={tmdbImage(f.poster, 'w342')} alt="" />
+                : <span className="stage__card-fallback">{f.title}</span>}
+              <span className="stage__card-label">{f.label}</span>
+            </motion.button>
+          ))}
+        </div>
       )}
-    </motion.div>
+
+      {children}
+    </section>
   );
+}
+
+function StageSkeleton() {
+  return (
+    <section className="stage stage--loading" aria-busy="true" aria-label="Loading featured titles">
+      <div className="stage__copy">
+        <div className="skeleton skeleton--title" />
+        <div className="skeleton skeleton--bar" />
+        <div className="skeleton skeleton--line" />
+      </div>
+    </section>
+  );
+}
+
+// ── Rails (rows below the stage) ──────────────────────────────────────────
+function Rail({ title, sub, action, children, empty }) {
+  return (
+    <section className="rail" aria-label={title}>
+      <header className="rail__header">
+        <h2 className="rail__title">{title}</h2>
+        {sub && <span className="rail__tag">{sub}</span>}
+        {action && <div className="rail__action">{action}</div>}
+      </header>
+      {empty ?? (
+        <motion.div className="fixture-grid" variants={gridVariants} initial="hidden" animate="visible">
+          {children}
+        </motion.div>
+      )}
+    </section>
+  );
+}
+
+function RailEmpty({ children }) {
+  return <div className="rail__empty" role="status">{children}</div>;
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────
@@ -113,101 +344,93 @@ export default function Home() {
   const { user, openLoginModal } = useAuth();
   const requireAuth = useRequireAuth();
 
-  const [titles,     setTitles]     = useState([]);
-  const [stats,      setStats]      = useState(null);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState(null);
-  const [reloadKey,  setReloadKey]  = useState(0);
+  const [titles,    setTitles]    = useState([]);
+  const [overview,  setOverview]  = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // AI recommendations — fetched separately so the page doesn't block on Claude
-  const [aiRec,      setAiRec]      = useState(null);   // null = not yet fetched
-  const [aiLoading,  setAiLoading]  = useState(false);
-  const [aiSource,   setAiSource]   = useState(null);   // 'ai' | 'rule-based'
+  const [recs,        setRecs]        = useState(null);
+  const [recsLoading, setRecsLoading] = useState(false);
 
-  // TMDB trending — the main content for guests, also handy for adding titles
   const [trending,        setTrending]        = useState([]);
-  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingLoading, setTrendingLoading] = useState(true);
   const [trendingError,   setTrendingError]   = useState(null);
   const [addingTmdbId,    setAddingTmdbId]    = useState(null);
   const [addError,        setAddError]        = useState(null);
 
-  // ── load catalog data ─────────────────────────────────────────────────
   async function refreshTitles() {
-    const allTitles = await window.electronAPI.getAllTitles({});
-    if (allTitles?.error) throw new Error(allTitles.error);
-    setTitles(allTitles);
-    return allTitles;
+    const all = unwrap(await window.electronAPI.getAllTitles({}));
+    setTitles(all);
+    return all;
   }
 
+  // ── the user's own data ───────────────────────────────────────────────
   useEffect(() => {
     if (!user) {
-      setTitles([]);
-      setStats(null);
-      setLoading(false);
-      return;
+      setTitles([]); setOverview(null); setRecs(null); setLoading(false);
+      return undefined;
     }
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const allTitles = await refreshTitles();
-
-        const completed = allTitles.filter((t) => t.status === 'completed').length;
-        const watching  = allTitles.filter((t) => t.status === 'watching').length;
-        const pending   = allTitles.filter((t) => t.status === 'pending').length;
-        const ratings   = allTitles.map((t) => t.rating).filter((r) => r != null);
-        const avgRating = ratings.length
-          ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-          : null;
-        setStats({ total: allTitles.length, completed, watching, pending, avgRating });
-      } catch (err) {
-        setError(err.message);
-        console.error('Home load error:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    let cancelled = false;
+    setLoading(true); setError(null);
+    Promise.all([
+      window.electronAPI.getAllTitles({}).then(unwrap),
+      window.electronAPI.getStatsOverview().then(unwrap),
+    ])
+      .then(([all, stats]) => { if (!cancelled) { setTitles(all); setOverview(stats); } })
+      .catch((err) => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [user, reloadKey]);
 
-  // ── load AI recommendations after catalog is ready (logged-in only) ───
+  // ── recommendations, after the catalog is ready ──────────────────────
   useEffect(() => {
-    if (loading) return; // wait for catalog
-    if (!user) {
-      setAiRec(null);
-      setAiSource(null);
-      return;
-    }
-    setAiLoading(true);
+    if (!user || loading) return;
+    setRecsLoading(true);
     window.electronAPI.getAIRecommendations()
-      .then((result) => {
-        if (result?.error) throw new Error(result.error);
-        setAiRec(result ?? { recommendations: [], reason: 'no-ratings' });
-        setAiSource(result?.source ?? 'rule-based');
-      })
-      .catch((err) => {
-        console.error('AI rec error:', err);
-        setAiRec({ recommendations: [], reason: 'no-ratings' });
-        setAiSource('rule-based');
-      })
-      .finally(() => setAiLoading(false));
-  }, [loading, user]);
+      .then((result) => setRecs(unwrap(result) ?? { recommendations: [], reason: 'no-ratings' }))
+      .catch(() => setRecs({ recommendations: [], reason: 'no-ratings', source: 'rule-based' }))
+      .finally(() => setRecsLoading(false));
+  }, [user, loading]);
 
-  // ── load TMDB trending ────────────────────────────────────────────────
+  // ── TMDB trending (public) ────────────────────────────────────────────
   useEffect(() => {
-    setTrendingLoading(true);
     getTrending()
       .then(setTrending)
       .catch((err) => setTrendingError(err.message))
       .finally(() => setTrendingLoading(false));
   }, []);
 
-  // tmdb_id -> local title id, so trending cards know what is already saved
   const catalogByTmdbId = useMemo(() => {
     const map = new Map();
     titles.forEach((t) => { if (t.tmdb_id != null) map.set(t.tmdb_id, t.id); });
     return map;
   }, [titles]);
+
+  const watching        = useMemo(() => titles.filter((t) => t.status === 'watching'), [titles]);
+  const recommendations = useMemo(() => recs?.recommendations ?? [], [recs]);
+  const recent          = titles.slice(0, 6);
+
+  // Featured lineup: your own titles when you have them, otherwise trending.
+  const featured = useMemo(() => {
+    if (user && titles.length > 0) {
+      const seen = new Set();
+      const lineup = [
+        ...watching.map((t) => fromLocal(t, 'Now watching')),
+        ...recommendations.map((t) => fromLocal(t, 'Pick for you')),
+        ...titles.map((t) => fromLocal(t, 'Just added')),
+      ].filter((f) => {
+        if (seen.has(f.key) || !(f.backdrop || f.poster)) return false;
+        seen.add(f.key);
+        return true;
+      });
+      if (lineup.length > 0) return lineup.slice(0, FEATURED_COUNT);
+    }
+    return trending
+      .filter((t) => t.backdrop_path)
+      .slice(0, FEATURED_COUNT)
+      .map((t, i) => fromTrending(t, i + 1, catalogByTmdbId.get(t.tmdb_id)));
+  }, [user, titles, watching, recommendations, trending, catalogByTmdbId]);
 
   function handleAddTrending(item) {
     requireAuth(async () => {
@@ -215,8 +438,7 @@ export default function Home() {
       setAddError(null);
       try {
         const detail = await getTitleDetails(item.tmdb_id, item.type);
-        const result = await window.electronAPI.addTitle(toCatalogPayload(detail));
-        if (result?.error) throw new Error(result.error);
+        unwrap(await window.electronAPI.addTitle(toCatalogPayload(detail)));
         await refreshTitles();
       } catch (err) {
         setAddError(`Could not add "${item.title}": ${err.message}`);
@@ -226,198 +448,120 @@ export default function Home() {
     });
   }
 
-  const recent = useMemo(() => titles.slice(0, 6), [titles]);
+  function primaryState(f) {
+    if (f.localId) return { label: 'Open title', icon: <IconArrow /> };
+    return { label: 'Add to catalog', icon: <IconPlus />, busy: addingTmdbId === f.tmdbItem?.tmdb_id };
+  }
 
-  const recommendations = aiRec?.recommendations ?? [];
-  const recReason       = aiRec?.reason ?? 'no-ratings';
-  const isAI            = aiSource === 'ai';
+  function handlePrimary(f) {
+    if (f.localId) navigate(`/title/${f.localId}`);
+    else if (f.tmdbItem) handleAddTrending(f.tmdbItem);
+  }
 
-  const greeting = user
-    ? `Good ${getTimeOfDay()}, ${user.name.split(' ')[0]}`
-    : 'Discover what to watch';
+  const openTitle  = (id) => navigate(`/title/${id}`);
+  const stageReady = !(user ? loading : trendingLoading);
 
-  // ── recommendations ──
-  const recommendationsSection = (
-    <section className="home__section" aria-label="Recommended for you">
-      <div className="section-header section-header--primary">
-        <div className="section-header__left">
-          <h2>Recommended for You</h2>
-          {!aiLoading && recommendations.length > 0 && (
-            <span className="section-header__sub">
-              {isAI
-                ? <><span className="ai-badge"><IconAI /> AI-powered</span> · Personalized by Claude</>
-                : 'Based on your highest-rated genres'}
-            </span>
-          )}
-        </div>
-      </div>
+  if (error) {
+    return <PageError message={`Failed to load your catalog: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />;
+  }
 
-      {/* guests: personalized picks need an account */}
-      {!user && (
-        <div className="home__empty" role="status">
-          <div className="home__empty__icon-wrap"><IconSparkle /></div>
-          <p>Log in to get recommendations based on what you have watched and rated.</p>
-          <button className="btn btn--primary" onClick={() => openLoginModal()}>Log in</button>
-        </div>
-      )}
-
-      {/* loading skeleton while Claude is thinking */}
-      {aiLoading && (
-        <div className="rec-loading" role="status" aria-label="Generating recommendations">
-          <IconSpinner />
-          <span>Generating personalized recommendations…</span>
-        </div>
-      )}
-
-      {/* results */}
-      {!aiLoading && recommendations.length > 0 && (
-        <motion.div
-          className={`title-grid${isAI ? ' title-grid--ai' : ''}`}
-          variants={gridVariants}
-          initial="hidden"
-          animate="visible"
+  return (
+    <main className="home">
+      {!stageReady && <StageSkeleton />}
+      {stageReady && featured.length > 0 && (
+        <Stage
+          featured={featured}
+          user={user}
+          primaryState={primaryState}
+          onPrimary={handlePrimary}
+          onLogin={() => openLoginModal()}
+          onBrowse={() => navigate('/catalog')}
         >
-          {recommendations.map((t) =>
-            isAI
-              ? <AIRecCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-              : <TitleCard  key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-          )}
-        </motion.div>
+          <Ticker overview={user ? overview : null} trending={trending} />
+        </Stage>
+      )}
+      {stageReady && featured.length === 0 && (
+        <section className="stage stage--empty">
+          <div className="stage__copy">
+            <h1 className="stage__title">Your catalog starts here</h1>
+            <p className="stage__overview">
+              {trendingError
+                ? `Trending titles are unavailable right now (${trendingError}). You can still add titles by hand.`
+                : 'Add the first movie or series you are watching.'}
+            </p>
+            <div className="stage__actions">
+              <button className="btn btn--primary btn--lg" onClick={() => requireAuth(() => navigate('/catalog'))}>
+                <IconPlus /> Add a title
+              </button>
+            </div>
+          </div>
+        </section>
       )}
 
-      {/* empty state */}
-      {user && !aiLoading && recommendations.length === 0 && (
-        <div className="home__empty" role="status">
-          <div className="home__empty__icon-wrap"><IconSparkle /></div>
-          <p>{NO_REC_MSG[recReason] ?? 'No recommendations available yet.'}</p>
-        </div>
-      )}
-    </section>
-  );
+      <div className="home__rails">
+        {addError && <p className="form-error" role="alert">{addError}</p>}
 
-  // ── trending on TMDB ──
-  const trendingSection = (trendingLoading || trendingError || trending.length > 0) && (
-    <section className="home__section" aria-label="Trending this week">
-      <div className="section-header">
-        <div className="section-header__left">
-          <h2>Trending This Week</h2>
-          <span className="section-header__sub">From TMDB</span>
-        </div>
-      </div>
+        {user && watching.length > 0 && (
+          <Rail title="Continue watching" sub={`${watching.length} in progress`}>
+            {watching.slice(0, 6).map((t) => <FixtureCard key={t.id} title={t} onOpen={openTitle} />)}
+          </Rail>
+        )}
 
-      {addError && <p className="form-error" role="alert">{addError}</p>}
+        {user && (
+          <Rail
+            title="Recommended for you"
+            sub={recs?.source === 'ai' ? 'Picked by Claude from your ratings' : 'Based on your highest-rated genres'}
+            empty={
+              recsLoading ? <RailEmpty>Finding titles that fit your taste…</RailEmpty>
+              : recommendations.length === 0 ? <RailEmpty>{NO_REC_MSG[recs?.reason] ?? 'No recommendations yet.'}</RailEmpty>
+              : undefined
+            }
+          >
+            {recommendations.map((t) => <FixtureCard key={t.id} title={t} reason={t.ai_reason} onOpen={openTitle} />)}
+          </Rail>
+        )}
 
-      {trendingLoading && (
-        <div className="rec-loading" role="status" aria-label="Loading trending titles">
-          <IconSpinner />
-          <span>Loading trending titles…</span>
-        </div>
-      )}
-
-      {!trendingLoading && trendingError && (
-        <div className="home__empty" role="status">
-          <p>Trending titles are unavailable right now. {trendingError}</p>
-        </div>
-      )}
-
-      {!trendingLoading && !trendingError && trending.length > 0 && (
-        <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
-          {trending.map((item) => (
-            <TrendingCard
+        <Rail
+          title="Trending this week"
+          sub="From TMDB"
+          empty={
+            trendingLoading ? <RailEmpty>Loading trending titles…</RailEmpty>
+            : trendingError ? <RailEmpty>Trending titles are unavailable right now. {trendingError}</RailEmpty>
+            : undefined
+          }
+        >
+          {trending.slice(0, 9).map((item) => (
+            <FixtureCard
               key={`${item.type}-${item.tmdb_id}`}
               item={item}
               catalogId={catalogByTmdbId.get(item.tmdb_id)}
               adding={addingTmdbId === item.tmdb_id}
               onAdd={handleAddTrending}
-              onOpen={(id) => navigate(`/title/${id}`)}
+              onOpen={openTitle}
             />
           ))}
-        </motion.div>
-      )}
-    </section>
-  );
+        </Rail>
 
-  if (loading) return <PageLoading />;
-  if (error)   return <PageError message={`Failed to load: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />;
-
-  return (
-    <main className="page">
-
-      {/* ── page heading ── */}
-      <div className="home__header">
-        <h1 className="page__heading">{greeting}</h1>
-        {!user && (
-          <p className="home__header-sub">
-            Browse what is trending. Log in to build your catalog, rate titles and get picks made for you.
-          </p>
+        {user && (
+          <Rail
+            title="Recently added"
+            action={titles.length > 0 && <button className="btn btn--ghost btn--sm" onClick={() => navigate('/catalog')}>View all</button>}
+            empty={titles.length === 0
+              ? <RailEmpty>Nothing here yet. Add a title from Trending or the Catalog.</RailEmpty>
+              : undefined}
+          >
+            {recent.map((t) => <FixtureCard key={t.id} title={t} onOpen={openTitle} />)}
+          </Rail>
         )}
-        {stats && (
-          <p className="home__header-sub">
-            {stats.total === 0
-              ? 'No titles yet — add your first one below.'
-              : `${stats.total} title${stats.total !== 1 ? 's' : ''} · ${stats.completed} completed`}
-          </p>
+
+        {!user && (
+          <section className="home__signup">
+            <h2 className="home__signup-title">Keep score of everything you watch</h2>
+            <p>Make a free account to save titles, rate them from 1 to 10 and get picks based on your taste. Your data stays on this computer.</p>
+            <button className="btn btn--primary btn--lg" onClick={() => openLoginModal()}>Create an account</button>
+          </section>
         )}
       </div>
-
-      {/* ── stat strip ── */}
-      {stats && (
-        <motion.div
-          className="home__stat-strip"
-          aria-label="Collection summary"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.22, ease: 'easeOut' } }}
-        >
-          <StatPill label="Total"     value={stats.total}     icon={IconFilm}  accent />
-          <StatPill label="Watching"  value={stats.watching}  icon={IconPlay} />
-          <StatPill label="Completed" value={stats.completed} icon={IconCheck} />
-          <StatPill label="Pending"   value={stats.pending}   icon={IconClock} />
-          {stats.avgRating && (
-            <StatPill label="Avg Rating" value={`${stats.avgRating}/10`} icon={IconStar} />
-          )}
-        </motion.div>
-      )}
-
-      {/* guests: trending leads; users: personal picks first */}
-      {user ? <>{recommendationsSection}{trendingSection}</> : <>{trendingSection}{recommendationsSection}</>}
-
-      {/* ── recently added ── */}
-      {user && (
-      <section className="home__section" aria-label="Recently added">
-        <div className="section-header">
-          <div className="section-header__left">
-            <h2>Recently Added</h2>
-          </div>
-          <button className="btn btn--ghost btn--sm" onClick={() => navigate('/catalog')}>
-            View all
-          </button>
-        </div>
-
-        {recent.length === 0 ? (
-          <div className="home__empty" role="status">
-            <div className="home__empty__icon-wrap"><IconPlus /></div>
-            <p>No titles yet.</p>
-            <button className="btn btn--primary" onClick={() => requireAuth(() => navigate('/catalog'))}>
-              Add your first title
-            </button>
-          </div>
-        ) : (
-          <motion.div className="title-grid" variants={gridVariants} initial="hidden" animate="visible">
-            {recent.map((t) => (
-              <TitleCard key={t.id} title={t} onClick={(id) => navigate(`/title/${id}`)} />
-            ))}
-          </motion.div>
-        )}
-      </section>
-      )}
-
     </main>
   );
-}
-
-function getTimeOfDay() {
-  const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 18) return 'afternoon';
-  return 'evening';
 }

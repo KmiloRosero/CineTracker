@@ -20,6 +20,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
+    "@fontsource/anton": "^5.2.5",
+    "@fontsource/barlow": "^5.2.5",
+    "@fontsource/barlow-condensed": "^5.2.5",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^9.6.0",
     "framer-motion": "^14.0.0",

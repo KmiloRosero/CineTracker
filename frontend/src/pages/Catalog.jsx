@@ -426,7 +426,7 @@ export default function Catalog() {
                     style={{ fontSize: '.76rem', textAlign: 'left' }}
                     onClick={() => setModalMode('autocomplete')}
                   >
-                    ← Back to TMDB search
+                    Back to TMDB search
                   </button>
                 </div>
                 <button className="modal__close" onClick={closeModal} aria-label="Close"><IconClose /></button>

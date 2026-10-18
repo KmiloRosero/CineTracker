@@ -113,6 +113,49 @@ function getTotals(userId) {
   return row;
 }
 
+/**
+ * This month against last month for the stats that have dated history:
+ * titles added, completed watches, hours watched and average score of watches.
+ * (Status changes are not dated, so "watching" has no trend.)
+ */
+function getMonthlyTrends(userId, now = new Date()) {
+  const [previous, current] = lastMonths(2, now);
+  const db = getDb();
+
+  const added = db.prepare(`
+    SELECT strftime('%Y-%m', added_at) AS month, COUNT(*) AS n
+    FROM titles WHERE user_id = ? AND strftime('%Y-%m', added_at) IN (?, ?)
+    GROUP BY month
+  `).all(userId, previous, current);
+
+  // completed watches: dated records, or the update date for completed titles without records
+  const watches = db.prepare(`
+    SELECT month, COUNT(*) AS n, ROUND(SUM(COALESCE(runtime, 0)) / 60.0, 1) AS hours,
+           ROUND(AVG(rating), 1) AS avgRating
+    FROM (
+      SELECT strftime('%Y-%m', r.watched_date) AS month, t.runtime, r.rating
+      FROM records r JOIN titles t ON t.id = r.title_id
+      WHERE r.user_id = ? AND r.status = 'completed'
+      UNION ALL
+      SELECT strftime('%Y-%m', t.updated_at) AS month, t.runtime, t.rating
+      FROM titles t
+      WHERE t.user_id = ? AND t.status = 'completed'
+        AND NOT EXISTS (SELECT 1 FROM records r WHERE r.title_id = t.id)
+    )
+    WHERE month IN (?, ?)
+    GROUP BY month
+  `).all(userId, userId, previous, current);
+
+  const pick = (rows, month, key) => rows.find((r) => r.month === month)?.[key] ?? 0;
+  const pickOrNull = (rows, month, key) => rows.find((r) => r.month === month)?.[key] ?? null;
+  return {
+    titlesAdded:   { current: pick(added, current, 'n'),       previous: pick(added, previous, 'n') },
+    completed:     { current: pick(watches, current, 'n'),     previous: pick(watches, previous, 'n') },
+    hours:         { current: pick(watches, current, 'hours'), previous: pick(watches, previous, 'hours') },
+    averageRating: { current: pickOrNull(watches, current, 'avgRating'), previous: pickOrNull(watches, previous, 'avgRating') },
+  };
+}
+
 /** Everything the Statistics page needs in one call. */
 function getOverview(userId) {
   const totals = getTotals(userId);
@@ -132,10 +175,11 @@ function getOverview(userId) {
     topGenres:         getTopGenres(userId),
     topRatedGenres:    getTopRatedGenres(userId),
     monthlyActivity:   getMonthlyWatched(userId),
+    trends:            getMonthlyTrends(userId),
   };
 }
 
 module.exports = {
   getGenreCounts, getTopGenres, getTopRatedGenres, getMonthlyWatched,
-  getTotalHours, getOverview, lastMonths,
+  getTotalHours, getMonthlyTrends, getOverview, lastMonths,
 };

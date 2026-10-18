@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
@@ -8,6 +8,7 @@ import Statistics from './pages/Statistics';
 import Login from './pages/Login';
 import ThemeToggle from './components/ThemeToggle';
 import LoginModal from './components/LoginModal';
+import Wordmark from './components/Wordmark';
 import { useAuth } from './context/AuthContext';
 
 const NAV_LINKS = [
@@ -63,7 +64,6 @@ export function PageWrapper({ children }) {
 
 function Sidebar() {
   const { user, logout, openLoginModal } = useAuth();
-  const navigate = useNavigate();
 
   async function handleLogout() {
     await logout();
@@ -73,8 +73,7 @@ function Sidebar() {
   return (
     <nav className="app-sidebar" aria-label="Main navigation">
       <div className="app-sidebar__logo">
-        <div className="app-sidebar__logo-mark" aria-hidden="true">🎥</div>
-        <span>Cine<span style={{ color: 'var(--accent)' }}>Tracker</span></span>
+        <Wordmark />
       </div>
 
       {NAV_LINKS.map(({ to, label, icon }) => (
@@ -84,8 +83,21 @@ function Sidebar() {
           end={to === '/'}
           className={({ isActive }) => `sidebar-nav__link${isActive ? ' active' : ''}`}
         >
-          <NavIcon name={icon} />
-          {label}
+          {({ isActive }) => (
+            <>
+              {/* one green slab slides between the active links */}
+              {isActive && (
+                <motion.span
+                  className="sidebar-nav__highlight"
+                  layoutId="nav-highlight"
+                  transition={{ type: 'spring', stiffness: 520, damping: 42 }}
+                  aria-hidden="true"
+                />
+              )}
+              <NavIcon name={icon} />
+              <span className="sidebar-nav__label">{label}</span>
+            </>
+          )}
         </NavLink>
       ))}
 
@@ -125,6 +137,9 @@ function Sidebar() {
 export default function App() {
   const { loading } = useAuth();
   const location = useLocation();
+  // Moving between titles keeps the showcase mounted so it can animate the swap itself.
+  const isShowcase = location.pathname.startsWith('/title/') && location.pathname !== '/title/new';
+  const routeKey = isShowcase ? '/title' : location.pathname;
 
   if (loading) return <div className="page-loading">Loading…</div>;
 
@@ -135,7 +150,7 @@ export default function App() {
 
       <main className="app-content">
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Routes location={location} key={routeKey}>
             {/* /login stays available for direct navigation */}
             <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
 

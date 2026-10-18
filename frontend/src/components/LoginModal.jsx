@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import Wordmark from './Wordmark';
 
 const shakeVariants = {
   idle:  { x: 0 },
@@ -139,7 +140,7 @@ export default function LoginModal() {
             {/* header */}
             <div className="modal__header">
               <div className="login-modal__brand">
-                <span className="login-modal__logo">🎥</span>
+                <Wordmark size="sm" />
                 <div>
                   <h2 className="login-modal__title">
                     {mode === 'login' ? 'Sign in to continue' : 'Create an account'}

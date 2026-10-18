@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import RatingStars from './RatingStars';
+import ScoreBug from './ScoreBug';
 import { cardVariants } from './cardAnimations';
 
 const STATUS_LABELS = {
@@ -74,7 +74,7 @@ export default function TitleCard({ title, onClick, onDelete }) {
     <motion.article
       className="title-card"
       variants={cardVariants}
-      whileHover={{ y: -4, boxShadow: '0 8px 28px rgba(0,0,0,.65)', transition: { duration: 0.18 } }}
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } }}
       whileTap={{ scale: 0.97, transition: { duration: 0.1 } }}
       onClick={() => onClick?.(title.id)}
       role="button"
@@ -108,7 +108,7 @@ export default function TitleCard({ title, onClick, onDelete }) {
           {title.runtime && <span>{title.runtime}m</span>}
         </p>
         {rating != null && rating > 0 && (
-          <RatingStars value={rating} readonly size="sm" />
+          <ScoreBug value={rating} readonly size="sm" />
         )}
       </div>
 

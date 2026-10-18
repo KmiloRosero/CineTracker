@@ -67,6 +67,23 @@ describe('statistics overview', () => {
     expect(o.monthlyActivity.every((m) => m.n === 0)).toBe(true);
   });
 
+  it('compares this month with last month for dated stats', async () => {
+    const u = await createUser();
+    const now = new Date();
+    const lastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 10)).toISOString();
+    const a = titleService.addTitle(u.id, { title: 'Now', type: 'movie', runtime: 120 });
+    const b = titleService.addTitle(u.id, { title: 'Before', type: 'movie', runtime: 60 });
+    recordService.addRecord(u.id, { title_id: a.id, rating: 9 });
+    recordService.addRecord(u.id, { title_id: a.id, rating: 7 });
+    recordService.addRecord(u.id, { title_id: b.id, rating: 6, watched_date: lastMonth });
+
+    const t = stats.getOverview(u.id).trends;
+    expect(t.titlesAdded).toEqual({ current: 2, previous: 0 });
+    expect(t.completed).toEqual({ current: 2, previous: 1 });
+    expect(t.hours).toEqual({ current: 4, previous: 1 });
+    expect(t.averageRating).toEqual({ current: 8, previous: 6 });
+  });
+
   it('builds month keys across a year boundary', () => {
     expect(stats.lastMonths(3, new Date(Date.UTC(2026, 0, 10)))).toEqual(['2025-11', '2025-12', '2026-01']);
   });

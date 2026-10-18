@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import Wordmark from '../components/Wordmark';
 
 // ── animation variants ────────────────────────────────────────────────────
 const shakeVariants = {
@@ -120,8 +121,7 @@ export default function Login() {
       >
         {/* ── brand ── */}
         <div className="login-card__brand">
-          <div className="login-card__logo-mark" aria-hidden="true">🎥</div>
-          <span className="login-card__logo-name">Cine<span>Tracker</span></span>
+          <Wordmark size="lg" />
           <span className="login-card__tagline">Your personal movie &amp; series journal</span>
         </div>
 
