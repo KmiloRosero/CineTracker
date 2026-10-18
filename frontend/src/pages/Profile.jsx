@@ -69,13 +69,13 @@ function ProfileForm({ user, onSaved }) {
 
   async function save(e) {
     e.preventDefault();
-    if (!name.trim()) { setError('Name is required.'); return; }
+    if (!name.trim()) { setError('El nombre es obligatorio.'); return; }
     setSaving(true);
     setError(null);
     try {
       const updated = unwrap(await window.electronAPI.updateProfile({ name, avatarUrl: avatar ?? null }));
       onSaved(updated);
-      showToast({ message: 'Profile saved.' });
+      showToast({ message: 'Perfil guardado.' });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -92,21 +92,21 @@ function ProfileForm({ user, onSaved }) {
         <div className="avatar-field__actions">
           <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" id="avatar-file" onChange={pick} />
           <button type="button" className="btn btn--ghost" onClick={() => fileRef.current?.click()}>
-            <IconUpload size={16} /> {avatar ? 'Change photo' : 'Upload photo'}
+            <IconUpload size={16} /> {avatar ? 'Cambiar foto' : 'Subir foto'}
           </button>
-          {avatar && <button type="button" className="btn btn--ghost" onClick={() => setAvatar(null)}>Remove</button>}
-          <p className="field-hint">PNG, JPEG or WebP. It is cropped to a square.</p>
+          {avatar && <button type="button" className="btn btn--ghost" onClick={() => setAvatar(null)}>Quitar</button>}
+          <p className="field-hint">PNG, JPEG o WebP. Se recorta en forma cuadrada.</p>
         </div>
       </div>
 
-      <Field id="profile-name" label="Name" error={error}>
+      <Field id="profile-name" label="Nombre" error={error}>
         <input id="profile-name" value={name} maxLength={60} onChange={(e) => { setName(e.target.value); setError(null); }} aria-invalid={Boolean(error)} aria-describedby={error ? 'profile-name-error' : undefined} />
       </Field>
-      <p className="settings-readonly"><span className="form-group__label">Email</span> {user.email}</p>
+      <p className="settings-readonly"><span className="form-group__label">Correo</span> {user.email}</p>
 
       <div className="form-actions form-actions--start">
         <button type="submit" className="btn btn--primary" disabled={!dirty || saving}>
-          {saving && <IconSpinner />} Save profile
+          {saving && <IconSpinner />} Guardar perfil
         </button>
       </div>
     </form>
@@ -124,10 +124,10 @@ function PasswordForm() {
 
   function validate() {
     const e = {};
-    if (!current) e.current = 'Enter your current password.';
-    if (next.length < MIN_PASSWORD) e.next = `Use at least ${MIN_PASSWORD} characters.`;
-    else if (next === current) e.next = 'Choose a password different from the current one.';
-    if (confirm !== next) e.confirm = 'The passwords do not match.';
+    if (!current) e.current = 'Escribe tu contraseña actual.';
+    if (next.length < MIN_PASSWORD) e.next = `Usa al menos ${MIN_PASSWORD} caracteres.`;
+    else if (next === current) e.next = 'Elige una contraseña distinta de la actual.';
+    if (confirm !== next) e.confirm = 'Las contraseñas no coinciden.';
     return e;
   }
 
@@ -140,7 +140,7 @@ function PasswordForm() {
     try {
       unwrap(await window.electronAPI.changePassword(current, next));
       setCurrent(''); setNext(''); setConfirm('');
-      showToast({ message: 'Password changed.' });
+      showToast({ message: 'Contraseña cambiada.' });
     } catch (err) {
       setErrors({ form: err.message });
     } finally {
@@ -153,19 +153,19 @@ function PasswordForm() {
   return (
     <form onSubmit={save} noValidate>
       {errors.form && <p className="form-error" role="alert">{errors.form}</p>}
-      <Field id="pw-current" label="Current password" error={errors.current}>
+      <Field id="pw-current" label="Contraseña actual" error={errors.current}>
         <input id="pw-current" type="password" autoComplete="current-password" value={current} onChange={(e) => { setCurrent(e.target.value); clear('current'); }} aria-invalid={Boolean(errors.current)} />
       </Field>
       <div className="form-row">
-        <Field id="pw-new" label="New password" error={errors.next} hint={`At least ${MIN_PASSWORD} characters.`}>
+        <Field id="pw-new" label="Nueva contraseña" error={errors.next} hint={`Al menos ${MIN_PASSWORD} caracteres.`}>
           <input id="pw-new" type="password" autoComplete="new-password" value={next} onChange={(e) => { setNext(e.target.value); clear('next'); }} aria-invalid={Boolean(errors.next)} />
         </Field>
-        <Field id="pw-confirm" label="Repeat new password" error={errors.confirm}>
+        <Field id="pw-confirm" label="Repite la nueva contraseña" error={errors.confirm}>
           <input id="pw-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => { setConfirm(e.target.value); clear('confirm'); }} aria-invalid={Boolean(errors.confirm)} />
         </Field>
       </div>
       <div className="form-actions form-actions--start">
-        <button type="submit" className="btn btn--primary" disabled={saving}>{saving && <IconSpinner />} Change password</button>
+        <button type="submit" className="btn btn--primary" disabled={saving}>{saving && <IconSpinner />} Cambiar contraseña</button>
       </div>
     </form>
   );
@@ -183,34 +183,34 @@ export default function Profile() {
   if (!user) {
     return (
       <main className="page">
-        <h1 className="page__heading">Profile</h1>
-        <GuestPrompt title="Your account lives here" message="Log in to edit your name and photo, change your password or manage your data." />
+        <h1 className="page__heading">Perfil</h1>
+        <GuestPrompt title="Aquí vive tu cuenta" message="Inicia sesión para editar tu nombre y foto, cambiar tu contraseña o gestionar tus datos." />
       </main>
     );
   }
 
   async function deleteAccount() {
-    if (!deletePassword) throw new Error('Enter your password to confirm.');
+    if (!deletePassword) throw new Error('Escribe tu contraseña para confirmar.');
     unwrap(await window.electronAPI.deleteAccount(deletePassword));
     forgetUser();
-    showToast({ message: 'Your account and its data were deleted.' });
+    showToast({ message: 'Se eliminaron tu cuenta y sus datos.' });
     navigate('/', { replace: true });
   }
 
   return (
     <main className="page profile">
       <header className="page__header">
-        <h1 className="page__heading">Profile &amp; settings</h1>
+        <h1 className="page__heading">Perfil y ajustes</h1>
       </header>
 
       <motion.div className="settings" initial="hidden" animate="visible">
-        <Section index={0} title="Profile" description="How you appear in the sidebar. Only you can see it.">
+        <Section index={0} title="Perfil" description="Cómo apareces en la barra lateral. Solo tú lo ves.">
           <ProfileForm user={user} onSaved={updateUser} />
         </Section>
 
-        <Section index={1} title="Appearance" description="Dark suits evening viewing; light suits a bright room.">
-          <div className="segmented segmented--page" role="radiogroup" aria-label="Theme">
-            {[['dark', 'Dark', IconMoon], ['light', 'Light', IconSun]].map(([value, label, Icon]) => (
+        <Section index={1} title="Apariencia" description="El oscuro va bien de noche; el claro, en una habitación iluminada.">
+          <div className="segmented segmented--page" role="radiogroup" aria-label="Tema">
+            {[['dark', 'Oscuro', IconMoon], ['light', 'Claro', IconSun]].map(([value, label, Icon]) => (
               <button
                 key={value}
                 type="button"
@@ -225,20 +225,21 @@ export default function Profile() {
           </div>
         </Section>
 
-        <Section index={2} title="Password" description="You need your current password to set a new one.">
+        <Section index={2} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
           <PasswordForm />
         </Section>
 
-        <Section index={3} title="About" description="CineTracker keeps your catalogue on this computer.">
+        <Section index={3} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
           <p className="settings-about">
-            Movie and series information and images come from TMDB.
-            This product uses the TMDB API but is not endorsed or certified by TMDB.
+            La información y las imágenes de películas y series provienen de TMDB.
+            Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
+            Las recomendaciones con IA usan Google Gemini.
           </p>
         </Section>
 
-        <Section index={4} danger title="Delete account" description="Deletes your account with every title, watch and list in it. This cannot be undone.">
+        <Section index={4} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
           <button className="btn btn--danger" onClick={() => { setDeletePassword(''); setDeleting(true); }}>
-            <IconTrash size={16} /> Delete my account
+            <IconTrash size={16} /> Eliminar mi cuenta
           </button>
         </Section>
       </motion.div>
@@ -247,12 +248,12 @@ export default function Profile() {
         open={deleting}
         onClose={() => setDeleting(false)}
         onConfirm={deleteAccount}
-        title="Delete account"
-        message="Type your password to permanently delete your account and all of its data."
-        confirmLabel="Delete account"
+        title="Eliminar cuenta"
+        message="Escribe tu contraseña para eliminar para siempre tu cuenta y todos sus datos."
+        confirmLabel="Eliminar cuenta"
       >
         <div className="form-group">
-          <label htmlFor="delete-password">Password</label>
+          <label htmlFor="delete-password">Contraseña</label>
           <input id="delete-password" type="password" autoComplete="current-password" value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} data-autofocus />
         </div>
       </ConfirmDialog>

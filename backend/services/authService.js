@@ -24,49 +24,49 @@ function stripHash(user) {
 }
 
 function validateName(name) {
-  if (typeof name !== 'string' || name.trim() === '') throw new Error('Name is required.');
-  if (name.trim().length > MAX_NAME) throw new Error(`Name must be ${MAX_NAME} characters or fewer.`);
+  if (typeof name !== 'string' || name.trim() === '') throw new Error('El nombre es obligatorio.');
+  if (name.trim().length > MAX_NAME) throw new Error(`El nombre debe tener como máximo ${MAX_NAME} caracteres.`);
   return name.trim();
 }
 
-function validatePassword(password, label = 'Password') {
+function validatePassword(password, label = 'La contraseña') {
   if (typeof password !== 'string' || password.length < MIN_PASSWORD) {
-    throw new Error(`${label} must be at least ${MIN_PASSWORD} characters.`);
+    throw new Error(`${label} debe tener al menos ${MIN_PASSWORD} caracteres.`);
   }
   if (password.length > MAX_PASSWORD) {
-    throw new Error(`${label} must be ${MAX_PASSWORD} characters or fewer.`);
+    throw new Error(`${label} debe tener como máximo ${MAX_PASSWORD} caracteres.`);
   }
 }
 
 function validateAvatar(avatarUrl) {
   if (avatarUrl === null || avatarUrl === undefined) return null;
   if (typeof avatarUrl !== 'string' || !AVATAR_RE.test(avatarUrl)) {
-    throw new Error('Avatar must be a PNG, JPEG or WebP image.');
+    throw new Error('La foto debe ser una imagen PNG, JPEG o WebP.');
   }
-  if (avatarUrl.length > MAX_AVATAR_CHARS) throw new Error('Avatar image is too large.');
+  if (avatarUrl.length > MAX_AVATAR_CHARS) throw new Error('La foto es demasiado grande.');
   return avatarUrl;
 }
 
 function requireUser(userId) {
   const user = userRepo.findById(userId);
-  if (!user) throw new Error('User not found.');
+  if (!user) throw new Error('No se encontró el usuario.');
   return user;
 }
 
 async function verifyPassword(user, password) {
   const ok = typeof password === 'string' && await bcrypt.compare(password, user.password_hash);
-  if (!ok) throw new Error('Current password is incorrect.');
+  if (!ok) throw new Error('La contraseña actual no es correcta.');
 }
 
 async function register(name, email, password) {
   const cleanName = validateName(name);
   if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
-    throw new Error('A valid email address is required.');
+    throw new Error('Escribe un correo electrónico válido.');
   }
   validatePassword(password);
 
   const cleanEmail = email.trim().toLowerCase();
-  if (userRepo.findByEmail(cleanEmail)) throw new Error('An account with that email already exists.');
+  if (userRepo.findByEmail(cleanEmail)) throw new Error('Ya existe una cuenta con ese correo.');
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const user = userRepo.create({ name: cleanName, email: cleanEmail, passwordHash });
@@ -79,13 +79,13 @@ async function register(name, email, password) {
 
 async function login(email, password) {
   if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
-    throw new Error('Invalid email or password.');
+    throw new Error('Correo o contraseña incorrectos.');
   }
   const user = userRepo.findByEmail(email.trim().toLowerCase());
-  if (!user) throw new Error('Invalid email or password.');
+  if (!user) throw new Error('Correo o contraseña incorrectos.');
 
   const match = await bcrypt.compare(password, user.password_hash);
-  if (!match) throw new Error('Invalid email or password.');
+  if (!match) throw new Error('Correo o contraseña incorrectos.');
 
   return stripHash(user);
 }
@@ -97,7 +97,7 @@ function getCurrentUser(userId) {
 /** Updates name and/or avatar. Pass `avatarUrl: null` to remove the avatar. */
 function updateProfile(userId, data) {
   const user = requireUser(userId);
-  if (!data || typeof data !== 'object') throw new Error('Profile data must be a non-null object.');
+  if (!data || typeof data !== 'object') throw new Error('Los datos del perfil no son válidos.');
   const name      = 'name' in data ? validateName(data.name) : user.name;
   const avatarUrl = 'avatarUrl' in data ? validateAvatar(data.avatarUrl) : user.avatar_url;
   return stripHash(userRepo.updateProfile(userId, { name, avatarUrl }));
@@ -106,8 +106,8 @@ function updateProfile(userId, data) {
 async function changePassword(userId, currentPassword, newPassword) {
   const user = requireUser(userId);
   await verifyPassword(user, currentPassword);
-  validatePassword(newPassword, 'New password');
-  if (currentPassword === newPassword) throw new Error('New password must be different from the current one.');
+  validatePassword(newPassword, 'La nueva contraseña');
+  if (currentPassword === newPassword) throw new Error('La nueva contraseña debe ser distinta de la actual.');
   userRepo.updatePasswordHash(userId, await bcrypt.hash(newPassword, SALT_ROUNDS));
   return { ok: true };
 }

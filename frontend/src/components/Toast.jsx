@@ -33,7 +33,7 @@ export function ToastProvider({ children }) {
             >
               <span className="toast__icon">{t.type === 'error' ? <IconAlert size={16} /> : <IconCheck size={16} />}</span>
               <span className="toast__message">{t.message}</span>
-              <button className="toast__dismiss" onClick={() => dismiss(t.id)} aria-label="Dismiss notification">
+              <button className="toast__dismiss" onClick={() => dismiss(t.id)} aria-label="Cerrar notificación">
                 <IconClose size={14} />
               </button>
             </motion.div>

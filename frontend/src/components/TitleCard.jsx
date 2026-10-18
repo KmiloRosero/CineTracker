@@ -3,13 +3,7 @@ import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
 import { tmdbImage } from '../utils/tmdbImage';
 import { cardVariants } from './cardAnimations';
-
-const STATUS_LABELS = {
-  pending:   'Pending',
-  watching:  'Watching',
-  completed: 'Completed',
-  dropped:   'Dropped',
-};
+import { STATUS_LABEL as STATUS_LABELS } from '../utils/labels';
 
 // ── Drawn icons — consistent stroke weight, no emoji ─────────────────────
 function IconFilmPlaceholder() {
@@ -81,7 +75,7 @@ export default function TitleCard({ title, onClick, onDelete }) {
     >
       <div className="title-card__poster">
         {posterUrl ? (
-          <img src={posterUrl} alt={`Poster for ${title.title}`} loading="lazy" />
+          <img src={posterUrl} alt={`Póster de ${title.title}`} loading="lazy" />
         ) : (
           <div className="title-card__poster--placeholder" aria-hidden="true">
             {isMovie ? <IconFilmPlaceholder /> : <IconTvPlaceholder />}
@@ -89,7 +83,7 @@ export default function TitleCard({ title, onClick, onDelete }) {
         )}
         <span
           className={`status-badge status-${title.status}`}
-          aria-label={`Status: ${STATUS_LABELS[title.status]}`}
+          aria-label={`Estado: ${STATUS_LABELS[title.status]}`}
         >
           {STATUS_LABELS[title.status] ?? title.status}
         </span>
@@ -112,7 +106,7 @@ export default function TitleCard({ title, onClick, onDelete }) {
       {onDelete && (
         <motion.button
           className="title-card__delete"
-          aria-label={`Delete ${title.title}`}
+          aria-label={`Eliminar ${title.title}`}
           whileTap={{ scale: 0.88 }}
           onClick={(e) => { e.stopPropagation(); onDelete(title.id); }}
         >

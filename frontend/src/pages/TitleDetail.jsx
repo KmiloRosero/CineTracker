@@ -10,17 +10,11 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
-import { parseGenres, canonicalGenres } from '../utils/genres';
+import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
+import { STATUS_LABEL, STATUS_OPTIONS, typeLabel, formatDate } from '../utils/labels';
 
-const STATUS_OPTIONS = [
-  { value: 'pending',   label: 'Pending' },
-  { value: 'watching',  label: 'Watching' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'dropped',   label: 'Dropped' },
-];
-const STATUS_LABEL = Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]));
 
 const EMPTY_FORM = {
   title: '', original_title: '', type: 'movie', overview: '',
@@ -58,20 +52,16 @@ const IconFilmLarge = () => (
   </svg>
 );
 
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 // ── Showcase: the title "goes to replay" ──────────────────────────────────
 function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
   const reduceMotion = useReducedMotion();
   const [listsOpen, setListsOpen] = useState(false);
-  const genres    = canonicalGenres(title.genres);
+  const genres    = canonicalGenres(title.genres).map(genreLabel);
   const cast      = parseCast(title.cast_members).slice(0, 6);
   const posterSrc = tmdbImage(title.poster_path, 'w780');
   const field     = usePosterColor(tmdbImage(title.poster_path, 'w185'));
   const meta = [
-    title.type === 'movie' ? 'Movie' : 'Series',
+    typeLabel(title.type),
     title.release_year,
     title.runtime ? `${title.runtime} min` : null,
   ].filter(Boolean);
@@ -118,7 +108,7 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
           </div>
 
           {genres.length > 0 && (
-            <ul className="showcase__genres" aria-label="Genres">
+            <ul className="showcase__genres" aria-label="Géneros">
               {genres.map((g) => <li key={g}>{g}</li>)}
             </ul>
           )}
@@ -127,7 +117,7 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
 
           {cast.length > 0 && (
             <div className="showcase__cast">
-              <span className="showcase__label">Starring</span>
+              <span className="showcase__label">Reparto</span>
               <ul>
                 {cast.map((c) => (
                   <li key={`${c.name}-${c.character ?? ''}`}>
@@ -140,12 +130,12 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
           )}
 
           <div className="showcase__score">
-            <span className="showcase__label">Your score</span>
-            <ScoreBug value={title.rating} onChange={onRate} label={`Rate ${title.title}`} />
+            <span className="showcase__label">Tu puntuación</span>
+            <ScoreBug value={title.rating} onChange={onRate} label={`Califica ${title.title}`} />
           </div>
 
           <div className="showcase__status">
-            <span className="showcase__label" id="status-label">Status</span>
+            <span className="showcase__label" id="status-label">Estado</span>
             <div className="segmented" role="radiogroup" aria-labelledby="status-label">
               {STATUS_OPTIONS.map((o) => (
                 <button
@@ -165,13 +155,13 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
           <div className="showcase__actions">
             <button className="btn btn--primary btn--lg" onClick={onMarkWatched} disabled={marking}>
               {marking ? <IconSpinner /> : <IconCheck />}
-              {marking ? 'Saving…' : 'Mark as watched'}
+              {marking ? 'Guardando…' : 'Marcar como visto'}
             </button>
           </div>
 
           {title.notes && (
             <div className="showcase__notes">
-              <span className="showcase__label">Notes</span>
+              <span className="showcase__label">Notas</span>
               <p>{title.notes}</p>
             </div>
           )}
@@ -189,41 +179,41 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
           whileHover={reduceMotion ? undefined : { rotate: POSTER_TILT + 3, scale: 1.02, transition: { duration: 0.35, ease: EASE } }}
         >
           {posterSrc
-            ? <img src={posterSrc} alt={`Poster for ${title.title}`} />
+            ? <img src={posterSrc} alt={`Póster de ${title.title}`} />
             : <div className="showcase__poster-fallback" aria-hidden="true"><IconFilmLarge /></div>}
           <ScoreBug value={title.rating} readonly size="lg" />
         </motion.div>
       </motion.div>
 
       {/* ── right: round side controls ── */}
-      <nav className="side-controls" aria-label="Title controls">
-        <button className="side-controls__btn" onClick={onBack} aria-label="Back"><IconBack /></button>
+      <nav className="side-controls" aria-label="Controles del título">
+        <button className="side-controls__btn" onClick={onBack} aria-label="Volver"><IconBack /></button>
         <div className="side-controls__group">
-          <button className="side-controls__btn" onClick={() => onNavigate(-1)} disabled={!neighbours.prev} aria-label={neighbours.prev ? `Previous: ${neighbours.prev.title}` : 'No previous title'}><IconPrev /></button>
-          <span className="side-controls__count" aria-label={`Title ${neighbours.index + 1} of ${neighbours.total}`}>
+          <button className="side-controls__btn" onClick={() => onNavigate(-1)} disabled={!neighbours.prev} aria-label={neighbours.prev ? `Anterior: ${neighbours.prev.title}` : 'No hay título anterior'}><IconPrev /></button>
+          <span className="side-controls__count" aria-label={`Título ${neighbours.index + 1} de ${neighbours.total}`}>
             {neighbours.total > 0 ? `${neighbours.index + 1}/${neighbours.total}` : ''}
           </span>
-          <button className="side-controls__btn" onClick={() => onNavigate(1)} disabled={!neighbours.next} aria-label={neighbours.next ? `Next: ${neighbours.next.title}` : 'No next title'}><IconNext /></button>
+          <button className="side-controls__btn" onClick={() => onNavigate(1)} disabled={!neighbours.next} aria-label={neighbours.next ? `Siguiente: ${neighbours.next.title}` : 'No hay título siguiente'}><IconNext /></button>
         </div>
-        <button className="side-controls__btn" onClick={onEdit} aria-label="Edit title"><IconEdit /></button>
+        <button className="side-controls__btn" onClick={onEdit} aria-label="Editar título"><IconEdit /></button>
         <div className="side-controls__anchor">
-          <button className="side-controls__btn" onClick={() => setListsOpen((v) => !v)} aria-expanded={listsOpen} aria-label="Add to list"><IconList /></button>
+          <button className="side-controls__btn" onClick={() => setListsOpen((v) => !v)} aria-expanded={listsOpen} aria-label="Agregar a una lista"><IconList /></button>
           <AnimatePresence>
             {listsOpen && <ListMenu titleId={title.id} onClose={() => setListsOpen(false)} />}
           </AnimatePresence>
         </div>
         {/* destructive action kept apart from the rest */}
-        <button className="side-controls__btn side-controls__btn--danger" onClick={onDelete} aria-label="Delete title"><IconTrash /></button>
+        <button className="side-controls__btn side-controls__btn--danger" onClick={onDelete} aria-label="Eliminar título"><IconTrash /></button>
       </nav>
 
       {/* ── below the fold: watch history ── */}
-      <section className="history" aria-label="Watch history">
+      <section className="history" aria-label="Historial">
         <header className="rail__header">
-          <h2 className="rail__title">Watch history</h2>
-          <span className="rail__tag">{records.length === 0 ? 'Not watched yet' : `${records.length} ${records.length === 1 ? 'watch' : 'watches'}`}</span>
+          <h2 className="rail__title">Historial</h2>
+          <span className="rail__tag">{records.length === 0 ? 'Aún sin ver' : `${records.length} ${records.length === 1 ? 'vez' : 'veces'}`}</span>
         </header>
         {records.length === 0 ? (
-          <p className="rail__empty">Use “Mark as watched” to log each time you watch it.</p>
+          <p className="rail__empty">Usa “Marcar como visto” para registrar cada vez que lo veas.</p>
         ) : (
           <ol className="history__list">
             {records.map((r) => (
@@ -231,7 +221,7 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
                 <span className="history__date">{formatDate(r.watched_date)}</span>
                 <ScoreBug value={r.rating} readonly size="sm" />
                 <span className="history__meta">{[r.platform, r.note].filter(Boolean).join(' · ')}</span>
-                <button className="history__remove" onClick={() => onDeleteRecord(r.id)} aria-label={`Remove watch from ${formatDate(r.watched_date)}`}>
+                <button className="history__remove" onClick={() => onDeleteRecord(r.id)} aria-label={`Quitar la vez del ${formatDate(r.watched_date)}`}>
                   <IconClose />
                 </button>
               </li>
@@ -286,7 +276,7 @@ export default function TitleDetail() {
         setCatalog(all);
         setForm({
           ...titleData,
-          genres:       parseGenres(titleData.genres).join(', '),
+          genres:       parseGenres(titleData.genres).map(genreLabel).join(', '),
           release_year: titleData.release_year ?? '',
           runtime:      titleData.runtime ?? '',
           rating:       titleData.rating  ?? 0,
@@ -348,7 +338,7 @@ export default function TitleDetail() {
         release_year: form.release_year ? Number(form.release_year) : null,
         runtime:      form.runtime      ? Number(form.runtime)      : null,
         rating:       form.rating       ? Number(form.rating)       : null,
-        genres: JSON.stringify(form.genres.split(',').map((g) => g.trim()).filter(Boolean)),
+        genres: JSON.stringify(form.genres.split(',').map(genreKey).filter(Boolean)),
       };
       if (isNew) {
         const created = unwrap(await window.electronAPI.addTitle(payload));
@@ -371,7 +361,7 @@ export default function TitleDetail() {
 
   async function confirmDelete() {
     unwrap(await window.electronAPI.deleteTitle(Number(id)));
-    showToast({ message: `"${title.title}" deleted.` });
+    showToast({ message: `"${title.title}" se eliminó.` });
     navigate('/catalog');
   }
 
@@ -425,12 +415,12 @@ export default function TitleDetail() {
   if (!user && !isNew) {
     return (
       <main className="page">
-        <GuestPrompt title="Log in to see this title" message="Titles, ratings and watch history belong to your account." />
+        <GuestPrompt title="Inicia sesión para ver este título" message="Los títulos, las puntuaciones y el historial pertenecen a tu cuenta." />
       </main>
     );
   }
   // keep showing the current title while the next one loads
-  if (loading && !title) return <PageLoading message="Loading title…" />;
+  if (loading && !title) return <PageLoading message="Cargando título…" />;
   if (error && !title && !isNew) return <div className="page-error" role="alert">{error}</div>;
 
   const posterPreview = tmdbImage(form.poster_path, 'w342');
@@ -462,8 +452,8 @@ export default function TitleDetail() {
           open={deleting}
           onClose={() => setDeleting(false)}
           onConfirm={confirmDelete}
-          title="Delete title"
-          message={`Delete “${title.title}” and its watch history? This cannot be undone.`}
+          title="Eliminar título"
+          message={`¿Eliminar “${title.title}” y su historial? No se puede deshacer.`}
         />
       )}
 
@@ -471,17 +461,17 @@ export default function TitleDetail() {
         <main className="page title-edit">
           <div className="page__header title-edit__header">
             <div className="title-edit__heading">
-              <h1 className="page__heading">{isNew ? 'New title' : title?.title}</h1>
+              <h1 className="page__heading">{isNew ? 'Nuevo título' : title?.title}</h1>
               <div className="lower-third">
-                <span className="lower-third__label"><span>{isNew ? 'Manual entry' : 'Editing'}</span></span>
+                <span className="lower-third__label"><span>{isNew ? 'Entrada manual' : 'Editando'}</span></span>
                 <span className="lower-third__meta">
-                  <span>{isNew ? 'Fill in what you know' : [form.type === 'movie' ? 'Movie' : 'Series', form.release_year].filter(Boolean).join(' · ')}</span>
+                  <span>{isNew ? 'Completa lo que sepas' : [typeLabel(form.type), form.release_year].filter(Boolean).join(' · ')}</span>
                 </span>
               </div>
             </div>
             {!isNew && (
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)}>
-                <IconClose /> Cancel
+                <IconClose /> Cancelar
               </button>
             )}
           </div>
@@ -489,76 +479,76 @@ export default function TitleDetail() {
           <div className="title-edit__layout">
             <form className="title-edit__form" onSubmit={handleSubmit} noValidate>
               <div className="form-group">
-                <label htmlFor="title">Title</label>
+                <label htmlFor="title">Título</label>
                 <input id="title" name="title" value={form.title} onChange={handleChange} required autoFocus />
               </div>
 
               <div className="form-group">
-                <label htmlFor="original_title">Original title</label>
+                <label htmlFor="original_title">Título original</label>
                 <input id="original_title" name="original_title" value={form.original_title ?? ''} onChange={handleChange} />
               </div>
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="type">Type</label>
+                  <label htmlFor="type">Tipo</label>
                   <select id="type" name="type" value={form.type} onChange={handleChange}>
-                    <option value="movie">Movie</option>
-                    <option value="series">Series</option>
+                    <option value="movie">Película</option>
+                    <option value="series">Serie</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="status">Status</label>
+                  <label htmlFor="status">Estado</label>
                   <select id="status" name="status" value={form.status} onChange={handleChange}>
                     {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="release_year">Year</label>
+                  <label htmlFor="release_year">Año</label>
                   <input id="release_year" name="release_year" type="number" min="1870" max="2100" value={form.release_year} onChange={handleChange} />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="runtime">Runtime (min)</label>
+                  <label htmlFor="runtime">Duración (min)</label>
                   <input id="runtime" name="runtime" type="number" min="1" value={form.runtime} onChange={handleChange} />
                 </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="genres">Genres (comma separated)</label>
-                <input id="genres" name="genres" value={form.genres} onChange={handleChange} placeholder="Action, Drama, Sci-Fi" />
+                <label htmlFor="genres">Géneros (separados por comas)</label>
+                <input id="genres" name="genres" value={form.genres} onChange={handleChange} placeholder="Acción, Drama, Comedia" />
               </div>
 
               <div className="form-group">
-                <label htmlFor="overview">Overview</label>
+                <label htmlFor="overview">Sinopsis</label>
                 <textarea id="overview" name="overview" rows={4} value={form.overview ?? ''} onChange={handleChange} />
               </div>
 
               <div className="form-group">
-                <span className="form-group__label">Score</span>
+                <span className="form-group__label">Puntuación</span>
                 <ScoreBug
                   value={Number(form.rating) || 0}
                   onChange={(val) => setForm((p) => ({ ...p, rating: val }))}
-                  label="Score"
+                  label="Puntuación"
                 />
               </div>
 
               <div className="form-group">
-                <label htmlFor="notes">Personal notes</label>
+                <label htmlFor="notes">Notas personales</label>
                 <textarea id="notes" name="notes" rows={3} value={form.notes ?? ''} onChange={handleChange} />
               </div>
 
               <div className="form-group">
-                <label htmlFor="poster_path">Poster URL</label>
-                <input id="poster_path" name="poster_path" value={form.poster_path ?? ''} onChange={handleChange} placeholder="https://… or a TMDB path" />
+                <label htmlFor="poster_path">URL del póster</label>
+                <input id="poster_path" name="poster_path" value={form.poster_path ?? ''} onChange={handleChange} placeholder="https://… o una ruta de TMDB" />
               </div>
 
               <div className="form-actions">
                 <button type="submit" className="btn btn--primary btn--lg" disabled={saving}>
-                  {saving ? <><IconSpinner /> Saving…</> : isNew ? 'Create title' : 'Save changes'}
+                  {saving ? <><IconSpinner /> Guardando…</> : isNew ? 'Crear título' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
 
-            <aside className="title-edit__preview" aria-label="Poster preview">
+            <aside className="title-edit__preview" aria-label="Vista previa del póster">
               {posterPreview
                 ? <img src={posterPreview} alt="" />
                 : <div className="showcase__poster-fallback"><IconFilmLarge /></div>}

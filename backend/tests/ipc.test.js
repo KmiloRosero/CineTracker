@@ -36,7 +36,7 @@ describe('IPC handlers', () => {
 
   it('refuses data changes from guests and returns empty reads', async () => {
     expect(await ipc.invoke('titles:add', { title: 'X', type: 'movie' }))
-      .toEqual({ error: 'You need to log in to do that.' });
+      .toEqual({ error: 'Necesitas iniciar sesión para hacer eso.' });
     expect(await ipc.invoke('titles:getAll', {})).toEqual([]);
     expect(await ipc.invoke('stats:getTotalHours')).toEqual({ totalHours: 0 });
   });
@@ -51,8 +51,8 @@ describe('IPC handlers', () => {
 
   it('returns validation messages as-is', async () => {
     await ipc.invoke('auth:login', 'ana-ipc@test.co', 'secret123');
-    expect(await ipc.invoke('titles:add', { title: '', type: 'movie' })).toEqual({ error: 'Title is required.' });
-    expect(await ipc.invoke('app:setTheme', 'neon')).toEqual({ error: 'Theme must be "light" or "dark".' });
+    expect(await ipc.invoke('titles:add', { title: '', type: 'movie' })).toEqual({ error: 'El título es obligatorio.' });
+    expect(await ipc.invoke('app:setTheme', 'neon')).toEqual({ error: 'El tema debe ser "light" o "dark".' });
   });
 
   it('hides internal database errors behind a generic message', async () => {
@@ -61,7 +61,7 @@ describe('IPC handlers', () => {
     env.db.exec('ALTER TABLE lists RENAME TO lists_tmp');
     try {
       const result = await ipc.invoke('lists:create', 'Broken');
-      expect(result).toEqual({ error: 'Something went wrong. Please try again.' });
+      expect(result).toEqual({ error: 'Algo salió mal. Inténtalo de nuevo.' });
       expect(JSON.stringify(result)).not.toMatch(/SQLITE|no such table/);
       expect(spy).toHaveBeenCalled();
     } finally {
@@ -72,7 +72,7 @@ describe('IPC handlers', () => {
 
   it('logs out after deleting the account', async () => {
     await ipc.invoke('auth:register', 'Temp', 'temp-ipc@test.co', 'secret123');
-    expect(await ipc.invoke('auth:deleteAccount', 'wrong')).toEqual({ error: 'Current password is incorrect.' });
+    expect(await ipc.invoke('auth:deleteAccount', 'wrong')).toEqual({ error: 'La contraseña actual no es correcta.' });
     expect(await ipc.invoke('auth:deleteAccount', 'secret123')).toEqual({ deleted: true });
     expect(await ipc.invoke('auth:getCurrentUser')).toBeNull();
   });

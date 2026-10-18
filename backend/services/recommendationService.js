@@ -1,5 +1,5 @@
 const titleRepository = require('../repositories/titleRepository.js');
-const { canonicalGenres } = require('../utils/genres.js');
+const { canonicalGenres, genreLabel } = require('../utils/genres.js');
 
 const MIN_RATING = 8;
 const TOP_N = 5;
@@ -17,14 +17,14 @@ function buildGenreFrequency(titles) {
 
 function joinNames(names) {
   if (names.length <= 1) return names[0] ?? '';
-  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return `${names.slice(0, -1).join(', ')} y ${names[names.length - 1]}`;
 }
 
 /** One sentence saying which of the user's favourite genres a title shares. */
 function explain(matchedGenres) {
-  const top = matchedGenres.slice(0, 3);
-  const noun = top.length === 1 ? 'a genre' : 'genres';
-  return `It matches ${joinNames(top)}, ${noun} you rated ${MIN_RATING} or higher.`;
+  const top = matchedGenres.slice(0, 3).map(genreLabel);
+  const noun = top.length === 1 ? 'un género que' : 'géneros que';
+  return `Coincide con ${joinNames(top)}, ${noun} calificaste con ${MIN_RATING} o más.`;
 }
 
 function getRecommendations(userId) {

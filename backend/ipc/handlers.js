@@ -9,7 +9,7 @@ const tmdbService             = require('../services/tmdbService.js');
 const { getDb }               = require('../db/database.js');
 const { setSession, getSession, clearSession } = require('../utils/session.js');
 
-const INTERNAL_ERROR = 'Something went wrong. Please try again.';
+const INTERNAL_ERROR = 'Algo salió mal. Inténtalo de nuevo.';
 
 // Validation errors thrown by services carry user-facing messages. Database and
 // programming errors do not: log them here and send the renderer a generic one.
@@ -39,7 +39,7 @@ function safe(fn) {
 function authed(fn) {
   return safe((...args) => {
     const userId = getSession();
-    if (!userId) throw new Error('You need to log in to do that.');
+    if (!userId) throw new Error('Necesitas iniciar sesión para hacer eso.');
     return fn(userId, ...args);
   });
 }
@@ -94,7 +94,7 @@ function registerIpcHandlers(ipcMain) {
     return getDb().prepare('SELECT value FROM settings WHERE key = ?').get('theme')?.value;
   }));
   ipcMain.handle('app:setTheme', safe((theme) => {
-    if (theme !== 'light' && theme !== 'dark') throw new Error('Theme must be "light" or "dark".');
+    if (theme !== 'light' && theme !== 'dark') throw new Error('El tema debe ser "light" o "dark".');
     getDb()
       .prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)')
       .run('theme', theme);

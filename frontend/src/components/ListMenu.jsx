@@ -78,14 +78,14 @@ export default function ListMenu({ titleId, onClose }) {
       ref={ref}
       className="list-menu"
       role="dialog"
-      aria-label="Add to list"
+      aria-label="Agregar a una lista"
       initial={{ opacity: 0, x: 8 }}
       animate={{ opacity: 1, x: 0, transition: { duration: 0.18 } }}
     >
-      <p className="list-menu__title">Add to list</p>
+      <p className="list-menu__title">Agregar a una lista</p>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {lists === null && !error && <p className="list-menu__empty">Loading lists…</p>}
-      {lists?.length === 0 && <p className="list-menu__empty">No lists yet. Create one below.</p>}
+      {lists === null && !error && <p className="list-menu__empty">Cargando listas…</p>}
+      {lists?.length === 0 && <p className="list-menu__empty">Aún no tienes listas. Crea una aquí abajo.</p>}
       {lists?.length > 0 && (
         <ul className="list-menu__items">
           {lists.map((l) => (
@@ -100,13 +100,13 @@ export default function ListMenu({ titleId, onClose }) {
       )}
       <form className="list-menu__create" onSubmit={create}>
         <input
-          aria-label="New list name"
-          placeholder="New list name"
+          aria-label="Nombre de la nueva lista"
+          placeholder="Nombre de la nueva lista"
           value={name}
           maxLength={60}
           onChange={(e) => setName(e.target.value)}
         />
-        <button type="submit" className="btn btn--primary btn--sm" disabled={busy || !name.trim()}>Create</button>
+        <button type="submit" className="btn btn--primary btn--sm" disabled={busy || !name.trim()}>Crear</button>
       </form>
     </motion.div>
   );

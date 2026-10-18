@@ -229,7 +229,7 @@ describe('without any AI key', () => {
     const result = await getAIRecommendations(user.id);
     expect(result.recommendations[0]).toMatchObject({
       title: 'Thief',
-      explanation: 'It matches Crime, a genre you rated 8 or higher.',
+      explanation: 'Coincide con Crimen, un género que calificaste con 8 o más.',
     });
   });
 });

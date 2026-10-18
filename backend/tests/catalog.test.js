@@ -22,19 +22,19 @@ describe('titles', () => {
 
   it('allows the same TMDB title for different users but not twice for one user', () => {
     expect(titleService.addTitle(bo.id, dune).user_id).toBe(bo.id);
-    expect(() => titleService.addTitle(ana.id, dune)).toThrow('"Dune" is already in your catalog.');
+    expect(() => titleService.addTitle(ana.id, dune)).toThrow('"Dune" ya está en tu catálogo.');
   });
 
   it.each([
-    [{ title: '', type: 'movie' }, 'Title is required.'],
-    [{ title: 'X', type: 'documentary' }, 'Type must be one of'],
-    [{ title: 'X', type: 'movie', rating: 11 }, 'between 1 and 10'],
-    [{ title: 'X', type: 'movie', status: 'binged' }, 'Status must be one of'],
-    [{ title: 'X', type: 'movie', release_year: 1700 }, 'Release year'],
-    [{ title: 'X', type: 'movie', genres: '{"not":"a list"}' }, 'Genres must be a list'],
-    [{ title: 'X'.repeat(201), type: 'movie' }, '200 characters'],
-    [{ title: 'X', type: 'movie', cast_members: '[{"character":"no name"}]' }, 'Cast must be a list'],
-    [{ title: 'X', type: 'movie', cast_members: 'not json' }, 'Cast must be a list'],
+    [{ title: '', type: 'movie' }, 'El título es obligatorio.'],
+    [{ title: 'X', type: 'documentary' }, 'El tipo debe ser uno de'],
+    [{ title: 'X', type: 'movie', rating: 11 }, 'entre 1 y 10'],
+    [{ title: 'X', type: 'movie', status: 'binged' }, 'El estado debe ser uno de'],
+    [{ title: 'X', type: 'movie', release_year: 1700 }, 'El año de estreno'],
+    [{ title: 'X', type: 'movie', genres: '{"not":"a list"}' }, 'Los géneros deben ser una lista'],
+    [{ title: 'X'.repeat(201), type: 'movie' }, '200 caracteres'],
+    [{ title: 'X', type: 'movie', cast_members: '[{"character":"no name"}]' }, 'El reparto debe ser una lista'],
+    [{ title: 'X', type: 'movie', cast_members: 'not json' }, 'El reparto debe ser una lista'],
   ])('rejects invalid input %#', (input, message) => {
     expect(() => titleService.addTitle(ana.id, input)).toThrow(message);
   });
@@ -48,9 +48,9 @@ describe('titles', () => {
   it("hides other users' titles from reads, updates and deletes", () => {
     const anas = titleService.getAllTitles(ana.id)[0];
     expect(titleService.getAllTitles(bo.id).map((t) => t.user_id)).toEqual([bo.id]);
-    expect(() => titleService.getTitleWithRecords(bo.id, anas.id)).toThrow('Title not found.');
-    expect(() => titleService.updateTitle(bo.id, anas.id, { rating: 5 })).toThrow('Title not found.');
-    expect(() => titleService.deleteTitle(bo.id, anas.id)).toThrow('Title not found.');
+    expect(() => titleService.getTitleWithRecords(bo.id, anas.id)).toThrow('No se encontró el título.');
+    expect(() => titleService.updateTitle(bo.id, anas.id, { rating: 5 })).toThrow('No se encontró el título.');
+    expect(() => titleService.deleteTitle(bo.id, anas.id)).toThrow('No se encontró el título.');
   });
 
   it('ignores columns that callers must not write (id, user_id, unknown keys)', () => {
@@ -94,17 +94,17 @@ describe('watch records', () => {
   });
 
   it('rejects bad dates, ratings and statuses', () => {
-    expect(() => recordService.addRecord(ana.id, { title_id: title.id, watched_date: 'yesterday-ish' })).toThrow('valid date');
-    expect(() => recordService.addRecord(ana.id, { title_id: title.id, rating: 0 })).toThrow('between 1 and 10');
+    expect(() => recordService.addRecord(ana.id, { title_id: title.id, watched_date: 'yesterday-ish' })).toThrow('no es válida');
+    expect(() => recordService.addRecord(ana.id, { title_id: title.id, rating: 0 })).toThrow('entre 1 y 10');
     const r = recordService.addRecord(ana.id, { title_id: title.id });
-    expect(() => recordService.updateRecordStatus(ana.id, r.id, 'nope')).toThrow('Status must be one of');
+    expect(() => recordService.updateRecordStatus(ana.id, r.id, 'nope')).toThrow('El estado debe ser uno de');
   });
 
   it("does not let another user touch the user's records", () => {
     const r = recordService.addRecord(ana.id, { title_id: title.id });
-    expect(() => recordService.addRecord(bo.id, { title_id: title.id })).toThrow('Title not found.');
-    expect(() => recordService.updateRecord(bo.id, r.id, { rating: 1 })).toThrow('Watch record not found.');
-    expect(() => recordService.deleteRecord(bo.id, r.id)).toThrow('Watch record not found.');
+    expect(() => recordService.addRecord(bo.id, { title_id: title.id })).toThrow('No se encontró el título.');
+    expect(() => recordService.updateRecord(bo.id, r.id, { rating: 1 })).toThrow('No se encontró el registro de visualización.');
+    expect(() => recordService.deleteRecord(bo.id, r.id)).toThrow('No se encontró el registro de visualización.');
   });
 });
 
@@ -115,16 +115,16 @@ describe('lists', () => {
   it('creates, renames and deletes lists with unique names per user', () => {
     const list = listService.createList(ana.id, '  Weekend ');
     expect(list.name).toBe('Weekend');
-    expect(() => listService.createList(ana.id, 'weekend')).toThrow('already have a list named "weekend"');
+    expect(() => listService.createList(ana.id, 'weekend')).toThrow('Ya tienes una lista llamada "weekend"');
     expect(listService.createList(bo.id, 'Weekend').user_id).toBe(bo.id);
 
     const other = listService.createList(ana.id, 'Classics');
-    expect(() => listService.renameList(ana.id, other.id, 'WEEKEND')).toThrow('already have a list');
+    expect(() => listService.renameList(ana.id, other.id, 'WEEKEND')).toThrow('Ya tienes una lista');
     expect(listService.renameList(ana.id, list.id, 'Weekend')).toMatchObject({ name: 'Weekend' }); // same name is fine
     expect(listService.renameList(ana.id, other.id, 'Old classics').name).toBe('Old classics');
 
     listService.deleteList(ana.id, other.id);
-    expect(() => listService.getList(ana.id, other.id)).toThrow('List not found.');
+    expect(() => listService.getList(ana.id, other.id)).toThrow('No se encontró la lista.');
   });
 
   it('adds and removes titles, and reports which lists contain a title', () => {
@@ -139,11 +139,11 @@ describe('lists', () => {
   });
 
   it("rejects names that are empty or too long, and other users' lists or titles", () => {
-    expect(() => listService.createList(ana.id, '   ')).toThrow('List name is required.');
-    expect(() => listService.createList(ana.id, 'x'.repeat(61))).toThrow('60 characters');
+    expect(() => listService.createList(ana.id, '   ')).toThrow('El nombre de la lista es obligatorio.');
+    expect(() => listService.createList(ana.id, 'x'.repeat(61))).toThrow('60 caracteres');
     const anasList = listService.getAllLists(ana.id)[0];
     const bosTitle = titleService.addTitle(bo.id, { title: 'Bo only', type: 'movie' });
-    expect(() => listService.addTitleToList(bo.id, anasList.id, bosTitle.id)).toThrow('List not found.');
-    expect(() => listService.addTitleToList(ana.id, anasList.id, bosTitle.id)).toThrow('Title not found.');
+    expect(() => listService.addTitleToList(bo.id, anasList.id, bosTitle.id)).toThrow('No se encontró la lista.');
+    expect(() => listService.addTitleToList(ana.id, anasList.id, bosTitle.id)).toThrow('No se encontró el título.');
   });
 });

@@ -32,14 +32,14 @@ function contentTypeOf(file) {
 async function getImage({ size, file }, { cacheDir, fetchImpl = fetch }) {
   const target = path.join(cacheDir, size, file);
   // parseImageUrl already restricts both parts; this guards against any future caller.
-  if (!target.startsWith(path.join(cacheDir, size) + path.sep)) throw new Error('Invalid image path.');
+  if (!target.startsWith(path.join(cacheDir, size) + path.sep)) throw new Error('Ruta de imagen no válida.');
 
   if (fs.existsSync(target)) {
     return { buffer: await fs.promises.readFile(target), contentType: contentTypeOf(file) };
   }
 
   const res = await fetchImpl(`${TMDB_IMAGE_BASE}/${size}/${file}`, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`Image not available (${res.status}).`);
+  if (!res.ok) throw new Error(`Imagen no disponible (${res.status}).`);
   const buffer = Buffer.from(await res.arrayBuffer());
 
   await fs.promises.mkdir(path.dirname(target), { recursive: true });

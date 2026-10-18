@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
+import { formatNumber } from '../utils/labels';
 
 /**
  * Animates a number from 0 to `target` with an exponential ease-out.
@@ -26,5 +27,5 @@ export function useCountUp(target, { duration = 900, decimals = 0 } = {}) {
   }, [target, duration, reduceMotion]);
 
   if (value == null) return null;
-  return Number(value).toFixed(decimals);
+  return formatNumber(value, decimals);
 }

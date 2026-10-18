@@ -20,10 +20,10 @@ function TickerStat({ label, value, decimals = 0, suffix = '', trend }) {
       {trend != null && (
         <span
           className={`ticker__trend ${trend > 0 ? 'is-up' : 'is-down'}`}
-          title={`${Math.abs(trend)} ${trend > 0 ? 'more' : 'less'} than last month`}
+          title={`${Math.abs(trend)} ${trend > 0 ? 'más' : 'menos'} que el mes pasado`}
         >
-          {trend > 0 ? `+${trend}` : trend}
-          <span className="sr-only"> vs last month</span>
+          {trend > 0 ? '+' : '−'}{String(Math.abs(trend)).replace('.', ',')}
+          <span className="sr-only"> frente al mes pasado</span>
         </span>
       )}
     </div>

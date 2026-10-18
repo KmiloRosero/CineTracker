@@ -3,8 +3,7 @@ import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
 import { cardVariants } from './cardAnimations';
 import { tmdbImage } from '../utils/tmdbImage';
-
-const STATUS_LABEL = { pending: 'Pending', watching: 'Watching', completed: 'Completed', dropped: 'Dropped' };
+import { STATUS_LABEL, typeLabel } from '../utils/labels';
 
 function IconPlus() {
   return (
@@ -33,7 +32,7 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
   const meta = [
     source.release_year,
     source.runtime ? `${source.runtime} min` : null,
-    source.type === 'movie' ? 'Movie' : 'Series',
+    typeLabel(source.type),
   ].filter(Boolean);
   const open = localId ? () => onOpen(localId) : undefined;
 
@@ -45,7 +44,7 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
       onKeyDown={open ? (e) => e.key === 'Enter' && open() : undefined}
       role={open ? 'button' : undefined}
       tabIndex={open ? 0 : undefined}
-      aria-label={open ? `Open ${source.title}` : undefined}
+      aria-label={open ? `Abrir ${source.title}` : undefined}
     >
       <div className="fixture__poster">
         {source.poster_path
@@ -62,7 +61,7 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
             <span className={`fixture__status status-slab--${title.status}`}>{STATUS_LABEL[title.status]}</span>
           )}
           {title && <ScoreBug value={title.rating} readonly size="sm" />}
-          {!title && catalogId && <span className="fixture__status status-slab--watching">In your catalog</span>}
+          {!title && catalogId && <span className="fixture__status status-slab--watching">En tu catálogo</span>}
           {!title && !catalogId && (
             <button
               type="button"
@@ -70,9 +69,9 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
               onClick={(e) => { e.stopPropagation(); onAdd(item); }}
               onKeyDown={(e) => e.stopPropagation()}
               disabled={adding}
-              aria-label={`Add ${source.title} to your catalog`}
+              aria-label={`Agregar ${source.title} a tu catálogo`}
             >
-              <IconPlus /> {adding ? 'Adding…' : 'Add'}
+              <IconPlus /> {adding ? 'Agregando…' : 'Agregar'}
             </button>
           )}
         </div>
@@ -86,7 +85,7 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
               onClick={(e) => { e.stopPropagation(); setWhyOpen((v) => !v); }}
               onKeyDown={(e) => e.stopPropagation()}
             >
-              {whyOpen ? 'Hide reason' : 'Why this?'}
+              {whyOpen ? 'Ocultar motivo' : '¿Por qué este?'}
             </button>
             <p className={`fixture__reason${whyOpen ? ' is-open' : ''}`}>{explanation}</p>
             {whyOpen && explanationSource && <p className="fixture__why-source">{explanationSource}</p>}

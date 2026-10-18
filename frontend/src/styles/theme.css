@@ -763,7 +763,46 @@ html, body, #root { height: 100%; }
   transition: background .2s ease;
 }
 .stage__dot:hover::after { background: rgba(244,244,240,.7); }
-.stage__dot.is-active::after { background: var(--accent-text); }
+.stage__dot.is-active::after { background: rgba(244,244,240,.5); }
+/* the active bar fills over the slide's duration, like a broadcast countdown */
+.stage__dot-fill {
+  position: absolute;
+  left: 0; top: 50%;
+  height: 4px;
+  width: 0;
+  transform: translateY(-50%);
+  background: var(--accent-text);
+  z-index: 1;
+  animation: stage-progress var(--rotate-ms, 7000ms) linear forwards;
+}
+.stage__dot.is-paused .stage__dot-fill { animation: none; width: 100%; }
+@keyframes stage-progress { from { width: 0; } to { width: 100%; } }
+
+.stage__controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.stage__pause {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(244,244,240,.45);
+  background: rgba(10,10,10,.35);
+  color: var(--slab-text);
+  transition: border-color var(--t), background var(--t);
+}
+.stage__pause:hover { border-color: var(--slab-text); background: rgba(244,244,240,.12); }
+.stage__pause[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.stage__pause:focus-visible { outline: 3px solid var(--accent-text); outline-offset: 3px; }
+.stage__count {
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: .08em;
+  font-variant-numeric: tabular-nums;
+  color: var(--slab-text);
+  min-width: 7ch;
+}
 
 /* up-next deck: posters overlap in depth, each slightly rotated */
 .stage__deck {

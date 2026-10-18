@@ -7,18 +7,18 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 6;
 
 const COPY = {
-  login:    { title: 'Log in',            sub: 'Pick up where you left off.',                     submit: 'Log in',         busy: 'Logging in…' },
-  register: { title: 'Create an account', sub: 'Free, and your data stays on this computer.',     submit: 'Create account', busy: 'Creating account…' },
+  login:    { title: 'Iniciar sesión', sub: 'Sigue donde lo dejaste.',                          submit: 'Iniciar sesión', busy: 'Entrando…' },
+  register: { title: 'Crear cuenta',   sub: 'Es gratis y tus datos se quedan en este computador.', submit: 'Crear cuenta',   busy: 'Creando cuenta…' },
 };
 
 function validate(mode, { name, email, password, confirm }) {
   const e = {};
-  if (mode === 'register' && !name.trim()) e.name = 'Enter your name.';
-  if (!email.trim()) e.email = 'Enter your email.';
-  else if (!EMAIL_RE.test(email.trim())) e.email = 'Enter a valid email, like you@example.com.';
-  if (!password) e.password = 'Enter your password.';
-  else if (mode === 'register' && password.length < MIN_PASSWORD) e.password = `Use at least ${MIN_PASSWORD} characters.`;
-  if (mode === 'register' && confirm !== password) e.confirm = 'The passwords do not match.';
+  if (mode === 'register' && !name.trim()) e.name = 'Escribe tu nombre.';
+  if (!email.trim()) e.email = 'Escribe tu correo.';
+  else if (!EMAIL_RE.test(email.trim())) e.email = 'Escribe un correo válido, como tu@ejemplo.com.';
+  if (!password) e.password = 'Escribe tu contraseña.';
+  else if (mode === 'register' && password.length < MIN_PASSWORD) e.password = `Usa al menos ${MIN_PASSWORD} caracteres.`;
+  if (mode === 'register' && confirm !== password) e.confirm = 'Las contraseñas no coinciden.';
   return e;
 }
 
@@ -143,35 +143,35 @@ export default function AuthForm({ onSuccess, headingLevel = 'h1', idPrefix = 'a
         </AnimatePresence>
 
         {mode === 'register' && (
-          <Field id={id('name')} label="Name" error={show('name')}>
+          <Field id={id('name')} label="Nombre" error={show('name')}>
             <input id={id('name')} autoComplete="name" value={values.name} onChange={(e) => update('name', e.target.value)} onBlur={() => blur('name')} maxLength={60} autoFocus {...invalid('name')} />
           </Field>
         )}
 
-        <Field id={id('email')} label="Email" error={show('email')}>
-          <input id={id('email')} type="email" autoComplete="email" placeholder="you@example.com" value={values.email} onChange={(e) => update('email', e.target.value)} onBlur={() => blur('email')} autoFocus={mode === 'login'} {...invalid('email')} />
+        <Field id={id('email')} label="Correo" error={show('email')}>
+          <input id={id('email')} type="email" autoComplete="email" placeholder="tu@ejemplo.com" value={values.email} onChange={(e) => update('email', e.target.value)} onBlur={() => blur('email')} autoFocus={mode === 'login'} {...invalid('email')} />
         </Field>
 
-        <Field id={id('password')} label="Password" error={show('password')}>
+        <Field id={id('password')} label="Contraseña" error={show('password')}>
           <div className="password-input">
             <input
               id={id('password')}
               type={showPw ? 'text' : 'password'}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              placeholder={mode === 'register' ? `At least ${MIN_PASSWORD} characters` : undefined}
+              placeholder={mode === 'register' ? `Al menos ${MIN_PASSWORD} caracteres` : undefined}
               value={values.password}
               onChange={(e) => update('password', e.target.value)}
               onBlur={() => blur('password')}
               {...invalid('password')}
             />
-            <button type="button" className="password-input__toggle" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'} aria-pressed={showPw}>
+            <button type="button" className="password-input__toggle" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Ocultar contraseña' : 'Mostrar contraseña'} aria-pressed={showPw}>
               <EyeIcon open={showPw} />
             </button>
           </div>
         </Field>
 
         {mode === 'register' && (
-          <Field id={id('confirm')} label="Repeat password" error={show('confirm')}>
+          <Field id={id('confirm')} label="Repite la contraseña" error={show('confirm')}>
             <input id={id('confirm')} type={showPw ? 'text' : 'password'} autoComplete="new-password" value={values.confirm} onChange={(e) => update('confirm', e.target.value)} onBlur={() => blur('confirm')} {...invalid('confirm')} />
           </Field>
         )}
@@ -182,9 +182,9 @@ export default function AuthForm({ onSuccess, headingLevel = 'h1', idPrefix = 'a
       </motion.form>
 
       <p className="auth-form__switch">
-        {mode === 'login' ? 'New to CineTracker?' : 'Already have an account?'}{' '}
+        {mode === 'login' ? '¿Eres nuevo en CineTracker?' : '¿Ya tienes una cuenta?'}{' '}
         <button type="button" onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}>
-          {mode === 'login' ? 'Create an account' : 'Log in'}
+          {mode === 'login' ? 'Crea una cuenta' : 'Inicia sesión'}
         </button>
       </p>
     </div>

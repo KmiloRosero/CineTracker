@@ -25,7 +25,7 @@ function ChartTooltip({ active, payload, label, unit, labelFormatter }) {
 export function ChartTable({ caption, columns, rows }) {
   return (
     <details className="chart-table">
-      <summary>Show as table</summary>
+      <summary>Ver como tabla</summary>
       <table>
         <caption className="sr-only">{caption}</caption>
         <thead><tr>{columns.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
@@ -37,7 +37,7 @@ export function ChartTable({ caption, columns, rows }) {
   );
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 export function monthLabel(key, withYear = false) {
   const [y, m] = key.split('-').map(Number);
   return withYear ? `${MONTHS[m - 1]} ${y}` : MONTHS[m - 1];
@@ -51,7 +51,7 @@ export function MonthlyColumns({ data }) {
   const showLabel = (i) => data[i].n > 0 && (i === peak || i === last);
 
   return (
-    <div className="chart" role="img" aria-label={`Completed watches per month for the last ${data.length} months. Peak: ${data[peak]?.n ?? 0} in ${monthLabel(data[peak]?.month ?? '2000-01', true)}.`}>
+    <div className="chart" role="img" aria-label={`Visualizaciones completadas por mes en los últimos ${data.length} meses. Máximo: ${data[peak]?.n ?? 0} en ${monthLabel(data[peak]?.month ?? '2000-01', true)}.`}>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} margin={{ top: 24, right: 8, bottom: 0, left: -12 }} barCategoryGap="30%">
           <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -59,7 +59,7 @@ export function MonthlyColumns({ data }) {
           <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} width={40} />
           <Tooltip
             cursor={{ fill: 'var(--bg-hover)' }}
-            content={<ChartTooltip unit="watched" labelFormatter={(m) => monthLabel(m, true)} />}
+            content={<ChartTooltip unit="vistas" labelFormatter={(m) => monthLabel(m, true)} />}
           />
           <Bar dataKey="n" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={24} isAnimationActive={!reduceMotion} animationDuration={700} animationEasing="ease-out">
             <LabelList
@@ -81,13 +81,13 @@ export function GenreBars({ data }) {
   const reduceMotion = useReducedMotion();
   const height = Math.max(160, data.length * 34 + 16);
   return (
-    <div className="chart" role="img" aria-label={`Titles per genre. Most common: ${data[0]?.genre} with ${data[0]?.n}.`}>
+    <div className="chart" role="img" aria-label={`Títulos por género. El más común: ${data[0]?.genre} con ${data[0]?.n}.`}>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} layout="vertical" margin={{ top: 0, right: 40, bottom: 0, left: 0 }} barCategoryGap="28%">
           {/* every bar is labelled at its tip, so the value axis and its grid are omitted */}
           <XAxis type="number" hide domain={[0, 'dataMax']} />
-          <YAxis type="category" dataKey="genre" tick={AXIS_TICK} axisLine={{ stroke: 'var(--border-strong)' }} tickLine={false} width={124} />
-          <Tooltip cursor={{ fill: 'var(--bg-hover)' }} content={<ChartTooltip unit="titles" />} />
+          <YAxis type="category" dataKey="genre" tick={AXIS_TICK} axisLine={{ stroke: 'var(--border-strong)' }} tickLine={false} width={150} />
+          <Tooltip cursor={{ fill: 'var(--bg-hover)' }} content={<ChartTooltip unit="títulos" />} />
           <Bar dataKey="n" fill="var(--accent)" radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={!reduceMotion} animationDuration={700} animationEasing="ease-out">
             <LabelList dataKey="n" position="right" className="chart-label" offset={8} />
           </Bar>
@@ -99,10 +99,10 @@ export function GenreBars({ data }) {
 
 // Status order keeps green and amber apart (validated for colour-vision deficiency).
 export const STATUS_ORDER = [
-  { key: 'watching',  label: 'Watching' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'pending',   label: 'Pending' },
-  { key: 'dropped',   label: 'Dropped' },
+  { key: 'watching',  label: 'Viendo' },
+  { key: 'completed', label: 'Completados' },
+  { key: 'pending',   label: 'Pendientes' },
+  { key: 'dropped',   label: 'Abandonados' },
 ];
 
 /** Part-to-whole bar of titles by status, with a labelled legend (never colour alone). */

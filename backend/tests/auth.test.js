@@ -17,21 +17,21 @@ describe('register and login', () => {
   });
 
   it('rejects invalid input with clear messages', async () => {
-    await expect(authService.register('', 'a@b.co', 'secret123')).rejects.toThrow('Name is required.');
-    await expect(authService.register('A', 'not-an-email', 'secret123')).rejects.toThrow('valid email');
-    await expect(authService.register('A', 'a@b.co', '123')).rejects.toThrow('at least 6');
+    await expect(authService.register('', 'a@b.co', 'secret123')).rejects.toThrow('El nombre es obligatorio.');
+    await expect(authService.register('A', 'not-an-email', 'secret123')).rejects.toThrow('correo electrónico válido');
+    await expect(authService.register('A', 'a@b.co', '123')).rejects.toThrow('al menos 6');
   });
 
   it('rejects a duplicate email regardless of case', async () => {
     await expect(authService.register('Other', 'CAMILO@example.com', 'secret123'))
-      .rejects.toThrow('already exists');
+      .rejects.toThrow('Ya existe una cuenta');
   });
 
   it('logs in with the right password only, with the same message for unknown emails', async () => {
     const user = await authService.login('camilo@example.com', 'secret123');
     expect(user.email).toBe('camilo@example.com');
-    await expect(authService.login('camilo@example.com', 'wrong')).rejects.toThrow('Invalid email or password.');
-    await expect(authService.login('nobody@example.com', 'secret123')).rejects.toThrow('Invalid email or password.');
+    await expect(authService.login('camilo@example.com', 'wrong')).rejects.toThrow('Correo o contraseña incorrectos.');
+    await expect(authService.login('nobody@example.com', 'secret123')).rejects.toThrow('Correo o contraseña incorrectos.');
   });
 });
 
@@ -47,16 +47,16 @@ describe('profile', () => {
   it('rejects avatars that are not image data URLs', async () => {
     const user = await createUser();
     expect(() => authService.updateProfile(user.id, { avatarUrl: 'https://evil.example/x.png' }))
-      .toThrow('PNG, JPEG or WebP');
+      .toThrow('PNG, JPEG o WebP');
     expect(() => authService.updateProfile(user.id, { avatarUrl: 'data:text/html;base64,PHNjcmlwdD4=' }))
-      .toThrow('PNG, JPEG or WebP');
+      .toThrow('PNG, JPEG o WebP');
   });
 
   it('changes the password only with the current one', async () => {
     const user = await createUser();
-    await expect(authService.changePassword(user.id, 'wrong', 'newsecret1')).rejects.toThrow('Current password is incorrect.');
-    await expect(authService.changePassword(user.id, 'secret123', '123')).rejects.toThrow('at least 6');
-    await expect(authService.changePassword(user.id, 'secret123', 'secret123')).rejects.toThrow('different');
+    await expect(authService.changePassword(user.id, 'wrong', 'newsecret1')).rejects.toThrow('La contraseña actual no es correcta.');
+    await expect(authService.changePassword(user.id, 'secret123', '123')).rejects.toThrow('al menos 6');
+    await expect(authService.changePassword(user.id, 'secret123', 'secret123')).rejects.toThrow('distinta');
     await authService.changePassword(user.id, 'secret123', 'newsecret1');
     await expect(authService.login(user.email, 'newsecret1')).resolves.toMatchObject({ id: user.id });
   });
@@ -72,7 +72,7 @@ describe('account deletion', () => {
     listService.addTitleToList(user.id, list.id, title.id);
     titleService.addTitle(other.id, { title: 'Theirs', type: 'movie' });
 
-    await expect(authService.deleteAccount(user.id, 'wrong')).rejects.toThrow('Current password is incorrect.');
+    await expect(authService.deleteAccount(user.id, 'wrong')).rejects.toThrow('La contraseña actual no es correcta.');
     await authService.deleteAccount(user.id, 'secret123');
 
     const count = (table) => env.db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE user_id = ?`).get(user.id).n;
@@ -81,6 +81,6 @@ describe('account deletion', () => {
     expect(count('lists')).toBe(0);
     expect(env.db.prepare('SELECT COUNT(*) AS n FROM list_titles WHERE list_id = ?').get(list.id).n).toBe(0);
     expect(titleService.getAllTitles(other.id)).toHaveLength(1);
-    expect(() => authService.getCurrentUser(user.id)).toThrow('User not found.');
+    expect(() => authService.getCurrentUser(user.id)).toThrow('No se encontró el usuario.');
   });
 });

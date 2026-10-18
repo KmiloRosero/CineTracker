@@ -8,37 +8,40 @@ import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { StatTicker, CrawlTicker, trendOf } from '../components/Ticker';
 import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
-import { canonicalGenres } from '../utils/genres';
+import { canonicalGenres, genreLabel } from '../utils/genres';
+import { typeLabel } from '../utils/labels';
 import { tmdbImage } from '../utils/tmdbImage';
 
 // Why the AI picks were replaced by genre-based ones, in the user's terms.
 // `ai` is the provider's display name (Gemini or Claude).
 const FALLBACK_NOTE = {
-  'no-api-key':        () => 'Add a Gemini API key to get AI-written picks. Showing genre-based picks.',
-  'insufficient-data': (ai) => `Rate at least 3 titles and keep some as Pending to get picks from ${ai}.`,
-  'offline':           (ai) => `${ai} could not be reached (check your connection). Showing genre-based picks.`,
-  'rate-limited':      (ai) => `${ai} is busy right now. Showing genre-based picks; try Refresh in a minute.`,
-  'invalid-api-key':   (ai) => `The ${ai} API key was rejected. Showing genre-based picks.`,
-  'api-permission':    (ai) => `The ${ai} API key cannot use this model. Showing genre-based picks.`,
-  'api-error':         (ai) => `${ai} returned an error. Showing genre-based picks.`,
-  'refused':           (ai) => `${ai} declined this request. Showing genre-based picks.`,
-  'invalid-response':  (ai) => `The answer from ${ai} could not be used. Showing genre-based picks.`,
-  'empty-ai-response': (ai) => `${ai} did not find a match in your list. Showing genre-based picks.`,
+  'no-api-key':        () => 'Agrega una clave de Gemini para recibir recomendaciones escritas por IA. Por ahora se muestran según tus géneros.',
+  'insufficient-data': (ai) => `Califica al menos 3 títulos y deja algunos como Pendiente para recibir recomendaciones de ${ai}.`,
+  'offline':           (ai) => `No se pudo conectar con ${ai} (revisa tu conexión). Se muestran recomendaciones según tus géneros.`,
+  'rate-limited':      (ai) => `${ai} está ocupado ahora mismo. Se muestran recomendaciones según tus géneros; prueba Actualizar en un minuto.`,
+  'invalid-api-key':   (ai) => `La clave de ${ai} fue rechazada. Se muestran recomendaciones según tus géneros.`,
+  'api-permission':    (ai) => `La clave de ${ai} no puede usar este modelo. Se muestran recomendaciones según tus géneros.`,
+  'api-error':         (ai) => `${ai} devolvió un error. Se muestran recomendaciones según tus géneros.`,
+  'refused':           (ai) => `${ai} rechazó la solicitud. Se muestran recomendaciones según tus géneros.`,
+  'invalid-response':  (ai) => `No se pudo usar la respuesta de ${ai}. Se muestran recomendaciones según tus géneros.`,
+  'empty-ai-response': (ai) => `${ai} no encontró coincidencias en tu lista. Se muestran recomendaciones según tus géneros.`,
 };
 
-const AI_NAME = { gemini: 'Gemini', claude: 'Claude' };
-const aiName  = (recs) => AI_NAME[recs?.provider] ?? 'the AI';
-const aiSource = (ai) => `Written by ${ai} after comparing this title with the ones you rated.`;
-const RULE_SOURCE = 'Based on how often you rated these genres 8 or higher.';
+const AI_NAME  = { gemini: 'Gemini', claude: 'Claude' };
+const aiName   = (recs) => AI_NAME[recs?.provider] ?? 'la IA';
+const aiSource = (ai) => `Escrito por ${ai} tras comparar este título con los que calificaste.`;
+const RULE_SOURCE = 'Basado en cuántas veces calificaste estos géneros con 8 o más.';
 
 const NO_REC_MSG = {
-  'no-ratings': 'Rate completed titles 8 or higher to unlock recommendations.',
-  'no-pending': 'Add titles as Pending to get suggestions from your own list.',
-  'no-match':   'None of your pending titles match your top-rated genres yet. Keep rating.',
+  'no-ratings': 'Califica con 8 o más los títulos que termines para desbloquear recomendaciones.',
+  'no-pending': 'Agrega títulos como Pendiente para recibir sugerencias de tu propia lista.',
+  'no-match':   'Ninguno de tus pendientes coincide aún con tus géneros favoritos. Sigue calificando.',
 };
 
-const FEATURED_COUNT = 4;
-const ROTATE_MS      = 9000;
+const FEATURED_COUNT = 8;
+const DECK_SIZE      = 3;
+const ROTATE_MS      = 7000;
+const FADE_S         = 1.4;
 const EASE           = [0.16, 1, 0.3, 1];
 
 function unwrap(result) {
@@ -47,23 +50,14 @@ function unwrap(result) {
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────
-function IconArrow() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" aria-hidden="true">
-      <line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/>
-    </svg>
-  );
-}
-function IconPlus() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" aria-hidden="true">
-      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  );
-}
+const svg = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'square', 'aria-hidden': true };
+const IconArrow = () => <svg {...svg}><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>;
+const IconPlus  = () => <svg {...svg}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconPause = () => <svg {...svg}><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>;
+const IconPlay  = () => <svg {...svg} fill="currentColor" strokeWidth={0}><polygon points="7 4 20 12 7 20"/></svg>;
 function IconSpinner() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite' }}>
+    <svg {...svg} strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
     </svg>
   );
@@ -80,7 +74,7 @@ function fromLocal(t, label) {
     year: t.release_year,
     runtime: t.runtime,
     type: t.type,
-    genres: canonicalGenres(t.genres),
+    genres: canonicalGenres(t.genres).map(genreLabel),
     label,
     localId: t.id,
     tmdbItem: null,
@@ -98,11 +92,13 @@ function fromTrending(item, rank, catalogId) {
     runtime: null,
     type: item.type,
     genres: [],
-    label: `Trending #${rank}`,
+    label: `Tendencia #${rank}`,
     localId: catalogId ?? null,
     tmdbItem: item,
   };
 }
+
+const backdropOf = (f) => tmdbImage(f.backdrop, 'w1280') ?? tmdbImage(f.poster, 'w780');
 
 // ── Ticker: the stats strip that closes the stage ─────────────────────────
 function Ticker({ overview, trending }) {
@@ -110,63 +106,95 @@ function Ticker({ overview, trending }) {
     const t = overview.trends ?? {};
     return (
       <StatTicker
-        tag="Your catalog"
-        sub="± vs last month"
-        label="Your catalog in numbers"
+        tag="Tu catálogo"
+        sub="± vs. el mes pasado"
+        label="Tu catálogo en números"
         items={[
-          { label: 'Titles',    value: overview.totals.titles, trend: trendOf(t.titlesAdded) },
+          { label: 'Títulos',    value: overview.totals.titles, trend: trendOf(t.titlesAdded) },
           // status changes are not dated, so "watching" has no monthly trend
-          { label: 'Watching',  value: overview.totals.watching },
-          { label: 'Completed', value: overview.totals.completed, trend: trendOf(t.completed) },
-          { label: 'Hours',     value: overview.totalHours, decimals: overview.totalHours % 1 ? 1 : 0, trend: trendOf(t.hours, 1) },
+          { label: 'Viendo',     value: overview.totals.watching },
+          { label: 'Completados', value: overview.totals.completed, trend: trendOf(t.completed) },
+          { label: 'Horas',      value: overview.totalHours, decimals: overview.totalHours % 1 ? 1 : 0, trend: trendOf(t.hours, 1) },
           // catalogue average has no dated history; a watch-average delta would mislead
-          { label: 'Avg score', value: overview.averageRating, decimals: 1 },
+          { label: 'Nota media', value: overview.averageRating, decimals: 1 },
         ]}
       />
     );
   }
-  if (trending.length > 0) return <CrawlTicker tag="Trending" names={trending.map((t) => t.title)} />;
+  if (trending.length > 0) return <CrawlTicker tag="Tendencias" names={trending.map((t) => t.title)} />;
   return null;
 }
 
-// ── Stage (first viewport) ────────────────────────────────────────────────
+// ── Stage (first viewport): a backdrop slideshow ──────────────────────────
+// Titles advance on their own every ROTATE_MS with a cross-fade and a slow
+// push-in. Rotation pauses while the pointer is on a control, while a control
+// has keyboard focus, while the window is hidden, or when the viewer pauses it.
 function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, children }) {
   const reduceMotion = useReducedMotion();
-  const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [active, setActive]         = useState(0);
+  const [hoverPause, setHoverPause] = useState(false);
+  const [focusPause, setFocusPause] = useState(false);
+  const [userPaused, setUserPaused] = useState(false);
+  const [hidden, setHidden]         = useState(() => document.hidden);
   const keys = featured.map((f) => f.key).join('|');
+  const paused = hoverPause || focusPause || userPaused || hidden;
+  const count = featured.length;
 
   useEffect(() => { setActive(0); }, [keys]);
 
   useEffect(() => {
-    if (reduceMotion || paused || featured.length < 2) return undefined;
-    const id = setInterval(() => setActive((i) => (i + 1) % featured.length), ROTATE_MS);
-    return () => clearInterval(id);
-  }, [reduceMotion, paused, featured.length]);
+    const onVisibility = () => setHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  // one timer per slide; resuming restarts the current slide's countdown
+  useEffect(() => {
+    if (paused || count < 2) return undefined;
+    const id = setTimeout(() => setActive((i) => (i + 1) % count), ROTATE_MS);
+    return () => clearTimeout(id);
+  }, [active, paused, count]);
+
+  // warm the next backdrop so the cross-fade never shows an empty frame
+  useEffect(() => {
+    if (count < 2) return;
+    const next = featured[(active + 1) % count];
+    const src = next && backdropOf(next);
+    if (src) new Image().src = src;
+  }, [active, keys]);
 
   const current = featured[active];
   if (!current) return null;
 
   // the deck shows the next titles in order, so the lineup reads left to right
-  const deck = featured.map((_, i) => featured[(active + 1 + i) % featured.length]).slice(0, featured.length - 1);
+  const deck = Array.from({ length: Math.min(DECK_SIZE, count - 1) }, (_, i) => featured[(active + 1 + i) % count]);
   const meta = [
     current.year,
     current.runtime ? `${current.runtime} min` : null,
-    current.type === 'movie' ? 'Movie' : 'Series',
+    typeLabel(current.type),
     current.genres.slice(0, 2).join(' / ') || null,
   ].filter(Boolean);
-  const backdrop = tmdbImage(current.backdrop, 'w1280') ?? tmdbImage(current.poster, 'w780');
+  const backdrop = backdropOf(current);
   const { label: actionLabel, icon: actionIcon, busy } = primaryState(current);
+  const pad = (n) => String(n).padStart(2, '0');
+
+  // keyboard focus on a control pauses; a mouse click does not
+  const focusHandlers = {
+    onFocus: (e) => { if (e.target.matches(':focus-visible')) setFocusPause(true); },
+    onBlur:  () => setFocusPause(false),
+  };
+  const hoverHandlers = {
+    onMouseEnter: () => setHoverPause(true),
+    onMouseLeave: () => setHoverPause(false),
+  };
 
   return (
     <section
       className="stage"
-      aria-roledescription="carousel"
-      aria-label="Featured titles"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      aria-roledescription="carrusel"
+      aria-label="Títulos destacados"
+      style={{ '--rotate-ms': `${ROTATE_MS}ms` }}
+      {...focusHandlers}
     >
       <div className="stage__backdrop" aria-hidden="true">
         <AnimatePresence initial={false}>
@@ -175,9 +203,16 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
               key={current.key}
               src={backdrop}
               alt=""
-              initial={{ opacity: 0, scale: reduceMotion ? 1 : 1.06 }}
-              animate={{ opacity: 1, scale: 1, transition: { duration: 1.6, ease: EASE } }}
-              exit={{ opacity: 0, transition: { duration: 1.2, ease: 'easeInOut' } }}
+              initial={{ opacity: 0, scale: 1 }}
+              animate={{
+                opacity: 1,
+                scale: reduceMotion ? 1 : 1.08,
+                transition: {
+                  opacity: { duration: FADE_S, ease: 'easeInOut' },
+                  scale:   { duration: ROTATE_MS / 1000 + FADE_S, ease: 'linear' },
+                },
+              }}
+              exit={{ opacity: 0, transition: { duration: FADE_S, ease: 'easeInOut' } }}
             />
           )}
         </AnimatePresence>
@@ -193,6 +228,7 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
             initial="hidden"
             animate="visible"
             exit="exit"
+            aria-live={paused ? 'polite' : 'off'}
           >
             <motion.h1
               className="stage__title"
@@ -232,34 +268,49 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
           </motion.div>
         </AnimatePresence>
 
-        <div className="stage__actions">
+        <div className="stage__actions" {...hoverHandlers}>
           <button className="btn btn--primary btn--lg" onClick={() => onPrimary(current)} disabled={busy}>
             {busy ? <IconSpinner /> : actionIcon}
             {actionLabel}
           </button>
           {user
-            ? <button className="btn btn--ghost btn--lg stage__ghost" onClick={onBrowse}>Browse catalog</button>
-            : <button className="btn btn--ghost btn--lg stage__ghost" onClick={onLogin}>Log in</button>}
+            ? <button className="btn btn--ghost btn--lg stage__ghost" onClick={onBrowse}>Ver catálogo</button>
+            : <button className="btn btn--ghost btn--lg stage__ghost" onClick={onLogin}>Iniciar sesión</button>}
         </div>
 
-        {featured.length > 1 && (
-          <div className="stage__dots" role="tablist" aria-label="Choose featured title">
-            {featured.map((f, i) => (
-              <button
-                key={f.key}
-                role="tab"
-                aria-selected={i === active}
-                aria-label={f.title}
-                className={`stage__dot${i === active ? ' is-active' : ''}`}
-                onClick={() => setActive(i)}
-              />
-            ))}
+        {count > 1 && (
+          <div className="stage__controls" {...hoverHandlers}>
+            <button
+              type="button"
+              className="stage__pause"
+              onClick={() => setUserPaused((v) => !v)}
+              aria-label={userPaused ? 'Reanudar el carrusel' : 'Pausar el carrusel'}
+              aria-pressed={userPaused}
+            >
+              {userPaused ? <IconPlay /> : <IconPause />}
+            </button>
+            <span className="stage__count" aria-hidden="true">{pad(active + 1)} / {pad(count)}</span>
+            <div className="stage__dots" role="tablist" aria-label="Elegir título destacado">
+              {featured.map((f, i) => (
+                <button
+                  key={f.key}
+                  role="tab"
+                  aria-selected={i === active}
+                  aria-label={f.title}
+                  className={`stage__dot${i === active ? ' is-active' : ''}${paused ? ' is-paused' : ''}`}
+                  onClick={() => setActive(i)}
+                >
+                  {/* keyed per slide and run so the fill restarts with each countdown */}
+                  {i === active && <span key={`${active}-${paused}`} className="stage__dot-fill" />}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
       {deck.length > 0 && (
-        <div className="stage__deck" role="group" aria-label="Up next">
+        <div className="stage__deck" role="group" aria-label="A continuación" {...hoverHandlers}>
           {deck.map((f, slot) => (
             <motion.button
               key={f.key}
@@ -267,7 +318,7 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
               type="button"
               className={`stage__card stage__card--${slot}`}
               onClick={() => setActive(featured.indexOf(f))}
-              aria-label={`Feature ${f.title}`}
+              aria-label={`Destacar ${f.title}`}
               transition={{ layout: { duration: 0.6, ease: EASE } }}
               whileHover={reduceMotion ? undefined : { y: -10, rotate: 0, transition: { duration: 0.25, ease: EASE } }}
               whileTap={{ scale: 0.97 }}
@@ -288,7 +339,7 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
 
 function StageSkeleton() {
   return (
-    <section className="stage stage--loading" aria-busy="true" aria-label="Loading featured titles">
+    <section className="stage stage--loading" aria-busy="true" aria-label="Cargando títulos destacados">
       <div className="stage__copy">
         <div className="skeleton skeleton--title" />
         <div className="skeleton skeleton--bar" />
@@ -387,7 +438,7 @@ export default function Home() {
 
   // ── TMDB trending (public) ────────────────────────────────────────────
   useEffect(() => {
-    getTrending()
+    getTrending(20)
       .then(setTrending)
       .catch((err) => setTrendingError(err.message))
       .finally(() => setTrendingLoading(false));
@@ -403,25 +454,27 @@ export default function Home() {
   const recommendations = useMemo(() => recs?.recommendations ?? [], [recs]);
   const recent          = titles.slice(0, 6);
 
-  // Featured lineup: your own titles when you have them, otherwise trending.
+  // Featured lineup: your own titles first, topped up with this week's trending.
   const featured = useMemo(() => {
-    if (user && titles.length > 0) {
-      const seen = new Set();
-      const lineup = [
-        ...watching.map((t) => fromLocal(t, 'Now watching')),
-        ...recommendations.map((t) => fromLocal(t, 'Pick for you')),
-        ...titles.map((t) => fromLocal(t, 'Just added')),
-      ].filter((f) => {
-        if (seen.has(f.key) || !(f.backdrop || f.poster)) return false;
-        seen.add(f.key);
-        return true;
-      });
-      if (lineup.length > 0) return lineup.slice(0, FEATURED_COUNT);
-    }
-    return trending
-      .filter((t) => t.backdrop_path)
-      .slice(0, FEATURED_COUNT)
-      .map((t, i) => fromTrending(t, i + 1, catalogByTmdbId.get(t.tmdb_id)));
+    const seen = new Set();
+    const keep = (f) => {
+      if (seen.has(f.key) || !(f.backdrop || f.poster)) return false;
+      seen.add(f.key);
+      return true;
+    };
+    const own = user
+      ? [
+          ...watching.map((t) => fromLocal(t, 'Viendo ahora')),
+          ...recommendations.map((t) => fromLocal(t, 'Para ti')),
+          ...titles.filter((t) => t.backdrop_path).map((t) => fromLocal(t, 'Recién agregado')),
+        ].filter(keep)
+      : [];
+    const inCatalog = new Set(titles.map((t) => t.tmdb_id).filter((id) => id != null));
+    const fill = trending
+      .filter((t) => t.backdrop_path && !inCatalog.has(t.tmdb_id))
+      .map((t, i) => fromTrending(t, i + 1, catalogByTmdbId.get(t.tmdb_id)))
+      .filter(keep);
+    return [...own, ...fill].slice(0, FEATURED_COUNT);
   }, [user, titles, watching, recommendations, trending, catalogByTmdbId]);
 
   function handleAddTrending(item) {
@@ -433,7 +486,7 @@ export default function Home() {
         unwrap(await window.electronAPI.addTitle(toCatalogPayload(detail)));
         await refreshTitles();
       } catch (err) {
-        setAddError(`Could not add "${item.title}": ${err.message}`);
+        setAddError(`No se pudo agregar "${item.title}": ${err.message}`);
       } finally {
         setAddingTmdbId(null);
       }
@@ -441,8 +494,8 @@ export default function Home() {
   }
 
   function primaryState(f) {
-    if (f.localId) return { label: 'Open title', icon: <IconArrow /> };
-    return { label: 'Add to catalog', icon: <IconPlus />, busy: addingTmdbId === f.tmdbItem?.tmdb_id };
+    if (f.localId) return { label: 'Ver título', icon: <IconArrow /> };
+    return { label: 'Agregar al catálogo', icon: <IconPlus />, busy: addingTmdbId === f.tmdbItem?.tmdb_id };
   }
 
   function handlePrimary(f) {
@@ -451,10 +504,10 @@ export default function Home() {
   }
 
   const openTitle  = (id) => navigate(`/title/${id}`);
-  const stageReady = !(user ? loading : trendingLoading);
+  const stageReady = !trendingLoading && !(user && loading);
 
   if (error) {
-    return <PageError message={`Failed to load your catalog: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />;
+    return <PageError message={`No se pudo cargar tu catálogo: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />;
   }
 
   return (
@@ -475,15 +528,15 @@ export default function Home() {
       {stageReady && featured.length === 0 && (
         <section className="stage stage--empty">
           <div className="stage__copy">
-            <h1 className="stage__title">Your catalog starts here</h1>
+            <h1 className="stage__title">Tu catálogo empieza aquí</h1>
             <p className="stage__overview">
               {trendingError
-                ? `Trending titles are unavailable right now (${trendingError}). You can still add titles by hand.`
-                : 'Add the first movie or series you are watching.'}
+                ? `Las tendencias no están disponibles ahora (${trendingError}). Igual puedes agregar títulos a mano.`
+                : 'Agrega la primera película o serie que estés viendo.'}
             </p>
             <div className="stage__actions">
               <button className="btn btn--primary btn--lg" onClick={() => requireAuth(() => navigate('/catalog'))}>
-                <IconPlus /> Add a title
+                <IconPlus /> Agregar un título
               </button>
             </div>
           </div>
@@ -494,31 +547,31 @@ export default function Home() {
         {addError && <p className="form-error" role="alert">{addError}</p>}
 
         {user && watching.length > 0 && (
-          <Rail title="Continue watching" sub={`${watching.length} in progress`}>
+          <Rail title="Sigue viendo" sub={`${watching.length} en curso`}>
             {watching.slice(0, 6).map((t) => <FixtureCard key={t.id} title={t} onOpen={openTitle} />)}
           </Rail>
         )}
 
         {user && (
           <Rail
-            title="Recommended for you"
-            sub={recs ? (recs.source === 'ai' ? `Picked by ${aiName(recs)}` : 'By your top genres') : undefined}
+            title="Recomendados para ti"
+            sub={recs ? (recs.source === 'ai' ? `Elegidos por ${aiName(recs)}` : 'Según tus géneros favoritos') : undefined}
             action={
               <button
                 className="btn btn--ghost btn--sm"
                 onClick={() => loadRecommendations({ refresh: true })}
                 disabled={recsLoading}
-                aria-label="Refresh recommendations"
+                aria-label="Actualizar recomendaciones"
               >
                 {recsLoading && <IconSpinner />}
-                {recsLoading ? 'Refreshing…' : 'Refresh'}
+                {recsLoading ? 'Actualizando…' : 'Actualizar'}
               </button>
             }
             note={recs?.source === 'rule-based' ? FALLBACK_NOTE[recs.fallbackReason]?.(aiName(recs)) ?? null : null}
             empty={
-              recsError ? <RailEmpty>Recommendations failed to load: {recsError}</RailEmpty>
-              : !recs && recsLoading ? <RailEmpty>Finding titles that fit your taste…</RailEmpty>
-              : recommendations.length === 0 ? <RailEmpty>{NO_REC_MSG[recs?.reason] ?? 'No recommendations yet.'}</RailEmpty>
+              recsError ? <RailEmpty>No se pudieron cargar las recomendaciones: {recsError}</RailEmpty>
+              : !recs && recsLoading ? <RailEmpty>Buscando títulos que encajen con tu gusto…</RailEmpty>
+              : recommendations.length === 0 ? <RailEmpty>{NO_REC_MSG[recs?.reason] ?? 'Aún no hay recomendaciones.'}</RailEmpty>
               : undefined
             }
           >
@@ -535,11 +588,11 @@ export default function Home() {
         )}
 
         <Rail
-          title="Trending this week"
-          sub="From TMDB"
+          title="Tendencias de la semana"
+          sub="Desde TMDB"
           empty={
-            trendingLoading ? <RailEmpty>Loading trending titles…</RailEmpty>
-            : trendingError ? <RailEmpty>Trending titles are unavailable right now. {trendingError}</RailEmpty>
+            trendingLoading ? <RailEmpty>Cargando tendencias…</RailEmpty>
+            : trendingError ? <RailEmpty>Las tendencias no están disponibles ahora. {trendingError}</RailEmpty>
             : undefined
           }
         >
@@ -557,10 +610,10 @@ export default function Home() {
 
         {user && (
           <Rail
-            title="Recently added"
-            action={titles.length > 0 && <button className="btn btn--ghost btn--sm" onClick={() => navigate('/catalog')}>View all</button>}
+            title="Agregados recientemente"
+            action={titles.length > 0 && <button className="btn btn--ghost btn--sm" onClick={() => navigate('/catalog')}>Ver todo</button>}
             empty={titles.length === 0
-              ? <RailEmpty>Nothing here yet. Add a title from Trending or the Catalog.</RailEmpty>
+              ? <RailEmpty>Aún no hay nada. Agrega un título desde Tendencias o el Catálogo.</RailEmpty>
               : undefined}
           >
             {recent.map((t) => <FixtureCard key={t.id} title={t} onOpen={openTitle} />)}
@@ -569,9 +622,9 @@ export default function Home() {
 
         {!user && (
           <section className="home__signup">
-            <h2 className="home__signup-title">Keep score of everything you watch</h2>
-            <p>Make a free account to save titles, rate them from 1 to 10 and get picks based on your taste. Your data stays on this computer.</p>
-            <button className="btn btn--primary btn--lg" onClick={() => openLoginModal()}>Create an account</button>
+            <h2 className="home__signup-title">Lleva el marcador de todo lo que ves</h2>
+            <p>Crea una cuenta gratis para guardar títulos, calificarlos del 1 al 10 y recibir recomendaciones según tu gusto. Tus datos se quedan en este computador.</p>
+            <button className="btn btn--primary btn--lg" onClick={() => openLoginModal()}>Crear una cuenta</button>
           </section>
         )}
       </div>

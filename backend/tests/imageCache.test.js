@@ -45,7 +45,7 @@ describe('image cache', () => {
 
   it('does not cache failed downloads', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404 });
-    await expect(getImage({ size: 'w92', file: 'missing.jpg' }, { cacheDir, fetchImpl })).rejects.toThrow('not available');
+    await expect(getImage({ size: 'w92', file: 'missing.jpg' }, { cacheDir, fetchImpl })).rejects.toThrow('no disponible');
     expect(fs.existsSync(path.join(cacheDir, 'w92', 'missing.jpg'))).toBe(false);
   });
 });

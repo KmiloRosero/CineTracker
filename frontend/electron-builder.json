@@ -63,6 +63,8 @@
   },
   "nsis": {
     "oneClick": false,
+    "language": "3082",
+    "installerLanguages": ["es_ES"],
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "shortcutName": "CineTracker",

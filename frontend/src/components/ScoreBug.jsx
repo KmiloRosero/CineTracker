@@ -6,16 +6,16 @@ const SEGMENTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
  * Rating shown like a broadcast score bug: the value in a green slab and,
  * when editable, ten segments to set it (1-10).
  */
-export default function ScoreBug({ value = 0, onChange, readonly = false, size = 'md', label = 'Your score' }) {
+export default function ScoreBug({ value = 0, onChange, readonly = false, size = 'md', label = 'Tu puntuación' }) {
   const [hovered, setHovered] = useState(null);
   const score   = Number(value) || 0;
   const preview = hovered ?? score;
-  const shown   = Number.isInteger(score) ? score : score.toFixed(1);
+  const shown   = Number.isInteger(score) ? score : score.toFixed(1).replace('.', ',');
 
   if (readonly) {
     if (!score) return null;
     return (
-      <span className={`score-bug score-bug--readonly score-bug--${size}`} role="img" aria-label={`Rated ${shown} out of 10`}>
+      <span className={`score-bug score-bug--readonly score-bug--${size}`} role="img" aria-label={`Puntuación: ${shown} de 10`}>
         <span className="score-bug__value">{shown}</span>
         <span className="score-bug__max" aria-hidden="true">/10</span>
       </span>
@@ -40,7 +40,7 @@ export default function ScoreBug({ value = 0, onChange, readonly = false, size =
             type="button"
             role="radio"
             aria-checked={score === n}
-            aria-label={`${n} out of 10`}
+            aria-label={`${n} de 10`}
             className={`score-bug__segment${n <= preview ? ' is-on' : ''}`}
             onMouseEnter={() => setHovered(n)}
             onFocus={() => setHovered(n)}

@@ -1,7 +1,7 @@
 {
   "name": "cinetracker",
   "version": "1.0.0",
-  "description": "Desktop app to track and rate movies and TV shows.",
+  "description": "Aplicación de escritorio para seguir y calificar películas y series.",
   "author": "Camilo Rosero",
   "license": "MIT",
   "main": "electron/main.js",

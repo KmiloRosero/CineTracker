@@ -61,7 +61,7 @@ export default function Modal({ open, onClose, title, label, wide = false, class
             {title && (
               <div className="modal__header">
                 <h2 className="modal__title">{title}</h2>
-                <button className="modal__close" onClick={onClose} aria-label="Close"><IconClose size={16} /></button>
+                <button className="modal__close" onClick={onClose} aria-label="Cerrar"><IconClose size={16} /></button>
               </div>
             )}
             {children}
@@ -76,7 +76,7 @@ export default function Modal({ open, onClose, title, label, wide = false, class
  * Confirmation for destructive actions. `onConfirm` may be async; its error
  * message is shown in the dialog instead of closing it.
  */
-export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Delete', children }) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, message, confirmLabel = 'Eliminar', children }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -102,7 +102,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message, confir
         {children}
         {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy} data-autofocus>Cancel</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy} data-autofocus>Cancelar</button>
           <button type="submit" className="btn btn--danger" disabled={busy}>
             {busy && <IconSpinner />}
             {confirmLabel}

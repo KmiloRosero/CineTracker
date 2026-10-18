@@ -43,7 +43,7 @@ Used at home, typically right after finishing or starting a title. Sessions are 
 - Name: CineTracker.
 - Accent: green #018751 on near-black #0A0A0A (replaces the former #00BFFF blue; user decision, applies to both light and dark themes).
 - Both light and dark modes required.
-- All code and UI text in English.
+- Code, comments and commits in English; all UI text in Spanish (Latin American, informal "tú"). TMDB metadata is requested in Spanish (es-MX); genres are stored by their English TMDB name and translated for display.
 - No social features, no cloud sync, no public-facing content.
 - Must not look generic or "AI-made" (user's explicit concern).
 

@@ -58,6 +58,26 @@ describe('tmdbService', () => {
     expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('append_to_response')).toBe('credits');
   });
 
+  it('asks for Spanish metadata but stores genres by their English TMDB name', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({
+      id: 693134, title: 'Duna: Parte dos', overview: 'Paul Atreides se une a los Fremen.',
+      genres: [{ id: 878, name: 'Ciencia ficción' }, { id: 12, name: 'Aventura' }],
+    }));
+    const d = await tmdbService.getDetails(693134, 'movie');
+    expect(d).toMatchObject({ title: 'Duna: Parte dos', genres: ['Science Fiction', 'Adventure'] });
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('language')).toBe('es-MX');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the English synopsis when there is no Spanish one', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ id: 7, title: 'Rare Film', overview: '' }))
+      .mockResolvedValueOnce(jsonResponse({ id: 7, title: 'Rare Film', overview: 'An English synopsis.' }));
+    const d = await tmdbService.getDetails(7, 'movie');
+    expect(d.overview).toBe('An English synopsis.');
+    expect(new URL(fetchMock.mock.calls[1][0]).searchParams.get('language')).toBe('en-US');
+  });
+
   it('uses aggregate credits for series', async () => {
     fetchMock.mockResolvedValue(jsonResponse({
       id: 95396, name: 'Severance', first_air_date: '2022-02-18', episode_run_time: [55],
@@ -70,21 +90,21 @@ describe('tmdbService', () => {
 
   it('turns HTTP and network failures into clear messages', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({}, 401));
-    await expect(tmdbService.search('x')).rejects.toThrow('TMDB rejected the API key');
+    await expect(tmdbService.search('x')).rejects.toThrow('TMDB rechazó la clave');
     fetchMock.mockResolvedValueOnce(jsonResponse({}, 404));
-    await expect(tmdbService.getDetails(1, 'movie')).rejects.toThrow('not found on TMDB');
+    await expect(tmdbService.getDetails(1, 'movie')).rejects.toThrow('no se encontró en TMDB');
     fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
-    await expect(tmdbService.getTrending()).rejects.toThrow('Could not reach TMDB');
+    await expect(tmdbService.getTrending()).rejects.toThrow('No se pudo conectar con TMDB');
   });
 
   it('explains when no API key is configured', async () => {
     process.env.TMDB_API_KEY = '';
-    await expect(tmdbService.search('dune')).rejects.toThrow('TMDB is not configured');
+    await expect(tmdbService.search('dune')).rejects.toThrow('TMDB no está configurado');
   });
 
   it('validates ids and types before calling TMDB', async () => {
-    await expect(tmdbService.getDetails('abc', 'movie')).rejects.toThrow('positive integer');
-    await expect(tmdbService.getDetails(1, 'book')).rejects.toThrow('"movie" or "series"');
+    await expect(tmdbService.getDetails('abc', 'movie')).rejects.toThrow('entero positivo');
+    await expect(tmdbService.getDetails(1, 'book')).rejects.toThrow('"movie" o "series"');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

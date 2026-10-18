@@ -19,7 +19,7 @@ export default function GuestPrompt({ title, message, onLoggedIn }) {
       <h2 className="guest-prompt__title">{title}</h2>
       <p>{message}</p>
       <button className="btn btn--primary" onClick={() => openLoginModal(onLoggedIn)}>
-        Log in or create an account
+        Inicia sesión o crea una cuenta
       </button>
     </div>
   );

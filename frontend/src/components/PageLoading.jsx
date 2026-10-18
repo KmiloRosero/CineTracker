@@ -18,7 +18,7 @@ function Spinner() {
   );
 }
 
-export function PageLoading({ message = 'Loading…' }) {
+export function PageLoading({ message = 'Cargando…' }) {
   return (
     <main className="page-loading" role="status" aria-label={message}>
       <Spinner />
@@ -36,7 +36,7 @@ export function PageError({ message, onRetry }) {
       <span>{message}</span>
       {onRetry && (
         <button className="btn btn--ghost btn--sm" onClick={onRetry}>
-          Try again
+          Reintentar
         </button>
       )}
     </main>

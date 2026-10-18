@@ -16,7 +16,7 @@ export default function Login() {
       >
         <div className="login-card__brand">
           <Wordmark size="lg" />
-          <p className="login-card__tagline">Your movies and series, tracked like a match night.</p>
+          <p className="login-card__tagline">Tus películas y series, narradas como una noche de partido.</p>
         </div>
         <AuthForm onSuccess={() => navigate('/', { replace: true })} idPrefix="login" />
       </motion.div>

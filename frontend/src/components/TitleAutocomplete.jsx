@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { searchTitle, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { tmdbImage } from '../utils/tmdbImage';
+import { genreLabel } from '../utils/genres';
+import { typeLabel } from '../utils/labels';
 
 // ── Icons ─────────────────────────────────────────────────────────────────
 function IconSearch() {
@@ -216,13 +218,13 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
           ref={inputRef}
           type="search"
           className="tac__input"
-          placeholder="Search TMDB — type a movie or series name…"
+          placeholder="Busca en TMDB: escribe el nombre de una película o serie…"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setSelected(null); setPreview(null); }}
           onFocus={() => results.length > 0 && setOpen(true)}
           onKeyDown={handleKeyDown}
           autoComplete="off"
-          aria-label="Search TMDB"
+          aria-label="Buscar en TMDB"
           role="combobox"
           aria-expanded={open}
           aria-controls="tac-results"
@@ -234,7 +236,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
           <span className="tac__input-spinner"><IconSpinner /></span>
         )}
         {(query || selected) && !searching && (
-          <button className="tac__input-clear" onClick={clearSelection} aria-label="Clear search" tabIndex={-1}>
+          <button className="tac__input-clear" onClick={clearSelection} aria-label="Borrar búsqueda" tabIndex={-1}>
             <IconClose />
           </button>
         )}
@@ -248,7 +250,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
             id="tac-results"
             className="tac__dropdown"
             role="listbox"
-            aria-label="Search results"
+            aria-label="Resultados de búsqueda"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.14 } }}
             exit={{ opacity: 0, y: -4, transition: { duration: 0.1 } }}
@@ -257,16 +259,16 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
               <li className="tac__dropdown-msg tac__dropdown-error">
                 <span>{searchError}</span>
                 <button className="tac__manual-link" onClick={() => { setOpen(false); onManualAdd?.(); }}>
-                  Add manually
+                  Agregar a mano
                 </button>
               </li>
             )}
 
             {!searchError && results.length === 0 && !searching && (
               <li className="tac__dropdown-msg">
-                No results found for &ldquo;{query}&rdquo;
+                No hay resultados para &ldquo;{query}&rdquo;
                 <button className="tac__manual-link" onClick={() => { setOpen(false); onManualAdd?.(); }}>
-                  Add manually
+                  Agregar a mano
                 </button>
               </li>
             )}
@@ -294,7 +296,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
                     <span className="tac__result-meta">
                       <span className={`tac__type-badge tac__type-badge--${r.type}`}>
                         {r.type === 'movie' ? <IconFilm /> : <IconTv />}
-                        {r.type === 'movie' ? 'Movie' : 'Series'}
+                        {typeLabel(r.type)}
                       </span>
                       {r.release_year && <span>{r.release_year}</span>}
                     </span>
@@ -309,14 +311,14 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
       {/* ── detail loading ── */}
       {loadingDetail && (
         <div className="tac__detail-loading">
-          <IconSpinner /> Fetching details…
+          <IconSpinner /> Cargando detalles…
         </div>
       )}
 
       {/* ── detail error ── */}
       {detailError && (
         <p className="form-error tac__detail-error" role="alert">
-          Could not load details: {detailError}
+          No se pudieron cargar los detalles: {detailError}
         </p>
       )}
 
@@ -333,7 +335,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
               {/* poster */}
               <div className="tac__preview-poster">
                 {posterUrl(preview.poster_path)
-                  ? <img src={posterUrl(preview.poster_path)} alt={`Poster for ${preview.title}`} />
+                  ? <img src={posterUrl(preview.poster_path)} alt={`Póster de ${preview.title}`} />
                   : <div className="tac__preview-poster-placeholder"><IconFilm /></div>
                 }
               </div>
@@ -348,7 +350,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
                 <div className="tac__preview-meta">
                   <span className={`tac__type-badge tac__type-badge--${preview.type}`}>
                     {preview.type === 'movie' ? <IconFilm /> : <IconTv />}
-                    {preview.type === 'movie' ? 'Movie' : 'Series'}
+                    {typeLabel(preview.type)}
                   </span>
                   {preview.release_year && <span>{preview.release_year}</span>}
                   {preview.runtime && <span>{preview.runtime} min</span>}
@@ -356,7 +358,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
 
                 {genreList.length > 0 && (
                   <div className="tac__preview-genres">
-                    {genreList.map((g) => <span key={g} className="genre-tag">{g}</span>)}
+                    {genreList.map((g) => <span key={g} className="genre-tag">{genreLabel(g)}</span>)}
                   </div>
                 )}
 
@@ -366,7 +368,7 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
 
                 {cast.length > 0 && (
                   <p className="tac__preview-cast">
-                    <span className="tac__preview-cast-label">Cast</span>
+                    <span className="tac__preview-cast-label">Reparto</span>
                     {cast.slice(0, 5).map((c) => c.name).join(', ')}
                   </p>
                 )}
@@ -383,12 +385,12 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
                     whileTap={{ scale: 0.97 }}
                   >
                     {saving
-                      ? <><IconSpinner /> Saving…</>
-                      : <><IconCheck /> Save to my catalog</>
+                      ? <><IconSpinner /> Guardando…</>
+                      : <><IconCheck /> Guardar en mi catálogo</>
                     }
                   </motion.button>
                   <button className="btn btn--ghost btn--sm" onClick={clearSelection}>
-                    Cancel
+                    Cancelar
                   </button>
                 </div>
               </div>
@@ -400,9 +402,9 @@ export default function TitleAutocomplete({ onSaved, onManualAdd }) {
       {/* ── manual fallback link (always visible below input, before results) ── */}
       {!preview && !selected && (
         <p className="tac__fallback">
-          Can&apos;t find it?{' '}
+          ¿No lo encuentras?{' '}
           <button className="tac__manual-link" onClick={() => onManualAdd?.()}>
-            Add manually
+            Agregar a mano
           </button>
         </p>
       )}

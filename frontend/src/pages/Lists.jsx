@@ -8,6 +8,7 @@ import { IconPlus, IconSpinner, IconFilm } from '../components/Icons';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { tmdbImage } from '../utils/tmdbImage';
+import { formatDate } from '../utils/labels';
 
 function unwrap(result) {
   if (result?.error) throw new Error(result.error);
@@ -19,8 +20,7 @@ const MAX_NAME = 60;
 const STRIP = 6;
 
 function formatCreated(iso) {
-  const date = new Date(`${iso.replace(' ', 'T')}Z`);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatDate(`${iso.replace(' ', 'T')}Z`);
 }
 
 /** A list as a fixture row: name and count at left, its posters registered at one scale. */
@@ -29,12 +29,12 @@ function ListRow({ list, onOpen }) {
   const shown = list.titles.slice(0, STRIP);
   return (
     <motion.li variants={cardVariants}>
-      <button type="button" className="list-row" onClick={() => onOpen(list.id)} aria-label={`Open ${list.name}, ${count} ${count === 1 ? 'title' : 'titles'}`}>
+      <button type="button" className="list-row" onClick={() => onOpen(list.id)} aria-label={`Abrir ${list.name}, ${count} ${count === 1 ? 'título' : 'títulos'}`}>
         <span className="list-row__info">
           <span className="list-row__name">{list.name}</span>
           <span className="list-row__meta">
-            <span className="rail__tag">{count} {count === 1 ? 'title' : 'titles'}</span>
-            <span className="list-row__date">Created {formatCreated(list.created_at)}</span>
+            <span className="rail__tag">{count} {count === 1 ? 'título' : 'títulos'}</span>
+            <span className="list-row__date">Creada el {formatCreated(list.created_at)}</span>
           </span>
         </span>
         <span className="list-row__strip" aria-hidden="true">
@@ -43,7 +43,7 @@ function ListRow({ list, onOpen }) {
               {t.poster_path ? <img src={tmdbImage(t.poster_path, 'w185')} alt="" loading="lazy" /> : <IconFilm size={18} />}
             </span>
           ))}
-          {count === 0 && <span className="list-row__empty">No titles yet</span>}
+          {count === 0 && <span className="list-row__empty">Sin títulos aún</span>}
           {count > STRIP && <span className="list-row__more">+{count - STRIP}</span>}
         </span>
       </button>
@@ -84,13 +84,13 @@ export default function Lists() {
   async function create(e) {
     e.preventDefault();
     const clean = name.trim();
-    if (!clean) { setNameError('Give the list a name.'); inputRef.current?.focus(); return; }
+    if (!clean) { setNameError('Ponle un nombre a la lista.'); inputRef.current?.focus(); return; }
     setCreating(true);
     setNameError(null);
     try {
       const list = unwrap(await window.electronAPI.createList(clean));
       setName('');
-      showToast({ message: `List "${list.name}" created.` });
+      showToast({ message: `Se creó la lista "${list.name}".` });
       navigate(`/lists/${list.id}`);
     } catch (err) {
       setNameError(err.message);
@@ -102,8 +102,8 @@ export default function Lists() {
   if (!user) {
     return (
       <main className="page">
-        <h1 className="page__heading">Lists</h1>
-        <GuestPrompt title="Group titles your way" message="Log in to make lists for a movie night, a marathon or a genre you are exploring." />
+        <h1 className="page__heading">Listas</h1>
+        <GuestPrompt title="Agrupa títulos a tu manera" message="Inicia sesión para crear listas para una noche de películas, un maratón o un género que estés explorando." />
       </main>
     );
   }
@@ -111,42 +111,42 @@ export default function Lists() {
   return (
     <main className="page lists">
       <header className="page__header">
-        <h1 className="page__heading">Lists</h1>
-        {!loading && lists.length > 0 && <span className="rail__tag">{lists.length} {lists.length === 1 ? 'list' : 'lists'}</span>}
+        <h1 className="page__heading">Listas</h1>
+        {!loading && lists.length > 0 && <span className="rail__tag">{lists.length} {lists.length === 1 ? 'lista' : 'listas'}</span>}
       </header>
 
       <form className="inline-create" onSubmit={create} noValidate>
-        <label htmlFor="new-list" className="form-group__label">New list</label>
+        <label htmlFor="new-list" className="form-group__label">Nueva lista</label>
         <div className="inline-create__row">
           <input
             id="new-list"
             ref={inputRef}
             value={name}
             maxLength={MAX_NAME}
-            placeholder="Friday horror night"
+            placeholder="Noche de terror del viernes"
             onChange={(e) => { setName(e.target.value); setNameError(null); }}
             aria-invalid={Boolean(nameError)}
             aria-describedby={nameError ? 'new-list-error' : undefined}
           />
           <button type="submit" className="btn btn--primary btn--lg" disabled={creating}>
-            {creating ? <IconSpinner /> : <IconPlus size={16} />} Create list
+            {creating ? <IconSpinner /> : <IconPlus size={16} />} Crear lista
           </button>
         </div>
         {nameError && <p id="new-list-error" className="field-error" role="alert">{nameError}</p>}
       </form>
 
-      {error && <PageError message={`Failed to load your lists: ${error}`} onRetry={load} />}
+      {error && <PageError message={`No se pudieron cargar tus listas: ${error}`} onRetry={load} />}
 
       {!error && loading && (
-        <div className="list-rows" aria-busy="true" aria-label="Loading lists">
+        <div className="list-rows" aria-busy="true" aria-label="Cargando listas">
           {Array.from({ length: 3 }, (_, i) => <div key={i} className="list-row list-row--skeleton skeleton" />)}
         </div>
       )}
 
       {!error && !loading && lists.length === 0 && (
         <div className="catalog__empty" role="status">
-          <h2 className="catalog__empty-title">No lists yet</h2>
-          <p>Name your first list above, then add titles to it from any title page with the list button.</p>
+          <h2 className="catalog__empty-title">Aún no tienes listas</h2>
+          <p>Ponle nombre a tu primera lista arriba y luego agrégale títulos desde la página de cualquier título con el botón de listas.</p>
         </div>
       )}
 

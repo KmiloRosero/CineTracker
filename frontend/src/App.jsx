@@ -18,10 +18,10 @@ import { IconHome, IconFilm, IconChart, IconList, IconLogIn } from './components
 import { useAuth } from './context/AuthContext';
 
 const NAV_LINKS = [
-  { to: '/',           label: 'Home',       Icon: IconHome  },
-  { to: '/catalog',    label: 'Catalog',    Icon: IconFilm  },
-  { to: '/lists',      label: 'Lists',      Icon: IconList  },
-  { to: '/statistics', label: 'Statistics', Icon: IconChart },
+  { to: '/',           label: 'Inicio',       Icon: IconHome  },
+  { to: '/catalog',    label: 'Catálogo',     Icon: IconFilm  },
+  { to: '/lists',      label: 'Listas',       Icon: IconList  },
+  { to: '/statistics', label: 'Estadísticas', Icon: IconChart },
 ];
 
 const pageVariants = {
@@ -42,7 +42,7 @@ function Sidebar() {
   const { user, logout, openLoginModal } = useAuth();
 
   return (
-    <nav className="app-sidebar" aria-label="Main navigation">
+    <nav className="app-sidebar" aria-label="Navegación principal">
       <div className="app-sidebar__logo">
         <Wordmark />
       </div>
@@ -77,21 +77,21 @@ function Sidebar() {
 
       {user ? (
         <div className="sidebar-user">
-          <NavLink to="/profile" className="sidebar-user__link" aria-label={`${user.name}: profile and settings`}>
+          <NavLink to="/profile" className="sidebar-user__link" aria-label={`${user.name}: perfil y ajustes`}>
             {user.avatar_url
               ? <img className="sidebar-user__avatar" src={user.avatar_url} alt="" />
               : <span className="sidebar-user__initials" aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>}
             <span className="sidebar-user__info">
               <span className="sidebar-user__name">{user.name}</span>
-              <span className="sidebar-user__hint">Profile &amp; settings</span>
+              <span className="sidebar-user__hint">Perfil y ajustes</span>
             </span>
           </NavLink>
-          <button className="sidebar-user__logout" onClick={logout}>Log out</button>
+          <button className="sidebar-user__logout" onClick={logout}>Cerrar sesión</button>
         </div>
       ) : (
         <button className="sidebar-login-btn" onClick={() => openLoginModal()}>
           <IconLogIn size={16} />
-          <span>Log in</span>
+          <span>Iniciar sesión</span>
         </button>
       )}
     </nav>
@@ -105,7 +105,7 @@ export default function App() {
   const isShowcase = location.pathname.startsWith('/title/') && location.pathname !== '/title/new';
   const routeKey = isShowcase ? '/title' : location.pathname;
 
-  if (loading) return <PageLoading message="Starting CineTracker…" />;
+  if (loading) return <PageLoading message="Iniciando CineTracker…" />;
 
   return (
     <MotionConfig reducedMotion="user">

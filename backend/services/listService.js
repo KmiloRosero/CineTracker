@@ -5,24 +5,24 @@ const { validateId } = require('../utils/validators.js');
 const MAX_NAME_LENGTH = 60;
 
 function validateListName(name) {
-  if (typeof name !== 'string' || name.trim() === '') throw new Error('List name is required.');
+  if (typeof name !== 'string' || name.trim() === '') throw new Error('El nombre de la lista es obligatorio.');
   if (name.trim().length > MAX_NAME_LENGTH) {
-    throw new Error(`List name must be ${MAX_NAME_LENGTH} characters or fewer.`);
+    throw new Error(`El nombre de la lista debe tener como máximo ${MAX_NAME_LENGTH} caracteres.`);
   }
   return name.trim();
 }
 
 function requireList(userId, id) {
-  validateId(id, 'List id');
+  validateId(id, 'El id de la lista');
   const list = listRepository.findById(userId, Number(id));
-  if (!list) throw new Error('List not found.');
+  if (!list) throw new Error('No se encontró la lista.');
   return list;
 }
 
 function ensureNameAvailable(userId, name, exceptId = null) {
   const existing = listRepository.findByName(userId, name);
   if (existing && existing.id !== exceptId) {
-    throw new Error(`You already have a list named "${name}".`);
+    throw new Error(`Ya tienes una lista llamada "${name}".`);
   }
 }
 

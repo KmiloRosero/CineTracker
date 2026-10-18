@@ -10,10 +10,10 @@ export default function LoginModal() {
   const { loginModalOpen, closeLoginModal, onLoginSuccess } = useAuth();
 
   return (
-    <Modal open={loginModalOpen} onClose={closeLoginModal} label="Log in to continue" className="login-modal">
+    <Modal open={loginModalOpen} onClose={closeLoginModal} label="Inicia sesión para continuar" className="login-modal">
       <div className="login-modal__brand">
         <Wordmark size="sm" />
-        <button className="modal__close" onClick={closeLoginModal} aria-label="Close">
+        <button className="modal__close" onClick={closeLoginModal} aria-label="Cerrar">
           <IconClose size={16} />
         </button>
       </div>
