@@ -20,9 +20,14 @@ const LOCALE = 'es-CO';
 /** "18 oct 2026" from an ISO date or datetime; '' when it is not a date. */
 export function formatDate(iso) {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime())
-    ? ''
-    : date.toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\./g, '');
+  if (Number.isNaN(date.getTime())) return '';
+  // built from parts: es-CO would otherwise write "18 de oct. de 2026"
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' })
+      .formatToParts(date)
+      .map((p) => [p.type, p.value]),
+  );
+  return `${parts.day} ${parts.month.replace('.', '')} ${parts.year}`;
 }
 
 /** Number with Spanish separators (1.234,5). */
