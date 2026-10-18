@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, session } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, session, shell } = require('electron');
 const path = require('path');
 
 // In development the backend lives beside frontend/; electron-builder copies it
@@ -40,16 +40,62 @@ const DEV_URL = 'http://localhost:5173';
 
 let mainWindow;
 
+// Trailers play in YouTube's privacy-enhanced embed; it is the only page
+// allowed inside a frame (see the frame-src CSP in index.html).
+const YOUTUBE_EMBED = 'https://www.youtube-nocookie.com/';
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+// YouTube rejects embeds whose request carries no Referer (error 153), and a
+// page loaded from file:// sends none. As YouTube asks of desktop and WebView
+// apps, the player request identifies the app instead.
+const APP_REFERRER = 'https://com.cinetracker.app/';
+
+function isYouTubeLink(url) {
+  try {
+    const { protocol, hostname } = new URL(url);
+    return protocol === 'https:' && /^(www\.|m\.)?(youtube\.com|youtu\.be)$/.test(hostname);
+  } catch {
+    return false;
+  }
+}
+
 // The renderer may only ever show the app itself: no navigation elsewhere,
 // no new windows, no permission prompts (camera, location, notifications...).
+// Links out of the trailer player open in the user's browser.
 function lockDown(contents) {
-  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.setWindowOpenHandler(({ url }) => {
+    if (isYouTubeLink(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
   contents.on('will-navigate', (event, url) => {
     const allowed = isDev ? url.startsWith(DEV_URL) : url.startsWith('file://');
     if (!allowed) event.preventDefault();
   });
+  contents.on('will-frame-navigate', (details) => {
+    if (details.isMainFrame) return;
+    if (!details.url.startsWith(YOUTUBE_EMBED) && details.url !== 'about:blank') details.preventDefault();
+  });
   contents.on('will-attach-webview', (event) => event.preventDefault());
 }
+
+function configureSession(ses) {
+  // Fullscreen is the one permission granted, and only to the trailer player.
+  ses.setPermissionRequestHandler((_contents, permission, callback, details) => {
+    const origin = details?.requestingUrl ?? '';
+    callback(permission === 'fullscreen' && origin.startsWith(YOUTUBE_EMBED));
+  });
+  ses.webRequest.onBeforeSendHeaders({ urls: [`${YOUTUBE_EMBED}*`] }, (details, callback) => {
+    const headers = { ...details.requestHeaders };
+    if (!headers.Referer && !headers.referer) headers.Referer = APP_REFERRER;
+    callback({ requestHeaders: headers });
+  });
+}
+
+// Opens a trailer on youtube.com in the browser (fallback when the embed is blocked).
+ipcMain.handle('app:openYouTube', (_event, videoId) => {
+  if (typeof videoId !== 'string' || !YOUTUBE_ID.test(videoId)) return { error: 'Video no válido.' };
+  shell.openExternal(`https://www.youtube.com/watch?v=${videoId}`);
+  return { ok: true };
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -81,7 +127,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  configureSession(session.defaultSession);
   initDatabase();
   registerImageProtocol();
   registerIpcHandlers(ipcMain);

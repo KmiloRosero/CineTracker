@@ -43,6 +43,9 @@ export const IconMoon    = (p) => <Svg {...p}><path d="M21 13A9 9 0 1111 3a7 7 0
 export const IconLogIn   = (p) => <Svg {...p}><path d="M14 3h6v18h-6"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></Svg>;
 export const IconAlert   = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><line x1="12" y1="7" x2="12" y2="13"/><line x1="12" y1="16" x2="12" y2="17"/></Svg>;
 
+export const IconPlay    = (p) => <Svg {...p}><polygon points="7 4 20 12 7 20" fill="currentColor"/></Svg>;
+export const IconExternal = (p) => <Svg {...p}><path d="M14 4h6v6"/><line x1="20" y1="4" x2="11" y2="13"/><path d="M18 14v6H4V6h6"/></Svg>;
+
 export function IconSpinner({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>

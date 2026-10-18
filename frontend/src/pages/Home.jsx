@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
+import TrailerModal from '../components/TrailerModal';
 import { gridVariants } from '../components/cardAnimations';
 import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
@@ -53,6 +54,7 @@ function unwrap(result) {
 const svg = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'square', 'aria-hidden': true };
 const IconArrow = () => <svg {...svg}><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>;
 const IconPlus  = () => <svg {...svg}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconTrailer = () => <svg {...svg} strokeWidth={2}><polygon points="7 4 20 12 7 20" fill="currentColor"/></svg>;
 const IconPause = () => <svg {...svg}><line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/></svg>;
 const IconPlay  = () => <svg {...svg} fill="currentColor" strokeWidth={0}><polygon points="7 4 20 12 7 20"/></svg>;
 function IconSpinner() {
@@ -77,6 +79,7 @@ function fromLocal(t, label) {
     genres: canonicalGenres(t.genres).map(genreLabel),
     label,
     localId: t.id,
+    tmdbId: t.tmdb_id ?? null,
     tmdbItem: null,
   };
 }
@@ -94,6 +97,7 @@ function fromTrending(item, rank, catalogId) {
     genres: [],
     label: `Tendencia #${rank}`,
     localId: catalogId ?? null,
+    tmdbId: item.tmdb_id,
     tmdbItem: item,
   };
 }
@@ -129,7 +133,7 @@ function Ticker({ overview, trending }) {
 // Titles advance on their own every ROTATE_MS with a cross-fade and a slow
 // push-in. Rotation pauses while the pointer is on a control, while a control
 // has keyboard focus, while the window is hidden, or when the viewer pauses it.
-function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, children }) {
+function Stage({ featured, onPrimary, primaryState, onTrailer, holdRotation = false, user, onLogin, onBrowse, children }) {
   const reduceMotion = useReducedMotion();
   const [active, setActive]         = useState(0);
   const [hoverPause, setHoverPause] = useState(false);
@@ -137,7 +141,7 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
   const [userPaused, setUserPaused] = useState(false);
   const [hidden, setHidden]         = useState(() => document.hidden);
   const keys = featured.map((f) => f.key).join('|');
-  const paused = hoverPause || focusPause || userPaused || hidden;
+  const paused = hoverPause || focusPause || userPaused || hidden || holdRotation;
   const count = featured.length;
 
   useEffect(() => { setActive(0); }, [keys]);
@@ -273,6 +277,11 @@ function Stage({ featured, onPrimary, primaryState, user, onLogin, onBrowse, chi
             {busy ? <IconSpinner /> : actionIcon}
             {actionLabel}
           </button>
+          {current.tmdbId && (
+            <button className="btn btn--ghost btn--lg stage__ghost" onClick={() => onTrailer(current)}>
+              <IconTrailer /> Ver tráiler
+            </button>
+          )}
           {user
             ? <button className="btn btn--ghost btn--lg stage__ghost" onClick={onBrowse}>Ver catálogo</button>
             : <button className="btn btn--ghost btn--lg stage__ghost" onClick={onLogin}>Iniciar sesión</button>}
@@ -393,6 +402,7 @@ export default function Home() {
   const [trendingError,   setTrendingError]   = useState(null);
   const [addingTmdbId,    setAddingTmdbId]    = useState(null);
   const [addError,        setAddError]        = useState(null);
+  const [trailerFor,      setTrailerFor]      = useState(null);
 
   async function refreshTitles() {
     const all = unwrap(await window.electronAPI.getAllTitles({}));
@@ -521,6 +531,8 @@ export default function Home() {
           onPrimary={handlePrimary}
           onLogin={() => openLoginModal()}
           onBrowse={() => navigate('/catalog')}
+          onTrailer={setTrailerFor}
+          holdRotation={trailerFor !== null}
         >
           <Ticker overview={user ? overview : null} trending={trending} />
         </Stage>
@@ -542,6 +554,14 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      <TrailerModal
+        open={trailerFor !== null}
+        onClose={() => setTrailerFor(null)}
+        tmdbId={trailerFor?.tmdbId}
+        type={trailerFor?.type}
+        title={trailerFor?.title ?? ''}
+      />
 
       <div className="home__rails">
         {addError && <p className="form-error" role="alert">{addError}</p>}

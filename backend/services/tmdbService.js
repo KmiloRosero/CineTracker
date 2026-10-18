@@ -107,10 +107,58 @@ async function getDetails(tmdbId, type) {
   return details;
 }
 
+// ── Trailers ────────────────────────────────────────────────────────────────
+// YouTube ids are 11 characters of [A-Za-z0-9_-]; anything else is not embedded.
+const YOUTUBE_ID   = /^[A-Za-z0-9_-]{11}$/;
+const TRAILER_TYPE = { Trailer: 0, Teaser: 1 };
+const TRAILER_LANG = { es: 0, en: 1 };
+const TRAILER_TTL  = 6 * 60 * 60 * 1000;
+const trailerCache = new Map(); // "movie:123" -> { expires, trailer }
+
+/** Best trailer first: trailers before teasers, Spanish before English, official, newest. */
+function rankTrailers(videos) {
+  const rank = (v) => [
+    TRAILER_TYPE[v.type],
+    TRAILER_LANG[v.iso_639_1] ?? 2,
+    v.official ? 0 : 1,
+    -(Date.parse(v.published_at ?? '') || 0),
+  ];
+  return videos
+    .filter((v) => v && v.site === 'YouTube' && YOUTUBE_ID.test(v.key ?? '') && v.type in TRAILER_TYPE)
+    .sort((a, b) => {
+      const ra = rank(a);
+      const rb = rank(b);
+      for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return ra[i] - rb[i];
+      return 0;
+    });
+}
+
+/** The title's best YouTube trailer as { key, name, language, type }, or null when TMDB has none. */
+async function getTrailer(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  if (type !== 'movie' && type !== 'series') throw new Error('El tipo debe ser "movie" o "series".');
+  const cacheKey = `${type}:${Number(tmdbId)}`;
+  const cached = trailerCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.trailer;
+
+  const endpoint = type === 'movie' ? `/movie/${Number(tmdbId)}/videos` : `/tv/${Number(tmdbId)}/videos`;
+  const data = await tmdbFetch(endpoint, { include_video_language: 'es,en,null' });
+  const best = rankTrailers(data.results ?? [])[0];
+  const trailer = best
+    ? { key: best.key, name: String(best.name ?? '').slice(0, 200), language: best.iso_639_1 ?? null, type: best.type }
+    : null;
+  trailerCache.set(cacheKey, { expires: Date.now() + TRAILER_TTL, trailer });
+  return trailer;
+}
+
+function clearTrailerCache() {
+  trailerCache.clear();
+}
+
 async function getTrending(limit = 12) {
   const n = Math.min(Math.max(Number(limit) || 12, 1), 20);
   const data = await tmdbFetch('/trending/all/week');
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending, normalizeDetails };
+module.exports = { search, getDetails, getTrending, getTrailer, clearTrailerCache, normalizeDetails, YOUTUBE_ID };

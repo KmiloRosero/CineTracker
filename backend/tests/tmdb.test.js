@@ -108,3 +108,49 @@ describe('tmdbService', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('trailers', () => {
+  beforeEach(() => tmdbService.clearTrailerCache());
+
+  const video = (o) => ({ site: 'YouTube', type: 'Trailer', official: true, iso_639_1: 'en', published_at: '2024-01-01T00:00:00Z', name: 'Trailer', ...o });
+
+  it('picks a Spanish official trailer over English ones, teasers and other clips', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: [
+      video({ key: 'clip0000001', type: 'Clip', iso_639_1: 'es' }),
+      video({ key: 'teaser00001', type: 'Teaser', iso_639_1: 'es' }),
+      video({ key: 'english0001', name: 'Official Trailer' }),
+      video({ key: 'spanish0001', iso_639_1: 'es', name: 'Tráiler oficial' }),
+      video({ key: 'vimeo000001', site: 'Vimeo', iso_639_1: 'es' }),
+    ] }));
+    expect(await tmdbService.getTrailer(693134, 'movie')).toEqual({ key: 'spanish0001', name: 'Tráiler oficial', language: 'es', type: 'Trailer' });
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe('/3/movie/693134/videos');
+    expect(url.searchParams.get('include_video_language')).toBe('es,en,null');
+  });
+
+  it('falls back to an English trailer, then to a teaser, and caches the answer', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: [
+      video({ key: 'teaser00001', type: 'Teaser', iso_639_1: 'es' }),
+      video({ key: 'oldtrailer1', published_at: '2020-01-01T00:00:00Z' }),
+      video({ key: 'newtrailer1', published_at: '2025-01-01T00:00:00Z' }),
+    ] }));
+    expect((await tmdbService.getTrailer(95396, 'series')).key).toBe('newtrailer1');
+    expect((await tmdbService.getTrailer(95396, 'series')).key).toBe('newtrailer1');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe('/3/tv/95396/videos');
+  });
+
+  it('returns null without trailers and ignores malformed YouTube keys', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: [
+      video({ key: 'bad"key<script>' }),
+      video({ key: 'clip0000001', type: 'Featurette' }),
+    ] }));
+    expect(await tmdbService.getTrailer(7, 'movie')).toBeNull();
+  });
+
+  it('validates the id and type', async () => {
+    await expect(tmdbService.getTrailer(-1, 'movie')).rejects.toThrow('entero positivo');
+    await expect(tmdbService.getTrailer(1, 'game')).rejects.toThrow('"movie" o "series"');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

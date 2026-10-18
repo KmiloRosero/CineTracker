@@ -68,6 +68,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   tmdbGetDetails:  (tmdbId, type) => ipcRenderer.invoke('tmdb:getDetails', tmdbId, type),
   /** @param {number} [limit] — Returns titles trending this week */
   tmdbGetTrending: (limit)        => ipcRenderer.invoke('tmdb:getTrending', limit),
+  /** @param {number} tmdbId @param {'movie'|'series'} type — Returns { key, name, language, type } or null */
+  tmdbGetTrailer:  (tmdbId, type) => ipcRenderer.invoke('tmdb:getTrailer', tmdbId, type),
+  /** @param {string} videoId — Opens the YouTube video in the default browser */
+  openYouTube:     (videoId)      => ipcRenderer.invoke('app:openYouTube', videoId),
 
   // ── App settings ─────────────────────────────────────────────────────────
   getTheme: ()        => ipcRenderer.invoke('app:getTheme'),

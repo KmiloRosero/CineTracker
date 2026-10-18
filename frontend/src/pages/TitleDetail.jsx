@@ -10,6 +10,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
+import TrailerModal from '../components/TrailerModal';
 import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -39,6 +40,7 @@ const IconEdit     = () => <svg {...svg}><path d="M4 20h4L19 9l-4-4L4 16v4z"/><l
 const IconList     = () => <svg {...svg}><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="4" y1="6" x2="5" y2="6"/><line x1="4" y1="12" x2="5" y2="12"/><line x1="4" y1="18" x2="5" y2="18"/><line x1="18" y1="15" x2="18" y2="21"/><line x1="15" y1="18" x2="21" y2="18"/></svg>;
 const IconTrash    = () => <svg {...svg}><polyline points="4 7 20 7"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>;
 const IconCheck    = () => <svg {...svg} strokeWidth={2.5}><polyline points="5 12 10 17 19 7"/></svg>;
+const IconPlay     = () => <svg {...svg}><polygon points="7 4 20 12 7 20" fill="currentColor"/></svg>;
 const IconClose    = () => <svg {...svg}><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>;
 const IconSpinner  = () => (
   <svg {...svg} strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
@@ -53,7 +55,7 @@ const IconFilmLarge = () => (
 );
 
 // ── Showcase: the title "goes to replay" ──────────────────────────────────
-function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
+function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onTrailer, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
   const reduceMotion = useReducedMotion();
   const [listsOpen, setListsOpen] = useState(false);
   const genres    = canonicalGenres(title.genres).map(genreLabel);
@@ -157,6 +159,11 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
               {marking ? <IconSpinner /> : <IconCheck />}
               {marking ? 'Guardando…' : 'Marcar como visto'}
             </button>
+            {title.tmdb_id && (
+              <button className="btn btn--ghost btn--lg" onClick={onTrailer}>
+                <IconPlay /> Ver tráiler
+              </button>
+            )}
           </div>
 
           {title.notes && (
@@ -252,6 +259,7 @@ export default function TitleDetail() {
   const [error,     setError]     = useState(null);
   const [editing,   setEditing]   = useState(isNew);
   const [deleting,  setDeleting]  = useState(false);
+  const [trailerOpen, setTrailerOpen] = useState(false);
   const showToast = useToast();
 
   useEffect(() => { setEditing(isNew); }, [isNew, id]);
@@ -444,6 +452,17 @@ export default function TitleDetail() {
           onDeleteRecord={handleDeleteRecord}
           onNavigate={goTo}
           onBack={() => navigate(-1)}
+          onTrailer={() => setTrailerOpen(true)}
+        />
+      )}
+
+      {title?.tmdb_id && (
+        <TrailerModal
+          open={trailerOpen}
+          onClose={() => setTrailerOpen(false)}
+          tmdbId={title.tmdb_id}
+          type={title.type}
+          title={title.title}
         />
       )}
 
