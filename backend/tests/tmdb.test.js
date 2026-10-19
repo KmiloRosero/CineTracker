@@ -241,3 +241,49 @@ describe('related titles', () => {
     expect(fetchMock.mock.calls.length).toBe(calls);
   });
 });
+
+describe('where to watch', () => {
+  beforeEach(() => tmdbService.clearTrailerCache());
+
+  it('groups Colombian providers, links big services to their search and the rest to TMDB', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: {
+      US: { link: 'https://www.themoviedb.org/movie/1/watch?locale=US', flatrate: [{ provider_id: 9, provider_name: 'US only' }] },
+      CO: {
+        link: 'https://www.themoviedb.org/movie/438631-dune/watch?locale=CO',
+        flatrate: [
+          { provider_id: 1899, provider_name: 'HBO Max', logo_path: '/h.png', display_priority: 2 },
+          { provider_id: 8, provider_name: 'Netflix', logo_path: '/n.png', display_priority: 1 },
+        ],
+        ads:  [{ provider_id: 192, provider_name: 'YouTube', logo_path: '/y.png' }],
+        free: [{ provider_id: 192, provider_name: 'YouTube', logo_path: '/y.png' }],
+        rent: [{ provider_id: 2, provider_name: 'Apple TV Store', logo_path: '/a.png' }],
+      },
+    } }));
+    const w = await tmdbService.getWatchProviders(438631, 'movie', 'Duna: Parte dos');
+    expect(w.region).toBe('CO');
+    expect(w.link).toBe('https://www.themoviedb.org/movie/438631-dune/watch?locale=CO');
+    expect(w.groups.flatrate.map((p) => p.name)).toEqual(['Netflix', 'HBO Max']);
+    expect(w.groups.flatrate[0].url).toBe('https://www.netflix.com/search?q=Duna%3A%20Parte%20dos');
+    expect(w.groups.flatrate[1].url).toBe(w.link);
+    expect(w.groups.free.map((p) => p.name)).toEqual(['YouTube']); // free and ads merged once
+    expect(w.groups.rent[0].url).toBe('https://tv.apple.com/search?term=Duna%3A%20Parte%20dos');
+    expect(w.groups.buy).toEqual([]);
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe('/3/movie/438631/watch/providers');
+  });
+
+  it('returns empty groups when the title is not offered in Colombia, and caches', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: { US: { flatrate: [{ provider_id: 8, provider_name: 'Netflix' }] } } }));
+    const w = await tmdbService.getWatchProviders(95396, 'series', 'Severance');
+    expect(w).toEqual({ region: 'CO', link: null, groups: { flatrate: [], free: [], rent: [], buy: [] } });
+    await tmdbService.getWatchProviders(95396, 'series', 'Severance');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(new URL(fetchMock.mock.calls[0][0]).pathname).toBe('/3/tv/95396/watch/providers');
+  });
+
+  it('ignores a link that is not TMDB', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: { CO: { link: 'https://evil.example/watch', flatrate: [{ provider_id: 1899, provider_name: 'HBO Max' }] } } }));
+    const w = await tmdbService.getWatchProviders(7, 'movie', 'X');
+    expect(w.link).toBeNull();
+    expect(w.groups.flatrate[0].url).toBeNull();
+  });
+});

@@ -490,6 +490,13 @@ Identity as a square slab. On Profile a 96px green square with the initial in An
 ### API key rows (Perfil)
 An Anton label with a square status tag beside it: outlined "Sin configurar", or a pitch-green slab naming where the key comes from. Below it, a hint line, a 44px password field with the green primary Guardar, then ghost Probar clave / Quitar and an underlined "Conseguir una clave" link pushed right. The test result sits under the row with a check (green) or alert (red card) icon. Rows are split by a hairline.
 
+### Liquid metal background and intro
+- **App background:** the liquid-metal WebGL shader (`src/components/ui/liquid-metal-shader.tsx`) in pitch-green tones fills the area right of the sidebar, under a theme scrim (broadcast black at 50–62%, chalk at 88%) so page text keeps AA. It drifts at speed 0.32 and 0.75 pixel ratio; Perfil can hold it still; reduced motion draws one still frame.
+- **Intro:** a full-screen presentation on brighter green metal, shaded to near-black behind the copy column. Each of four steps has a lower-third (green step name, black "n de 4"), an Anton headline, one Barlow paragraph, three points with Lucide icons on green squares, and a deck of three real trending posters tilted like the Home stage with black and green tag slabs. A segmented progress bar (green done and current), "No mostrar al abrir la app", ghost Atrás and green Siguiente / Entrar a CineTracker close it; Saltar presentación sits top right. Steps slide 40px with the app's ease; reduced motion keeps only the fade.
+
+### Where to watch
+Provider buttons (44px logo, name, external-link icon) on module tiles, grouped in rows under condensed caps labels (Incluida en suscripción, Gratis, Alquiler, Compra), with the JustWatch credit and a "Ver todas las opciones" link below.
+
 ### Login: glass card on smoke
 - **Smokey background** (`src/components/ui/login-form.tsx`): a full-screen WebGL shader of pitch-green smoke on broadcast black that drifts with the pointer, under a light backdrop blur. It is the one place the app uses a glow, chosen by the user for the sign-in moment. It pauses while the window is hidden and draws one still frame under reduced motion.
 - **Glass card:** 384px, 16px corners, dark glass (broadcast black at 60% with a 16px backdrop blur and a 1px white-20% border) so chalk text keeps AA contrast over the brightest smoke. The wordmark sits on top, then an Anton uppercase heading ("Bienvenido de nuevo" / "Crea tu cuenta") and a Barlow line.

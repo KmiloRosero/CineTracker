@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
 import TrailerModal from '../components/TrailerModal';
 import RelatedTitles from '../components/RelatedTitles';
+import WatchProviders from '../components/WatchProviders';
 import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -462,6 +463,7 @@ export default function TitleDetail() {
           onBack={() => navigate(-1)}
           onTrailer={() => setTrailerOpen(true)}
         >
+          {title.tmdb_id && <WatchProviders key={`watch-${title.id}`} title={title} />}
           {title.tmdb_id && (
             <RelatedTitles
               key={title.id}

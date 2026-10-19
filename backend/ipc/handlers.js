@@ -94,6 +94,7 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('tmdb:getTrending', safe((limit)        => tmdbService.getTrending(limit)));
   ipcMain.handle('tmdb:getTrailer',  safe((tmdbId, type) => tmdbService.getTrailer(tmdbId, type)));
   ipcMain.handle('tmdb:getRelated',  safe((tmdbId, type) => tmdbService.getRelated(tmdbId, type)));
+  ipcMain.handle('tmdb:getWatchProviders', safe((tmdbId, type, title) => tmdbService.getWatchProviders(tmdbId, type, title)));
 
   // Theme is per installation, so it works before anyone logs in.
   ipcMain.handle('app:getTheme', safe(() => {

@@ -12,8 +12,8 @@ Hay dos formas de usar la aplicación (las dos se descargan de la página de ver
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.3.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.3.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.0.4.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.0.4.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
 La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 9).
 
@@ -28,7 +28,17 @@ Después sigue el asistente de instalación, que está en español. Puedes elegi
 
 ---
 
-## 2. Primer uso: invitado o cuenta
+## 2. Presentación y primer uso
+
+### La presentación
+
+Al abrir la aplicación aparece una presentación de cuatro pasos que explica para qué sirve CineTracker y qué puedes hacer: tu catálogo, la ficha de cada título (tráiler, saga, dónde verla) y las recomendaciones y estadísticas.
+
+- **Siguiente** y **Atrás** (o las flechas del teclado) cambian de paso; la barra de abajo muestra en cuál vas y permite saltar a cualquiera.
+- **Saltar presentación** (o **Esc**) entra directo a la aplicación.
+- Marca **No mostrar al abrir la app** si no quieres verla cada vez. En Perfil > Apariencia puedes volver a activarla o verla de nuevo con **Ver la presentación**.
+
+### Invitado o cuenta
 
 Al abrir la aplicación llegas al **Inicio**. Sin cuenta puedes:
 
@@ -93,6 +103,10 @@ Al abrir un título ves su póster inclinado sobre un fondo con el color del pó
 
 Los botones redondos de la derecha sirven para volver, ir al título anterior o siguiente (también con las flechas del teclado), editar, agregar a listas y eliminar. Eliminar pide confirmación y no se puede deshacer.
 
+### Dónde verla
+
+Debajo del póster, **Dónde verla** muestra en qué plataformas está el título en Colombia, de forma legal, agrupadas en **Incluida en suscripción**, **Gratis**, **Alquiler** y **Compra**. Cada plataforma abre su página en tu navegador; las principales (Netflix, Disney+, Prime Video, Apple TV, Google Play, YouTube) abren directamente la búsqueda del título, y el resto la página de TMDB con todas las opciones. Los datos son de JustWatch, a través de TMDB.
+
 ### Lo que sigue
 
 Al bajar en la ficha de un título que viene de TMDB aparecen:
@@ -147,7 +161,7 @@ En **Listas** puedes agrupar títulos a tu manera (por ejemplo, "Noche de terror
 Haz clic en tu nombre (abajo a la izquierda) para abrir **Perfil y ajustes**:
 
 - **Perfil:** cambia tu nombre y tu foto (PNG, JPEG o WebP).
-- **Apariencia:** tema oscuro o claro. También puedes cambiarlo con el botón **Modo claro / Modo oscuro** de la barra lateral.
+- **Apariencia:** tema oscuro o claro (también con el botón de la barra lateral), el **fondo** de metal líquido animado o quieto (quieto si tu computador va lento) y la **presentación** al abrir.
 - **Contraseña:** cámbiala escribiendo la actual y la nueva.
 - **Claves de API:**
   - **TMDB** es necesaria para buscar títulos, ver tendencias y tráilers. Consíguela gratis en themoviedb.org (botón **Conseguir una clave**).

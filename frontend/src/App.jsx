@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Home from './pages/Home';
@@ -11,11 +11,13 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import LoginModal from './components/LoginModal';
 import Sidebar from './components/Sidebar';
+import AppBackground from './components/AppBackground';
+import Intro from './components/Intro';
 import { ToastProvider } from './components/Toast';
 import { PageLoading } from './components/PageLoading';
 import { useStoredState } from './hooks/useStoredState';
+import { INTRO_PREF, setAppPref } from './hooks/useAppPref';
 import { useAuth } from './context/AuthContext';
-
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -40,12 +42,27 @@ export default function App() {
   const isShowcase = location.pathname.startsWith('/title/') && location.pathname !== '/title/new';
   const routeKey = isShowcase ? '/title' : location.pathname;
 
+  // The presentation opens with the app unless turned off; Perfil can replay it.
+  const [introOpen, setIntroOpen] = useState(() => {
+    try { return localStorage.getItem(INTRO_PREF[0]) !== 'hide'; } catch { return true; }
+  });
+  useEffect(() => {
+    const replay = () => setIntroOpen(true);
+    window.addEventListener('cinetracker-show-intro', replay);
+    return () => window.removeEventListener('cinetracker-show-intro', replay);
+  }, []);
+  const closeIntro = useCallback(({ dontShow }) => {
+    if (dontShow) setAppPref(INTRO_PREF[0], 'hide');
+    setIntroOpen(false);
+  }, []);
+
   if (loading) return <PageLoading message="Iniciando CineTracker…" />;
 
   return (
     <MotionConfig reducedMotion="user">
       <ToastProvider>
         <div className="app-layout" data-sidebar={sidebar}>
+          <AppBackground />
           <Sidebar collapsed={sidebar === 'collapsed'} onToggle={toggleSidebar} />
 
           <div className="app-content">
@@ -67,6 +84,14 @@ export default function App() {
           {/* rendered at root so it overlays any page */}
           <LoginModal />
         </div>
+
+        <AnimatePresence>
+          {introOpen && (
+            <motion.div key="intro" className="intro-layer" exit={{ opacity: 0, transition: { duration: 0.35 } }}>
+              <Intro onDone={closeIntro} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </ToastProvider>
     </MotionConfig>
   );

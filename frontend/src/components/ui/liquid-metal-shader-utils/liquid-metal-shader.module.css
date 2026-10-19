@@ -1,0 +1,23 @@
+/* Liquid metal shader: the canvas fills the root; without WebGL the root's
+   gradient (built from the same three colours) stands in for it. */
+.root {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(90% 70% at 30% 25%, var(--liquid-metal-mid) 0%, transparent 60%),
+    radial-gradient(70% 60% at 75% 80%, var(--liquid-metal-highlight) 0%, transparent 55%),
+    var(--liquid-metal-base);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.root[data-webgl="false"] .canvas {
+  display: none;
+}

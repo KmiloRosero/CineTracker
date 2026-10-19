@@ -287,6 +287,67 @@ async function getRelated(tmdbId, type) {
   return related;
 }
 
+// ── Where to watch (legal providers, data from JustWatch via TMDB) ──────────
+const WATCH_REGION = 'CO';
+const watchCache   = new Map(); // "movie:123" -> { expires, providers }
+
+// Search pages of the big services, so a provider opens on the title; any
+// other provider opens TMDB's "where to watch" page, which links to it.
+const PROVIDER_SEARCH = {
+  8:   (q) => `https://www.netflix.com/search?q=${q}`,
+  337: (q) => `https://www.disneyplus.com/search?q=${q}`,
+  119: (q) => `https://www.primevideo.com/search?phrase=${q}`,
+  10:  (q) => `https://www.primevideo.com/search?phrase=${q}`,
+  2:   (q) => `https://tv.apple.com/search?term=${q}`,
+  350: (q) => `https://tv.apple.com/search?term=${q}`,
+  3:   (q) => `https://play.google.com/store/search?q=${q}&c=movies`,
+  192: (q) => `https://www.youtube.com/results?search_query=${q}`,
+};
+
+/**
+ * Where the title can be watched legally in Colombia, grouped as included
+ * in a subscription, free (with or without ads), rent and buy; each provider
+ * carries a link. `link` is TMDB's page for the title; groups are empty when
+ * nothing is listed.
+ */
+async function getWatchProviders(tmdbId, type, title = '') {
+  validateId(tmdbId, 'El id de TMDB');
+  if (type !== 'movie' && type !== 'series') throw new Error('El tipo debe ser "movie" o "series".');
+  const id = Number(tmdbId);
+  const cacheKey = `${type}:${id}`;
+  const cached = watchCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.providers;
+
+  const data = await tmdbFetch(type === 'movie' ? `/movie/${id}/watch/providers` : `/tv/${id}/watch/providers`);
+  const region = data.results?.[WATCH_REGION] ?? {};
+  const link = typeof region.link === 'string' && region.link.startsWith('https://www.themoviedb.org/') ? region.link : null;
+  const query = encodeURIComponent(String(title).slice(0, 200));
+
+  const normalize = (list) => (Array.isArray(list) ? list : [])
+    .filter((p) => p && Number.isInteger(p.provider_id) && p.provider_name)
+    .sort((a, b) => (a.display_priority ?? 999) - (b.display_priority ?? 999))
+    .map((p) => ({
+      id:        p.provider_id,
+      name:      String(p.provider_name).slice(0, 80),
+      logo_path: p.logo_path ?? null,
+      url:       PROVIDER_SEARCH[p.provider_id] && query ? PROVIDER_SEARCH[p.provider_id](query) : link,
+    }));
+  const unique = (list) => list.filter((p, i) => list.findIndex((q) => q.id === p.id) === i);
+
+  const providers = {
+    region: WATCH_REGION,
+    link,
+    groups: {
+      flatrate: normalize(region.flatrate),
+      free:     unique([...normalize(region.free), ...normalize(region.ads)]),
+      rent:     normalize(region.rent),
+      buy:      normalize(region.buy),
+    },
+  };
+  watchCache.set(cacheKey, { expires: Date.now() + TRAILER_TTL, providers });
+  return providers;
+}
+
 /** Checks that the configured key works (Perfil > Claves de API). */
 async function ping() {
   await tmdbFetch('/configuration');
@@ -296,6 +357,7 @@ async function ping() {
 function clearTrailerCache() {
   trailerCache.clear();
   relatedCache.clear();
+  watchCache.clear();
 }
 
 async function getTrending(limit = 12) {
@@ -304,4 +366,4 @@ async function getTrending(limit = 12) {
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending, getTrailer, getRelated, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };
+module.exports = { search, getDetails, getTrending, getTrailer, getRelated, getWatchProviders, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };

@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.0.3
+Versión de la aplicación: 1.0.4
 
 ---
 
@@ -31,6 +31,8 @@ La interfaz está en español y sigue un sistema visual propio inspirado en las 
 | Ficha del título | Puntuación 1–10, estado, historial de visualizaciones, reparto, notas, listas, navegación entre títulos. |
 | Tráilers | Selección automática del mejor tráiler de TMDB y reproducción con un componente reutilizable de YouTube. |
 | Lo que sigue | La saga en orden (o las temporadas), títulos parecidos y próximos estrenos del mismo género en la ficha de cada título. |
+| Dónde verla | Plataformas legales en Colombia (suscripción, gratis, alquiler, compra) con enlace a cada una. |
+| Presentación | Cuatro pasos al abrir la app que explican para qué sirve y sus funciones; se puede saltar o desactivar. |
 | Recomendaciones | Gemini con salida JSON validada; motor por reglas como respaldo, siempre con el motivo de cada recomendación. |
 | Estadísticas | Totales con tendencia mensual, actividad de 12 meses, estados, géneros; cada gráfica con vista de tabla. |
 | Listas, perfil y ajustes | Listas con nombre; foto y nombre; cambio de contraseña; tema; claves de API; eliminación de cuenta. |
@@ -206,7 +208,11 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
 
 Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. El resultado se guarda en caché seis horas. En la interfaz, `RelatedTitles.jsx` reutiliza las tarjetas del Inicio (`FixtureCard`) con el número de parte y una etiqueta sobre el póster (Estás aquí, Sigue, Próximamente).
 
-### 4.4 Componentes con Tailwind, TypeScript y estructura shadcn
+### 4.4 Dónde verla (proveedores de streaming)
+
+`tmdbService.getWatchProviders` consulta `/watch/providers` de TMDB (datos de JustWatch) y se queda con la región de Colombia, agrupando las plataformas en suscripción, gratis (con o sin anuncios), alquiler y compra. TMDB no entrega enlaces directos a cada plataforma, así que para las principales se arma la URL de su búsqueda con el título y el resto usa la página "Dónde ver" de TMDB, que enlaza a cada servicio. El proceso principal solo abre enlaces `https` de una lista de dominios permitidos (TMDB y esas plataformas). La aplicación muestra únicamente opciones legales; no enlaza a sitios de descarga o streaming no autorizados.
+
+### 4.5 Componentes con Tailwind, TypeScript y estructura shadcn
 
 El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta de vidrio, escrito en TypeScript con clases de Tailwind (`src/components/ui/login-form.tsx`). Para integrarlo sin alterar el resto de la interfaz, que usa CSS propio:
 
@@ -222,7 +228,14 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
   - La animación se pausa con la ventana oculta.
   - Con "reducir movimiento" se dibuja un solo cuadro fijo.
 
-### 4.5 Recomendaciones con IA (Google Gemini)
+### 4.6 Fondo de metal líquido y presentación
+
+`src/components/ui/liquid-metal-shader.tsx` es un sombreador WebGL (ruido fbm deformado) integrado con su módulo CSS, que sirve de respaldo con un degradado si no hay WebGL. Solo dibuja mientras está en pantalla, se detiene con "reducir movimiento" o con velocidad 0, y libera sus recursos al desmontarse.
+
+- **Fondo de la app** (`AppBackground`): el metal en verde de la marca detrás de las páginas, con un velo del tema (negro al 50–62 % o tiza al 88 %) para que todo el texto mantenga contraste AA. Se dibuja a resolución reducida y en Perfil se puede dejar quieto.
+- **Presentación** (`Intro`): cuatro pasos sobre el metal, con pósters reales de las tendencias, indicador de progreso, Saltar, Atrás y teclado. Usa las pautas de UI/UX Pro Max (no forzar el recorrido, mostrar el progreso, animar una o dos piezas por vista) y de Motion (curva de salida exponencial y transiciones que se reducen a opacidad con "reducir movimiento").
+
+### 4.7 Recomendaciones con IA (Google Gemini)
 
 - **Modelo y petición:** `gemini-3.8-flash`, configurable con `GEMINI_MODEL`, mediante la API REST `generateContent`. Se usa razonamiento bajo y un esquema JSON estricto: `{ recommendations: [{ title_id, reason }] }`.
 - **Prompt:**
@@ -267,9 +280,9 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 
 ## 6. Pruebas
 
-`npm test` ejecuta **144 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **151 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
-**Backend (123 pruebas, `backend/tests/`), sobre bases de datos temporales:**
+**Backend (126 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
 - **Migraciones:** bases nuevas, actualización de bases anteriores a las cuentas, copias de seguridad e idempotencia.
 - **Autenticación y perfil:** registro, inicio de sesión, cambio de contraseña, fotos, eliminación de la cuenta en cascada.
@@ -279,7 +292,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 - **TMDB, tráilers, lo que sigue y caché de imágenes:** normalización, español con respaldo en inglés, selección de tráiler, orden de la saga, temporadas, filtro de estrenos, seguridad de rutas, uso sin internet.
 - **IPC, claves y sesiones:** restricciones a invitados, ocultamiento de errores internos, cifrado de claves, precedencia de fuentes, sesión recordada (vencimiento, cierre de sesión, base de datos copiada).
 
-**Interfaz (21 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
+**Interfaz (25 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
 
 - Reproductor de YouTube: dominio, sandbox, validación del identificador y estado de carga.
 - Pantalla del tráiler: encontrado, inexistente, error y reintento, cierre.
@@ -300,9 +313,9 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 144 pruebas. |
+| `npm test` | Las 151 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
-| `npm run dist:win:public` | `CineTracker-Setup-1.0.3.exe` y `CineTracker-Portable-1.0.3.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
+| `npm run dist:win:public` | `CineTracker-Setup-1.0.4.exe` y `CineTracker-Portable-1.0.4.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 

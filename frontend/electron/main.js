@@ -98,6 +98,19 @@ ipcMain.handle('app:openYouTube', (_event, videoId) => {
   return { ok: true };
 });
 
+// Where-to-watch links: TMDB's watch page or a known streaming service, https only.
+const WATCH_HOSTS = new Set([
+  'www.themoviedb.org', 'www.netflix.com', 'www.disneyplus.com', 'www.primevideo.com',
+  'tv.apple.com', 'play.google.com', 'www.youtube.com',
+]);
+ipcMain.handle('app:openWatchLink', (_event, url) => {
+  let parsed;
+  try { parsed = new URL(url); } catch { return { error: 'Enlace no válido.' }; }
+  if (parsed.protocol !== 'https:' || !WATCH_HOSTS.has(parsed.hostname)) return { error: 'Enlace no válido.' };
+  shell.openExternal(parsed.toString());
+  return { ok: true };
+});
+
 // Pages where each API key is created (Perfil > Claves de API).
 const KEY_PAGES = {
   tmdb:   'https://www.themoviedb.org/settings/api',

@@ -7,6 +7,7 @@ import { IconUpload, IconSpinner, IconSun, IconMoon, IconTrash, IconExternal, Ic
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
+import { useAppPref, BACKGROUND_PREF, INTRO_PREF } from '../hooks/useAppPref';
 import { avatarFromFile } from '../utils/avatar';
 
 const MIN_PASSWORD = 6;
@@ -304,6 +305,8 @@ export default function Profile() {
   const showToast = useToast();
   const { user, updateUser, forgetUser } = useAuth();
   const [theme, setTheme] = useTheme();
+  const [background, setBackground] = useAppPref(...BACKGROUND_PREF);
+  const [intro, setIntro] = useAppPref(...INTRO_PREF);
   const [deleting, setDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
@@ -350,6 +353,32 @@ export default function Profile() {
               </button>
             ))}
           </div>
+
+          <h3 className="settings-subtitle" id="bg-label">Fondo</h3>
+          <div className="segmented segmented--page" role="radiogroup" aria-labelledby="bg-label">
+            {[['animated', 'Animado'], ['still', 'Quieto']].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={background === value}
+                className={`segmented__option${background === value ? ' is-active' : ''}`}
+                onClick={() => setBackground(value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="field-hint">El fondo de metal líquido se mueve despacio; déjalo quieto si tu computador va lento.</p>
+
+          <h3 className="settings-subtitle">Presentación</h3>
+          <label className="settings-check" htmlFor="intro-on-open">
+            <input id="intro-on-open" type="checkbox" checked={intro === 'show'} onChange={(e) => setIntro(e.target.checked ? 'show' : 'hide')} />
+            <span>Mostrar la presentación al abrir la app</span>
+          </label>
+          <button type="button" className="btn btn--ghost" onClick={() => window.dispatchEvent(new Event('cinetracker-show-intro'))}>
+            Ver la presentación
+          </button>
         </Section>
 
         <Section index={2} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
