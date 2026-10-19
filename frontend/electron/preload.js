@@ -70,6 +70,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   tmdbGetTrending: (limit)        => ipcRenderer.invoke('tmdb:getTrending', limit),
   /** @param {number} tmdbId @param {'movie'|'series'} type — Returns { key, name, language, type } or null */
   tmdbGetTrailer:  (tmdbId, type) => ipcRenderer.invoke('tmdb:getTrailer', tmdbId, type),
+  /** @param {number} tmdbId @param {'movie'|'series'} type — Returns { collection, seasons, nextEpisode, similar, upcoming } */
+  tmdbGetRelated:  (tmdbId, type) => ipcRenderer.invoke('tmdb:getRelated', tmdbId, type),
   /** @param {string} videoId — Opens the YouTube video in the default browser */
   openYouTube:     (videoId)      => ipcRenderer.invoke('app:openYouTube', videoId),
 

@@ -12,8 +12,8 @@ Hay dos formas de usar la aplicación:
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.1.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.1.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.0.2.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.0.2.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
 Los archivos que terminan en `-sin-claves` (los que se descargan de GitHub) son la misma aplicación sin las claves de TMDB y Gemini incluidas. La primera vez que la abras, el Inicio muestra la pantalla **Configura CineTracker**: haz clic en **Configurar claves**, crea tu cuenta y pega tu clave de TMDB en el campo que queda seleccionado (ver la sección 9). Al volver al Inicio aparecen las tendencias.
 
@@ -91,6 +91,17 @@ Al abrir un título ves su póster inclinado sobre un fondo con el color del pó
 - **Reparto**, **sinopsis**, **géneros** y **notas** personales.
 
 Los botones redondos de la derecha sirven para volver, ir al título anterior o siguiente (también con las flechas del teclado), editar, agregar a listas y eliminar. Eliminar pide confirmación y no se puede deshacer.
+
+### Lo que sigue
+
+Al bajar en la ficha de un título que viene de TMDB aparecen:
+
+- **La saga en orden** (películas): todas las partes de la colección por fecha de estreno, numeradas. La que estás viendo dice **Estás aquí**, la siguiente dice **Sigue** y las que todavía no se estrenan dicen **Próximamente** con su fecha. Por ejemplo, en "Duna" ves Duna (1), Duna: Parte dos (2, Sigue) y Duna: Parte tres (3, Próximamente).
+- **Temporadas en orden** (series): cada temporada con su número de episodios y año, las que vienen marcadas como Próximamente y, si ya está anunciado, el próximo episodio con su fecha.
+- **Parecidas:** títulos recomendados por TMDB a partir de este.
+- **Próximos estrenos:** películas o series del mismo género que todavía no salen, ordenadas por fecha de estreno.
+
+Las que ya están en tu catálogo muestran su estado y tu puntuación, y se abren con un clic. Las demás tienen el botón **Agregar**, que las guarda en tu catálogo como Pendiente.
 
 ---
 

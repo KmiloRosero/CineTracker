@@ -151,6 +151,142 @@ async function getTrailer(tmdbId, type) {
   return trailer;
 }
 
+// ── What comes next: saga order, seasons, similar titles, upcoming releases ──
+const RELATED_LIMIT = 9;
+const RELATED_TTL   = 6 * 60 * 60 * 1000;
+const relatedCache  = new Map(); // "movie:123" -> { expires, related }
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** A movie or series from a list endpoint, with its full release date and whether it is still to come. */
+function normalizeListItem(item, type) {
+  const date = item.release_date ?? item.first_air_date ?? null;
+  return {
+    tmdb_id:       item.id,
+    type,
+    title:         item.title ?? item.name ?? '(sin título)',
+    overview:      item.overview ?? null,
+    poster_path:   item.poster_path ?? null,
+    backdrop_path: item.backdrop_path ?? null,
+    release_year:  parseYear(date),
+    release_date:  date || null,
+    upcoming:      !date || date > today(),
+  };
+}
+
+/** Saga parts in release order; parts without a date go last. */
+function orderParts(parts) {
+  return [...parts].sort((a, b) => {
+    if (!a.release_date) return b.release_date ? 1 : 0;
+    if (!b.release_date) return -1;
+    return a.release_date.localeCompare(b.release_date);
+  });
+}
+
+function normalizeSeasons(item) {
+  return (item.seasons ?? [])
+    .filter((s) => s && s.season_number > 0) // season 0 holds specials
+    .sort((a, b) => a.season_number - b.season_number)
+    .map((s) => ({
+      number:        s.season_number,
+      name:          s.name ?? `Temporada ${s.season_number}`,
+      episode_count: s.episode_count ?? null,
+      air_date:      s.air_date || null,
+      poster_path:   s.poster_path ?? null,
+      upcoming:      !s.air_date || s.air_date > today(),
+    }));
+}
+
+// Discover returns many untranslated foreign releases; keep the ones a
+// Spanish-speaking viewer can read: Spanish or English originals, or a title
+// TMDB has translated.
+function readableInSpanish(r) {
+  const title = r.title ?? r.name;
+  const original = r.original_title ?? r.original_name;
+  return ['es', 'en'].includes(r.original_language) || (title && original && title !== original);
+}
+
+/** Upcoming releases sharing the title's two main genres (one genre if that finds too few). */
+async function findUpcoming(type, genreIds, excludeIds) {
+  if (genreIds.length === 0) return [];
+  const endpoint = type === 'movie' ? '/discover/movie' : '/discover/tv';
+  const dateParam = type === 'movie' ? 'primary_release_date.gte' : 'first_air_date.gte';
+  const query = (genres) => tmdbFetch(endpoint, {
+    with_genres: genres.join(','),
+    [dateParam]: today(),
+    sort_by: 'popularity.desc',
+    include_adult: false,
+    page: 1,
+  });
+  let results = (await query(genreIds.slice(0, 2))).results ?? [];
+  if (results.length < 4 && genreIds.length > 1) {
+    const seen = new Set(results.map((r) => r.id));
+    const wider = ((await query(genreIds.slice(0, 1))).results ?? []).filter((r) => !seen.has(r.id));
+    results = [...results, ...wider];
+  }
+  return results
+    .filter((r) => !excludeIds.has(r.id) && r.poster_path && readableInSpanish(r))
+    .map((r) => normalizeListItem(r, type))
+    .sort((a, b) => (a.release_date ?? '9999').localeCompare(b.release_date ?? '9999'))
+    .slice(0, RELATED_LIMIT);
+}
+
+/**
+ * Everything that follows a title: for a movie, its saga in release order
+ * ({ name, parts }, with `current` marking this one); for a series, its
+ * seasons and next episode; plus similar titles and upcoming releases in
+ * the same genres. Each list is empty when TMDB has nothing for it.
+ */
+async function getRelated(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  if (type !== 'movie' && type !== 'series') throw new Error('El tipo debe ser "movie" o "series".');
+  const id = Number(tmdbId);
+  const cacheKey = `${type}:${id}`;
+  const cached = relatedCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) return cached.related;
+
+  const isMovie = type === 'movie';
+  const details = await tmdbFetch(isMovie ? `/movie/${id}` : `/tv/${id}`, { append_to_response: 'recommendations' });
+
+  let collection = null;
+  if (isMovie && details.belongs_to_collection?.id) {
+    try {
+      const data = await tmdbFetch(`/collection/${Number(details.belongs_to_collection.id)}`);
+      const parts = orderParts((data.parts ?? []).map((p) => normalizeListItem(p, 'movie')))
+        .map((p) => ({ ...p, current: p.tmdb_id === id }));
+      if (parts.length > 1) collection = { name: data.name ?? details.belongs_to_collection.name, parts };
+    } catch { /* the rest of the page still shows */ }
+  }
+
+  const sagaIds = new Set([id, ...(collection?.parts ?? []).map((p) => p.tmdb_id)]);
+  const similar = (details.recommendations?.results ?? [])
+    .filter((r) => !sagaIds.has(r.id) && (r.media_type === undefined || r.media_type === (isMovie ? 'movie' : 'tv')))
+    .slice(0, RELATED_LIMIT)
+    .map((r) => normalizeListItem(r, type));
+
+  let upcoming = [];
+  try {
+    const exclude = new Set([...sagaIds, ...similar.map((s) => s.tmdb_id)]);
+    upcoming = await findUpcoming(type, (details.genres ?? []).map((g) => g.id), exclude);
+  } catch { /* optional */ }
+
+  const next = details.next_episode_to_air;
+  const related = {
+    collection,
+    seasons:     isMovie ? [] : normalizeSeasons(details),
+    nextEpisode: !isMovie && next ? {
+      season:   next.season_number,
+      episode:  next.episode_number,
+      name:     next.name ?? null,
+      air_date: next.air_date ?? null,
+    } : null,
+    similar,
+    upcoming,
+  };
+  relatedCache.set(cacheKey, { expires: Date.now() + RELATED_TTL, related });
+  return related;
+}
+
 /** Checks that the configured key works (Perfil > Claves de API). */
 async function ping() {
   await tmdbFetch('/configuration');
@@ -159,6 +295,7 @@ async function ping() {
 
 function clearTrailerCache() {
   trailerCache.clear();
+  relatedCache.clear();
 }
 
 async function getTrending(limit = 12) {
@@ -167,4 +304,4 @@ async function getTrending(limit = 12) {
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending, getTrailer, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };
+module.exports = { search, getDetails, getTrending, getTrailer, getRelated, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };

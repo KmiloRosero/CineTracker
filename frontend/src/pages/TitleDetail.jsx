@@ -11,6 +11,7 @@ import { usePosterColor } from '../hooks/usePosterColor';
 import { useAuth } from '../context/AuthContext';
 import GuestPrompt from '../components/GuestPrompt';
 import TrailerModal from '../components/TrailerModal';
+import RelatedTitles from '../components/RelatedTitles';
 import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -55,7 +56,7 @@ const IconFilmLarge = () => (
 );
 
 // ── Showcase: the title "goes to replay" ──────────────────────────────────
-function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onTrailer, onEdit, onDelete, onDeleteRecord, onNavigate, onBack }) {
+function Showcase({ title, records, direction, neighbours, marking, onRate, onStatus, onMarkWatched, onTrailer, onEdit, onDelete, onDeleteRecord, onNavigate, onBack, children }) {
   const reduceMotion = useReducedMotion();
   const [listsOpen, setListsOpen] = useState(false);
   const genres    = canonicalGenres(title.genres).map(genreLabel);
@@ -213,7 +214,9 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
         <button className="side-controls__btn side-controls__btn--danger" onClick={onDelete} aria-label="Eliminar título"><IconTrash /></button>
       </nav>
 
-      {/* ── below the fold: watch history ── */}
+      {/* ── below the fold: what comes next, then the watch history ── */}
+      {children && <div className="showcase__more">{children}</div>}
+
       <section className="history" aria-label="Historial">
         <header className="rail__header">
           <h2 className="rail__title">Historial</h2>
@@ -363,6 +366,11 @@ export default function TitleDetail() {
     }
   }
 
+  async function refreshCatalog() {
+    const all = await window.electronAPI.getAllTitles({});
+    if (!all?.error) setCatalog(all);
+  }
+
   function handleDelete() {
     requireAuth(() => setDeleting(true));
   }
@@ -453,7 +461,17 @@ export default function TitleDetail() {
           onNavigate={goTo}
           onBack={() => navigate(-1)}
           onTrailer={() => setTrailerOpen(true)}
-        />
+        >
+          {title.tmdb_id && (
+            <RelatedTitles
+              key={title.id}
+              title={title}
+              catalog={catalog}
+              onOpen={(titleId) => navigate(`/title/${titleId}`)}
+              onCatalogChanged={refreshCatalog}
+            />
+          )}
+        </Showcase>
       )}
 
       {title?.tmdb_id && (

@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.0.1
+Versión de la aplicación: 1.0.2
 
 ---
 
@@ -30,6 +30,7 @@ La interfaz está en español y sigue un sistema visual propio inspirado en las 
 | Catálogo con TMDB | Búsqueda con espera de 400 ms, navegación con teclado, vista previa con reparto; respaldo de entrada manual. |
 | Ficha del título | Puntuación 1–10, estado, historial de visualizaciones, reparto, notas, listas, navegación entre títulos. |
 | Tráilers | Selección automática del mejor tráiler de TMDB y reproducción con un componente reutilizable de YouTube. |
+| Lo que sigue | La saga en orden (o las temporadas), títulos parecidos y próximos estrenos del mismo género en la ficha de cada título. |
 | Recomendaciones | Gemini con salida JSON validada; motor por reglas como respaldo, siempre con el motivo de cada recomendación. |
 | Estadísticas | Totales con tendencia mensual, actividad de 12 meses, estados, géneros; cada gráfica con vista de tabla. |
 | Listas, perfil y ajustes | Listas con nombre; foto y nombre; cambio de contraseña; tema; claves de API; eliminación de cuenta. |
@@ -194,7 +195,18 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
   - Los enlaces a YouTube se abren en el navegador del sistema.
 - **Error 153:** YouTube rechaza los videos insertados cuya petición no indica de dónde viene. Una aplicación empaquetada carga sus páginas desde `file://` y no envía esa cabecera. Como YouTube pide a las aplicaciones de escritorio y WebView, la petición del reproductor se identifica con la aplicación (`Referer: https://com.cinetracker.app/`).
 
-### 4.3 Recomendaciones con IA (Google Gemini)
+### 4.3 Lo que sigue: saga, temporadas, parecidas y estrenos
+
+`tmdbService.getRelated` reúne en una sola llamada IPC lo que se muestra debajo de la ficha de un título:
+
+- **Saga:** si la película pertenece a una colección de TMDB, se piden sus partes y se ordenan por fecha de estreno (las que no tienen fecha van al final). Cada parte indica si es la actual y si todavía no se estrena.
+- **Temporadas:** en las series, las temporadas en orden (sin la temporada 0 de especiales), con el próximo episodio anunciado.
+- **Parecidas:** las recomendaciones de TMDB, sin repetir las partes de la saga.
+- **Próximos estrenos:** búsqueda (`discover`) de títulos del mismo género con fecha de estreno futura, primero con los dos géneros principales y ampliada a uno si hay pocos resultados. Se descartan los que no tienen póster y los que no están en español o inglés ni tienen el título traducido.
+
+Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. El resultado se guarda en caché seis horas. En la interfaz, `RelatedTitles.jsx` reutiliza las tarjetas del Inicio (`FixtureCard`) con el número de parte y una etiqueta sobre el póster (Estás aquí, Sigue, Próximamente).
+
+### 4.4 Recomendaciones con IA (Google Gemini)
 
 - **Modelo y petición:** `gemini-3.8-flash`, configurable con `GEMINI_MODEL`, mediante la API REST `generateContent`. Se usa razonamiento bajo y un esquema JSON estricto: `{ recommendations: [{ title_id, reason }] }`.
 - **Prompt:**
@@ -239,16 +251,16 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
 
 ## 6. Pruebas
 
-`npm test` ejecuta **136 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **139 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
-**Backend (120 pruebas, `backend/tests/`), sobre bases de datos temporales:**
+**Backend (123 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
 - **Migraciones:** bases nuevas, actualización de bases anteriores a las cuentas, copias de seguridad e idempotencia.
 - **Autenticación y perfil:** registro, inicio de sesión, cambio de contraseña, fotos, eliminación de la cuenta en cascada.
 - **Catálogo:** reglas de títulos, registros y listas; mensajes de validación; aislamiento entre usuarios.
 - **Estadísticas:** totales, tasa de finalización, horas, actividad mensual, tendencias, géneros unificados.
 - **Recomendaciones:** motor por reglas y cada caso de respaldo de Gemini y Claude, con clientes simulados (sin llamadas pagadas).
-- **TMDB, tráilers y caché de imágenes:** normalización, español con respaldo en inglés, selección de tráiler, seguridad de rutas, uso sin internet.
+- **TMDB, tráilers, lo que sigue y caché de imágenes:** normalización, español con respaldo en inglés, selección de tráiler, orden de la saga, temporadas, filtro de estrenos, seguridad de rutas, uso sin internet.
 - **IPC, claves y sesiones:** restricciones a invitados, ocultamiento de errores internos, cifrado de claves, precedencia de fuentes, sesión recordada (vencimiento, cierre de sesión, base de datos copiada).
 
 **Interfaz (16 pruebas, `frontend/src/**/*.test.jsx`), con Testing Library en jsdom:**
@@ -272,8 +284,8 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 136 pruebas. |
-| `npm run dist:win` | `CineTracker-Setup-1.0.1.exe` (instalador en español) y `CineTracker-Portable-1.0.1.exe`, con las claves de `backend/.env`. |
+| `npm test` | Las 139 pruebas. |
+| `npm run dist:win` | `CineTracker-Setup-1.0.2.exe` (instalador en español) y `CineTracker-Portable-1.0.2.exe`, con las claves de `backend/.env`. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 
 Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firma digital comercial, por lo que Windows SmartScreen muestra un aviso la primera vez (ver el manual de usuario).

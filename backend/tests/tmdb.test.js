@@ -154,3 +154,90 @@ describe('trailers', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('related titles', () => {
+  beforeEach(() => tmdbService.clearTrailerCache());
+
+  // Answers by path so each endpoint returns its own body.
+  function routes(map) {
+    fetchMock.mockImplementation(async (url) => {
+      const u = new URL(url);
+      const key = Object.keys(map).find((k) => u.pathname === `/3${k}`);
+      return key ? jsonResponse(typeof map[key] === 'function' ? map[key](u) : map[key]) : jsonResponse({}, 404);
+    });
+  }
+
+  it('orders a saga by release date, marks the current part and what is still to come', async () => {
+    routes({
+      '/movie/438631': {
+        id: 438631, genres: [{ id: 878 }, { id: 12 }],
+        belongs_to_collection: { id: 726871, name: 'Duna - Colección' },
+        recommendations: { results: [
+          { id: 693134, title: 'Duna: Parte dos', release_date: '2024-02-27', media_type: 'movie' }, // in the saga: skipped
+          { id: 11, title: 'Star Wars', release_date: '1977-05-25', media_type: 'movie' },
+          { id: 1399, name: 'Game of Thrones', media_type: 'tv' },                                   // other type: skipped
+        ] },
+      },
+      '/collection/726871': { name: 'Duna - Colección', parts: [
+        { id: 1170608, title: 'Duna: Parte tres', release_date: '2999-12-15' },
+        { id: 438631,  title: 'Duna', release_date: '2021-09-15' },
+        { id: 999,     title: 'Duna: sin fecha', release_date: '' },
+        { id: 693134,  title: 'Duna: Parte dos', release_date: '2024-02-27' },
+      ] },
+      '/discover/movie': (u) => ({ results: u.searchParams.get('with_genres') === '878,12'
+        ? [
+          { id: 5, title: 'Pronto', release_date: '2999-01-01', poster_path: '/p.jpg', original_language: 'en' },
+          { id: 6, title: 'メイドインアビス', original_title: 'メイドインアビス', original_language: 'ja', release_date: '2999-01-02', poster_path: '/j.jpg' }, // untranslated: skipped
+          { id: 7, title: 'Sin póster', release_date: '2999-01-03', original_language: 'en' },                                     // no poster: skipped
+          { id: 8, title: 'El viaje', original_title: '旅', original_language: 'ja', release_date: '2999-02-01', poster_path: '/v.jpg' }, // translated: kept
+          { id: 1170608, title: 'Duna: Parte tres', release_date: '2999-12-15', poster_path: '/d.jpg', original_language: 'en' },
+        ]
+        : [] }),
+    });
+
+    const r = await tmdbService.getRelated(438631, 'movie');
+    expect(r.collection.name).toBe('Duna - Colección');
+    expect(r.collection.parts.map((p) => p.title)).toEqual(['Duna', 'Duna: Parte dos', 'Duna: Parte tres', 'Duna: sin fecha']);
+    expect(r.collection.parts.map((p) => p.current)).toEqual([true, false, false, false]);
+    expect(r.collection.parts.map((p) => p.upcoming)).toEqual([false, false, true, true]);
+    expect(r.similar.map((s) => s.title)).toEqual(['Star Wars']);
+    expect(r.upcoming.map((s) => s.title)).toEqual(['Pronto', 'El viaje']); // saga parts are not repeated
+    expect(r.seasons).toEqual([]);
+
+    const discover = fetchMock.mock.calls.map(([u]) => new URL(u)).find((u) => u.pathname === '/3/discover/movie');
+    expect(discover.searchParams.get('primary_release_date.gte')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it('lists a series by season with its next episode, skipping specials', async () => {
+    routes({
+      '/tv/95396': {
+        id: 95396, genres: [{ id: 18 }],
+        seasons: [
+          { season_number: 2, name: 'Temporada 2', episode_count: 10, air_date: '2025-01-16' },
+          { season_number: 0, name: 'Especiales', episode_count: 1, air_date: '2021-12-15' },
+          { season_number: 1, name: 'Temporada 1', episode_count: 9, air_date: '2022-02-17' },
+          { season_number: 3, name: 'Temporada 3', episode_count: 0, air_date: null },
+        ],
+        next_episode_to_air: { season_number: 3, episode_number: 1, name: 'Hola', air_date: '2999-01-02' },
+        recommendations: { results: [] },
+      },
+      '/discover/tv': { results: [] },
+    });
+    const r = await tmdbService.getRelated(95396, 'series');
+    expect(r.collection).toBeNull();
+    expect(r.seasons.map((s) => [s.number, s.upcoming])).toEqual([[1, false], [2, false], [3, true]]);
+    expect(r.nextEpisode).toEqual({ season: 3, episode: 1, name: 'Hola', air_date: '2999-01-02' });
+  });
+
+  it('still returns the rest when the saga or the upcoming search fails, and caches the answer', async () => {
+    routes({
+      '/movie/7': { id: 7, genres: [{ id: 27 }], belongs_to_collection: { id: 404404 }, recommendations: { results: [{ id: 8, title: 'Otra' }] } },
+    }); // collection and discover answer 404
+    const r = await tmdbService.getRelated(7, 'movie');
+    expect(r).toMatchObject({ collection: null, upcoming: [] });
+    expect(r.similar.map((s) => s.title)).toEqual(['Otra']);
+    const calls = fetchMock.mock.calls.length;
+    await tmdbService.getRelated(7, 'movie');
+    expect(fetchMock.mock.calls.length).toBe(calls);
+  });
+});

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
 import TrailerModal from '../components/TrailerModal';
-import { gridVariants } from '../components/cardAnimations';
+import Rail, { RailEmpty } from '../components/Rail';
 import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
@@ -356,29 +356,6 @@ function StageSkeleton() {
       </div>
     </section>
   );
-}
-
-// ── Rails (rows below the stage) ──────────────────────────────────────────
-function Rail({ title, sub, action, note, children, empty }) {
-  return (
-    <section className="rail" aria-label={title}>
-      <header className="rail__header">
-        <h2 className="rail__title">{title}</h2>
-        {sub && <span className="rail__tag">{sub}</span>}
-        {action && <div className="rail__action">{action}</div>}
-      </header>
-      {note && <p className="rail__note" role="status">{note}</p>}
-      {empty ?? (
-        <motion.div className="fixture-grid" variants={gridVariants} initial="hidden" animate="visible">
-          {children}
-        </motion.div>
-      )}
-    </section>
-  );
-}
-
-function RailEmpty({ children }) {
-  return <div className="rail__empty" role="status">{children}</div>;
 }
 
 // ── Home ──────────────────────────────────────────────────────────────────

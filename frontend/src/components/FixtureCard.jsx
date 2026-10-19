@@ -23,9 +23,12 @@ function IconPoster() {
 /**
  * A title as a broadcast fixture: registered poster, the name in the display
  * face, and a scoreline (status slab + score bug). Works for catalog titles
- * (`title`) and TMDB results (`item`, with an Add action until saved).
+ * (`title`) and TMDB results (`item`, with an Add action until saved). In a
+ * saga, `order` numbers the part, `tag` labels the poster
+ * ({ text, tone: 'here' | 'next' | 'soon' }), `dateLine` gives a release date
+ * and `current` frames the title being viewed.
  */
-export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, adding, onOpen, onAdd }) {
+export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, adding, onOpen, onAdd, order, tag, dateLine, current = false }) {
   const [whyOpen, setWhyOpen] = useState(false);
   const source  = title ?? item;
   const localId = title?.id ?? catalogId ?? null;
@@ -38,7 +41,8 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
 
   return (
     <motion.article
-      className={`fixture${open ? '' : ' fixture--static'}`}
+      className={`fixture${open ? '' : ' fixture--static'}${current ? ' fixture--current' : ''}`}
+      aria-current={current ? 'page' : undefined}
       variants={cardVariants}
       onClick={open}
       onKeyDown={open ? (e) => e.key === 'Enter' && open() : undefined}
@@ -50,11 +54,17 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
         {source.poster_path
           ? <img src={tmdbImage(source.poster_path, 'w185')} alt="" loading="lazy" />
           : <span className="fixture__poster-fallback"><IconPoster /></span>}
+        {order != null && <span className="fixture__order" aria-hidden="true">{order}</span>}
+        {tag && <span className={`fixture__tag fixture__tag--${tag.tone}`}>{tag.text}</span>}
       </div>
 
       <div className="fixture__body">
-        <h3 className="fixture__title" title={source.title}>{source.title}</h3>
+        <h3 className="fixture__title" title={source.title}>
+          {order != null && <span className="sr-only">Parte {order}: </span>}
+          {source.title}
+        </h3>
         {meta.length > 0 && <p className="fixture__meta">{meta.join(' · ')}</p>}
+        {dateLine && <p className="fixture__date">{dateLine}</p>}
 
         <div className="fixture__scoreline">
           {title && (

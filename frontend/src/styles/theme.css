@@ -1637,7 +1637,7 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 88px;
-  grid-template-rows: minmax(100vh, auto) auto;
+  grid-template-rows: minmax(100vh, auto) auto auto;
   color: var(--sc-text);
   background: var(--sc-ground);
   isolation: isolate;
@@ -1887,7 +1887,7 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 /* ── watch history (below the fold, back on the page ground) ── */
 .history {
   grid-column: 1 / -1;
-  grid-row: 2;
+  grid-row: 3;
   padding: 56px;
   background: var(--bg-base);
   color: var(--text-primary);
@@ -1955,6 +1955,7 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   .score-bug__segment { width: 26px; }
   .segmented__option { padding: 0 10px; font-size: .86rem; letter-spacing: .04em; }
   .history { padding: 40px 32px; }
+  .showcase__more { padding: 40px 32px 0; gap: 40px; }
   .title-edit__layout { grid-template-columns: 1fr; }
   .title-edit__preview { display: none; }
 }
@@ -2398,3 +2399,90 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   font-weight: 700;
   font-size: 1.05rem;
 }
+
+/* ─── Showcase: what comes next (saga, seasons, similar, upcoming) ───────── */
+.showcase__more {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  padding: 56px 56px 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+/* saga position: the part number and a poster slab, like a fixture's round */
+.fixture__poster { position: relative; }
+.fixture__order {
+  position: absolute;
+  top: 0; left: 0;
+  min-width: 30px;
+  padding: 3px 6px 2px;
+  text-align: center;
+  background: var(--slab-black);
+  color: var(--slab-text);
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.fixture__tag {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 4px 6px 3px;
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: .74rem;
+  line-height: 1.15;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.fixture__tag--here { background: var(--slab-text); color: var(--slab-black); }
+.fixture__tag--next { background: var(--accent); color: var(--on-accent); }
+.fixture__tag--soon { background: var(--slab-black); color: var(--slab-green); }
+.fixture--current { border-color: var(--text-primary); }
+.fixture--current:hover { border-color: var(--text-primary); }
+.fixture__date {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: .95rem;
+  letter-spacing: .02em;
+  color: var(--accent-text);
+}
+
+/* seasons in order: numbered rows on the page ground */
+.season-list { list-style: none; display: flex; flex-direction: column; max-width: 900px; }
+.season-list__item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--border);
+}
+.season-list__number {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.season-list__item.is-upcoming .season-list__number { background: var(--slab-black); color: var(--slab-green); }
+.season-list__name { font-family: var(--font-display); font-size: 1.35rem; line-height: 1; text-transform: uppercase; }
+.season-list__meta,
+.season-list__date {
+  font-family: var(--font-num);
+  font-weight: 600;
+  font-size: .98rem;
+  letter-spacing: .02em;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.season-list__soon { position: static; display: inline-block; padding: 4px 8px 3px; }
