@@ -12,8 +12,8 @@ Hay dos formas de usar la aplicación (las dos se descargan de la página de ver
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.4.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.4.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.0.5.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.0.5.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
 La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 9).
 
@@ -32,11 +32,11 @@ Después sigue el asistente de instalación, que está en español. Puedes elegi
 
 ### La presentación
 
-Al abrir la aplicación aparece una presentación de cuatro pasos que explica para qué sirve CineTracker y qué puedes hacer: tu catálogo, la ficha de cada título (tráiler, saga, dónde verla) y las recomendaciones y estadísticas.
+La primera vez que abres la aplicación aparece una presentación de cuatro pasos que explica para qué sirve CineTracker y qué puedes hacer: tu catálogo, la ficha de cada título (tráiler, saga, dónde verla) y las recomendaciones y estadísticas.
 
 - **Siguiente** y **Atrás** (o las flechas del teclado) cambian de paso; la barra de abajo muestra en cuál vas y permite saltar a cualquiera.
 - **Saltar presentación** (o **Esc**) entra directo a la aplicación.
-- Marca **No mostrar al abrir la app** si no quieres verla cada vez. En Perfil > Apariencia puedes volver a activarla o verla de nuevo con **Ver la presentación**.
+- Solo aparece esa primera vez. Si quieres verla de nuevo, ve a Perfil > Apariencia > **Ver la presentación**.
 
 ### Invitado o cuenta
 
@@ -161,7 +161,7 @@ En **Listas** puedes agrupar títulos a tu manera (por ejemplo, "Noche de terror
 Haz clic en tu nombre (abajo a la izquierda) para abrir **Perfil y ajustes**:
 
 - **Perfil:** cambia tu nombre y tu foto (PNG, JPEG o WebP).
-- **Apariencia:** tema oscuro o claro (también con el botón de la barra lateral), el **fondo** de metal líquido animado o quieto (quieto si tu computador va lento) y la **presentación** al abrir.
+- **Apariencia:** tema oscuro o claro (también con el botón de la barra lateral), el **fondo** de metal líquido animado o quieto (quieto si tu computador va lento) y el botón para ver de nuevo la **presentación**.
 - **Contraseña:** cámbiala escribiendo la actual y la nueva.
 - **Claves de API:**
   - **TMDB** es necesaria para buscar títulos, ver tendencias y tráilers. Consíguela gratis en themoviedb.org (botón **Conseguir una clave**).

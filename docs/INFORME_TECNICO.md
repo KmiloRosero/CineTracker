@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.0.4
+Versión de la aplicación: 1.0.5
 
 ---
 
@@ -32,7 +32,7 @@ La interfaz está en español y sigue un sistema visual propio inspirado en las 
 | Tráilers | Selección automática del mejor tráiler de TMDB y reproducción con un componente reutilizable de YouTube. |
 | Lo que sigue | La saga en orden (o las temporadas), títulos parecidos y próximos estrenos del mismo género en la ficha de cada título. |
 | Dónde verla | Plataformas legales en Colombia (suscripción, gratis, alquiler, compra) con enlace a cada una. |
-| Presentación | Cuatro pasos al abrir la app que explican para qué sirve y sus funciones; se puede saltar o desactivar. |
+| Presentación | Cuatro pasos la primera vez que se abre la app, que explican para qué sirve y sus funciones; se puede saltar y volver a ver desde Perfil. |
 | Recomendaciones | Gemini con salida JSON validada; motor por reglas como respaldo, siempre con el motivo de cada recomendación. |
 | Estadísticas | Totales con tendencia mensual, actividad de 12 meses, estados, géneros; cada gráfica con vista de tabla. |
 | Listas, perfil y ajustes | Listas con nombre; foto y nombre; cambio de contraseña; tema; claves de API; eliminación de cuenta. |
@@ -233,7 +233,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 `src/components/ui/liquid-metal-shader.tsx` es un sombreador WebGL (ruido fbm deformado) integrado con su módulo CSS, que sirve de respaldo con un degradado si no hay WebGL. Solo dibuja mientras está en pantalla, se detiene con "reducir movimiento" o con velocidad 0, y libera sus recursos al desmontarse.
 
 - **Fondo de la app** (`AppBackground`): el metal en verde de la marca detrás de las páginas, con un velo del tema (negro al 50–62 % o tiza al 88 %) para que todo el texto mantenga contraste AA. Se dibuja a resolución reducida y en Perfil se puede dejar quieto.
-- **Presentación** (`Intro`): cuatro pasos sobre el metal, con pósters reales de las tendencias, indicador de progreso, Saltar, Atrás y teclado. Usa las pautas de UI/UX Pro Max (no forzar el recorrido, mostrar el progreso, animar una o dos piezas por vista) y de Motion (curva de salida exponencial y transiciones que se reducen a opacidad con "reducir movimiento").
+- **Presentación** (`Intro`): cuatro pasos centrados sobre el metal, solo la primera vez que se abre la app, con indicador de progreso, Saltar, Atrás y teclado. Usa las pautas de UI/UX Pro Max (no forzar el recorrido, mostrar el progreso, animar una o dos piezas por vista) y de Motion (curva de salida exponencial y transiciones que se reducen a opacidad con "reducir movimiento").
 
 ### 4.7 Recomendaciones con IA (Google Gemini)
 
@@ -315,7 +315,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 | `npm run dev` | Desarrollo con recarga en caliente. |
 | `npm test` | Las 151 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
-| `npm run dist:win:public` | `CineTracker-Setup-1.0.4.exe` y `CineTracker-Portable-1.0.4.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
+| `npm run dist:win:public` | `CineTracker-Setup-1.0.5.exe` y `CineTracker-Portable-1.0.5.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 

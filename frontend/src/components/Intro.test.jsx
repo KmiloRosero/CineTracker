@@ -4,8 +4,7 @@ import Intro from './Intro';
 // WebGL is not available in jsdom; the shader is decorative here.
 vi.mock('@/components/ui/liquid-metal-shader', () => ({ default: () => null }));
 
-beforeEach(() => { window.electronAPI = { tmdbGetTrending: vi.fn().mockResolvedValue([]) }; });
-afterEach(() => { cleanup(); delete window.electronAPI; });
+afterEach(cleanup);
 
 describe('Intro', () => {
   it('walks the four steps with buttons and keys, then enters', async () => {
@@ -21,9 +20,8 @@ describe('Intro', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Paso 4: Para ti' }));
     expect(screen.getByRole('button', { name: /Entrar a CineTracker/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByLabelText('No mostrar al abrir la app'));
     fireEvent.click(screen.getByRole('button', { name: /Entrar a CineTracker/ }));
-    expect(onDone).toHaveBeenCalledWith({ dontShow: true });
+    expect(onDone).toHaveBeenCalledTimes(1);
   });
 
   it('can be skipped at any step, also with Escape', () => {
@@ -32,6 +30,5 @@ describe('Intro', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Saltar presentación' }));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onDone).toHaveBeenCalledTimes(2);
-    expect(onDone).toHaveBeenLastCalledWith({ dontShow: false });
   });
 });

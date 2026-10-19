@@ -7,7 +7,7 @@ import { IconUpload, IconSpinner, IconSun, IconMoon, IconTrash, IconExternal, Ic
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../hooks/useTheme';
-import { useAppPref, BACKGROUND_PREF, INTRO_PREF } from '../hooks/useAppPref';
+import { useAppPref, BACKGROUND_PREF } from '../hooks/useAppPref';
 import { avatarFromFile } from '../utils/avatar';
 
 const MIN_PASSWORD = 6;
@@ -306,7 +306,6 @@ export default function Profile() {
   const { user, updateUser, forgetUser } = useAuth();
   const [theme, setTheme] = useTheme();
   const [background, setBackground] = useAppPref(...BACKGROUND_PREF);
-  const [intro, setIntro] = useAppPref(...INTRO_PREF);
   const [deleting, setDeleting] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
@@ -372,10 +371,7 @@ export default function Profile() {
           <p className="field-hint">El fondo de metal líquido se mueve despacio; déjalo quieto si tu computador va lento.</p>
 
           <h3 className="settings-subtitle">Presentación</h3>
-          <label className="settings-check" htmlFor="intro-on-open">
-            <input id="intro-on-open" type="checkbox" checked={intro === 'show'} onChange={(e) => setIntro(e.target.checked ? 'show' : 'hide')} />
-            <span>Mostrar la presentación al abrir la app</span>
-          </label>
+          <p className="field-hint settings-hint">La presentación se muestra la primera vez que abres la app. Puedes verla de nuevo cuando quieras.</p>
           <button type="button" className="btn btn--ghost" onClick={() => window.dispatchEvent(new Event('cinetracker-show-intro'))}>
             Ver la presentación
           </button>

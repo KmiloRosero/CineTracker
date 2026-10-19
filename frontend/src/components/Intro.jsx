@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import LiquidMetalShader from '@/components/ui/liquid-metal-shader';
 import Wordmark from './Wordmark';
-import { tmdbImage } from '../utils/tmdbImage';
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -22,7 +21,6 @@ const STEPS = [
       [WifiOff, 'Lo que ya guardaste, con sus pósters, funciona sin internet.'],
       [Users, 'Varias cuentas en el mismo equipo, cada una con lo suyo.'],
     ],
-    tags: ['En cartelera', 'Tu marcador'],
   },
   {
     key: 'catalog',
@@ -34,7 +32,6 @@ const STEPS = [
       [Star, 'Calificación del 1 al 10 y estado: pendiente, viendo, completado o abandonado.'],
       [History, 'Historial de cada vez que la ves, con su fecha.'],
     ],
-    tags: ['Completado', '9/10'],
   },
   {
     key: 'title',
@@ -46,7 +43,6 @@ const STEPS = [
       [Layers, 'La saga en orden y las temporadas: qué sigue y qué está por estrenarse.'],
       [Tv, 'Dónde verla legalmente en Colombia: suscripción, gratis, alquiler o compra.'],
     ],
-    tags: ['Tráiler', 'Sigue · Parte 2', 'Dónde verla'],
   },
   {
     key: 'you',
@@ -58,34 +54,24 @@ const STEPS = [
       [BarChart3, 'Estadísticas: horas vistas, actividad de cada mes y tus géneros favoritos.'],
       [ListPlus, 'Listas para una noche de películas, un maratón o lo que quieras.'],
     ],
-    tags: ['Para ti', '¿Por qué este?'],
   },
 ];
 
 /**
- * Presentation shown when the app opens: what CineTracker is for and its
- * features in four steps over pitch-green liquid metal. Skip, back, next,
- * the progress bar and the keyboard (arrows, Enter, Escape) all work;
- * "No mostrar al abrir" turns it off (Perfil can show it again).
+ * Presentation shown the first time the app opens: what CineTracker is for
+ * and its features in four centred steps over pitch-green liquid metal.
+ * Skip, back, next, the progress bar and the keyboard (arrows, Escape)
+ * all work; Perfil can show it again.
  */
 export default function Intro({ onDone }) {
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [dontShow, setDontShow] = useState(false);
-  const [posters, setPosters] = useState([]);
   const primaryRef = useRef(null);
   const last = step === STEPS.length - 1;
   const current = STEPS[step];
 
-  // real posters from this week's trending for the visual; icons stand in offline
-  useEffect(() => {
-    window.electronAPI?.tmdbGetTrending(12)
-      .then((r) => { if (Array.isArray(r)) setPosters(r.filter((t) => t.poster_path).map((t) => t.poster_path)); })
-      .catch(() => {});
-  }, []);
-
-  const finish = useCallback(() => onDone({ dontShow }), [onDone, dontShow]);
+  const finish = useCallback(() => onDone(), [onDone]);
   const go = useCallback((next) => {
     if (next < 0 || next >= STEPS.length) return;
     setDirection(next > step ? 1 : -1);
@@ -96,7 +82,6 @@ export default function Intro({ onDone }) {
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.target.closest?.('input')) return;
       if (e.key === 'ArrowRight') go(step + 1);
       else if (e.key === 'ArrowLeft') go(step - 1);
       else if (e.key === 'Escape') finish();
@@ -105,11 +90,10 @@ export default function Intro({ onDone }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [go, finish, step]);
 
-  const deck = posters.length ? [0, 1, 2].map((i) => posters[(step * 3 + i) % posters.length]) : [];
   const slide = {
-    initial: (dir) => (reduceMotion ? { opacity: 0 } : { opacity: 0, x: 40 * dir }),
+    initial: (dir) => (reduceMotion ? { opacity: 0 } : { opacity: 0, x: 48 * dir }),
     animate: { opacity: 1, x: 0, transition: { duration: 0.45, ease: EASE } },
-    exit: (dir) => (reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24 * dir, transition: { duration: 0.2 } }),
+    exit: (dir) => (reduceMotion ? { opacity: 0 } : { opacity: 0, x: -28 * dir, transition: { duration: 0.2 } }),
   };
 
   return (
@@ -153,45 +137,16 @@ export default function Intro({ onDone }) {
               {current.points.map(([Icon, text], i) => (
                 <motion.li
                   key={text}
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE, delay: 0.12 + i * 0.07 } }}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE, delay: 0.14 + i * 0.08 } }}
                 >
-                  <span className="intro__icon" aria-hidden="true"><Icon size={22} /></span>
-                  <span>{text}</span>
+                  <span className="intro__icon" aria-hidden="true"><Icon size={24} /></span>
+                  <span className="intro__point">{text}</span>
                 </motion.li>
               ))}
             </ul>
           </motion.section>
         </AnimatePresence>
-
-        <div className="intro__visual" aria-hidden="true">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              key={current.key}
-              className="intro__deck"
-              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92, rotate: 4 * direction }}
-              animate={{ opacity: 1, scale: 1, rotate: 0, transition: { duration: 0.6, ease: EASE } }}
-              exit={{ opacity: 0, transition: { duration: 0.2 } }}
-            >
-              {deck.length > 0
-                ? deck.map((poster, i) => (
-                    <div key={`${poster}-${i}`} className={`intro__poster intro__poster--${i}`}>
-                      <img src={tmdbImage(poster, 'w342')} alt="" />
-                    </div>
-                  ))
-                : (
-                  <div className="intro__poster intro__poster--0 intro__poster--icon">
-                    {React.createElement(current.points[0][0], { size: 72 })}
-                  </div>
-                )}
-              <div className="intro__chips">
-                {current.tags.map((tag, i) => (
-                  <span key={tag} className={`intro__chip${i === 0 ? ' is-green' : ''}`}>{tag}</span>
-                ))}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
       </main>
 
       <footer className="intro__bottom">
@@ -207,11 +162,6 @@ export default function Intro({ onDone }) {
             />
           ))}
         </div>
-
-        <label className="intro__dontshow" htmlFor="intro-dontshow">
-          <input id="intro-dontshow" type="checkbox" checked={dontShow} onChange={(e) => setDontShow(e.target.checked)} />
-          <span>No mostrar al abrir la app</span>
-        </label>
 
         <div className="intro__actions">
           <button type="button" className="btn btn--ghost btn--lg intro__back" onClick={() => go(step - 1)} disabled={step === 0}>

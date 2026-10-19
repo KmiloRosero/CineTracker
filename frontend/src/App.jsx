@@ -42,7 +42,7 @@ export default function App() {
   const isShowcase = location.pathname.startsWith('/title/') && location.pathname !== '/title/new';
   const routeKey = isShowcase ? '/title' : location.pathname;
 
-  // The presentation opens with the app unless turned off; Perfil can replay it.
+  // The presentation opens only the first time the app runs; Perfil can replay it.
   const [introOpen, setIntroOpen] = useState(() => {
     try { return localStorage.getItem(INTRO_PREF[0]) !== 'hide'; } catch { return true; }
   });
@@ -51,8 +51,8 @@ export default function App() {
     window.addEventListener('cinetracker-show-intro', replay);
     return () => window.removeEventListener('cinetracker-show-intro', replay);
   }, []);
-  const closeIntro = useCallback(({ dontShow }) => {
-    if (dontShow) setAppPref(INTRO_PREF[0], 'hide');
+  const closeIntro = useCallback(() => {
+    setAppPref(INTRO_PREF[0], 'hide');
     setIntroOpen(false);
   }, []);
 
