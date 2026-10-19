@@ -12,8 +12,8 @@ Hay dos formas de usar la aplicación:
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.0.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.0.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.0.1.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.0.1.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
 Los archivos que terminan en `-sin-claves` (los que se descargan de GitHub) son la misma aplicación sin las claves de TMDB y Gemini incluidas. La primera vez que la abras, el Inicio muestra la pantalla **Configura CineTracker**: haz clic en **Configurar claves**, crea tu cuenta y pega tu clave de TMDB en el campo que queda seleccionado (ver la sección 9). Al volver al Inicio aparecen las tendencias.
 

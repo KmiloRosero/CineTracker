@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.0.0
+Versión de la aplicación: 1.0.1
 
 ---
 
@@ -273,7 +273,7 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
 | `npm test` | Las 136 pruebas. |
-| `npm run dist:win` | `CineTracker-Setup-1.0.0.exe` (instalador en español) y `CineTracker-Portable-1.0.0.exe`, con las claves de `backend/.env`. |
+| `npm run dist:win` | `CineTracker-Setup-1.0.1.exe` (instalador en español) y `CineTracker-Portable-1.0.1.exe`, con las claves de `backend/.env`. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 
 Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firma digital comercial, por lo que Windows SmartScreen muestra un aviso la primera vez (ver el manual de usuario).
