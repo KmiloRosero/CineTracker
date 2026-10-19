@@ -153,7 +153,6 @@ html, body, #root { height: 100%; }
 .title-card__poster,
 .modal,
 .modal-overlay,
-.login-card,
 .catalog__toolbar,
 .catalog__search,
 .chip,
@@ -1965,60 +1964,34 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   .showcase__field { height: 100%; }
 }
 
-/* ─── Login page & auth form ─────────────────────────────────────────────── */
+/* ─── Login page and login modal: glass card on smoke (ui/login-form) ───── */
 .login-page {
   position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--slab-black);
+}
+.login-page__stage {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  background: var(--slab-black);
-  overflow: hidden;
-  isolation: isolate;
 }
-.login-card {
-  width: 100%;
-  max-width: 440px;
-  padding: 36px 36px 28px;
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-strong);
-  border-top: 6px solid var(--accent);
-}
-.login-card__brand { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-.login-card__tagline { color: var(--text-secondary); font-size: .95rem; }
-
-.auth-form__heading { margin-bottom: 24px; }
-.auth-form__heading .lower-third__label,
-.auth-form__heading .lower-third__meta { min-height: 44px; }
-.auth-form__title { font: inherit; font-size: 1.15rem; letter-spacing: inherit; text-transform: inherit; }
-.auth-form__sub { font-size: .9rem; white-space: normal; }
-.auth-form form .btn--full { margin-top: 8px; }
-.auth-form__switch { margin-top: 20px; color: var(--text-secondary); font-size: .95rem; }
-.auth-form__switch button {
-  min-height: 32px;
+/* the modal drops its panel chrome: the glass card is the panel */
+.modal-overlay:has(.login-glass) { align-items: center; padding: 24px; background: var(--slab-black); }
+.modal.login-glass {
+  position: relative;
+  z-index: 1;
+  max-width: 384px;
   padding: 0;
-  border: none;
   background: none;
-  color: var(--accent-text);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  border: none;
 }
 
-.password-input { position: relative; display: flex; }
-.password-input input { flex: 1; padding-right: 48px; }
-.password-input__toggle {
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 44px;
-  display: flex; align-items: center; justify-content: center;
-  border: none;
-  background: none;
-  color: var(--text-secondary);
-}
-.password-input__toggle:hover { color: var(--text-primary); }
 
 /* ─── Modal ──────────────────────────────────────────────────────────────── */
 .modal-overlay {
@@ -2073,7 +2046,6 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   text-underline-offset: 3px;
 }
 .confirm__message { color: var(--text-secondary); line-height: 1.55; margin-bottom: 16px; }
-.login-modal__brand { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 
 
 
@@ -2314,19 +2286,6 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 }
 .yt-player__message { display: flex; align-items: center; gap: 10px; max-width: 48ch; color: #d6d8d2; font-size: 1.05rem; line-height: 1.5; }
 
-/* ─── Check field (keep me signed in) ────────────────────────────────────── */
-.check-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  margin: -4px 0 12px;
-  color: var(--text-secondary);
-  font-size: .95rem;
-  cursor: pointer;
-}
-.check-field input { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--accent); }
-.check-field:hover { color: var(--text-primary); }
 
 /* ─── API keys (Perfil) ──────────────────────────────────────────────────── */
 .api-keys { display: flex; flex-direction: column; gap: 28px; }

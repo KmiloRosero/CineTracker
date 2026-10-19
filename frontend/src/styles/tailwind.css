@@ -1,0 +1,6 @@
+/* Tailwind for src/components/ui only (see tailwind.config.cjs). With preflight
+   off, "base" just declares the --tw-* variables that transform, ring and blur
+   utilities rely on. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

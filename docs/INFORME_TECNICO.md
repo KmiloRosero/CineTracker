@@ -206,7 +206,23 @@ Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del 
 
 Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. El resultado se guarda en caché seis horas. En la interfaz, `RelatedTitles.jsx` reutiliza las tarjetas del Inicio (`FixtureCard`) con el número de parte y una etiqueta sobre el póster (Estás aquí, Sigue, Próximamente).
 
-### 4.4 Recomendaciones con IA (Google Gemini)
+### 4.4 Componentes con Tailwind, TypeScript y estructura shadcn
+
+El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta de vidrio, escrito en TypeScript con clases de Tailwind (`src/components/ui/login-form.tsx`). Para integrarlo sin alterar el resto de la interfaz, que usa CSS propio:
+
+- **Estructura shadcn:** `components.json` define los alias (`@/components/ui`, `@/lib/utils`). `src/lib/utils.ts` exporta `cn` (clsx + tailwind-merge). Los componentes reutilizables de este tipo van en `src/components/ui`, donde los busca la CLI de shadcn al agregar otros.
+- **Tailwind:** solo genera clases para `src/components/ui`, y su "reset" global (preflight) está desactivado. Así ninguna página existente cambia.
+- **TypeScript:** `tsconfig.json` admite `.ts`/`.tsx` junto al JavaScript existente, y `npm run typecheck` los verifica. Vite los compila sin configuración extra.
+- **El componente se adaptó a la aplicación:**
+  - Textos en español y verde de la marca.
+  - Se quitaron los botones de Google y "olvidé mi contraseña", porque la app no tiene esos servicios.
+  - El formulario recibe los valores y errores desde `AuthForm`, que conserva la validación, el registro y "Mantener la sesión iniciada".
+- **El fondo WebGL se corrigió para que no consuma recursos de más:**
+  - El original volvía a crear el programa WebGL con cada movimiento del mouse y nunca detenía la animación. Ahora el estado WebGL se crea una vez y se libera al cerrar.
+  - La animación se pausa con la ventana oculta.
+  - Con "reducir movimiento" se dibuja un solo cuadro fijo.
+
+### 4.5 Recomendaciones con IA (Google Gemini)
 
 - **Modelo y petición:** `gemini-3.8-flash`, configurable con `GEMINI_MODEL`, mediante la API REST `generateContent`. Se usa razonamiento bajo y un esquema JSON estricto: `{ recommendations: [{ title_id, reason }] }`.
 - **Prompt:**
@@ -251,7 +267,7 @@ Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. E
 
 ## 6. Pruebas
 
-`npm test` ejecuta **139 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **144 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
 **Backend (123 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
@@ -263,11 +279,11 @@ Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. E
 - **TMDB, tráilers, lo que sigue y caché de imágenes:** normalización, español con respaldo en inglés, selección de tráiler, orden de la saga, temporadas, filtro de estrenos, seguridad de rutas, uso sin internet.
 - **IPC, claves y sesiones:** restricciones a invitados, ocultamiento de errores internos, cifrado de claves, precedencia de fuentes, sesión recordada (vencimiento, cierre de sesión, base de datos copiada).
 
-**Interfaz (16 pruebas, `frontend/src/**/*.test.jsx`), con Testing Library en jsdom:**
+**Interfaz (21 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
 
 - Reproductor de YouTube: dominio, sandbox, validación del identificador y estado de carga.
 - Pantalla del tráiler: encontrado, inexistente, error y reintento, cierre.
-- Formulario de acceso: validaciones en español, opción de recordar, errores del servidor.
+- Formulario de acceso y tarjeta de vidrio: validaciones en español, etiquetas visibles, mostrar contraseña, opción de recordar, errores del servidor y fondo sin WebGL.
 - Utilidades de etiquetas, géneros, fechas y tendencias.
 
 **Verificación manual y automatizada de la aplicación real:**
@@ -284,7 +300,8 @@ Si la colección o la búsqueda de estrenos fallan, el resto se muestra igual. E
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 139 pruebas. |
+| `npm test` | Las 144 pruebas. |
+| `npm run typecheck` | Verificación de TypeScript. |
 | `npm run dist:win` | `CineTracker-Setup-1.0.2.exe` (instalador en español) y `CineTracker-Portable-1.0.2.exe`, con las claves de `backend/.env`. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 

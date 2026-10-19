@@ -490,6 +490,12 @@ Identity as a square slab. On Profile a 96px green square with the initial in An
 ### API key rows (Perfil)
 An Anton label with a square status tag beside it: outlined "Sin configurar", or a pitch-green slab naming where the key comes from. Below it, a hint line, a 44px password field with the green primary Guardar, then ghost Probar clave / Quitar and an underlined "Conseguir una clave" link pushed right. The test result sits under the row with a check (green) or alert (red card) icon. Rows are split by a hairline.
 
+### Login: glass card on smoke
+- **Smokey background** (`src/components/ui/login-form.tsx`): a full-screen WebGL shader of pitch-green smoke on broadcast black that drifts with the pointer, under a light backdrop blur. It is the one place the app uses a glow, chosen by the user for the sign-in moment. It pauses while the window is hidden and draws one still frame under reduced motion.
+- **Glass card:** 384px, 16px corners, dark glass (broadcast black at 60% with a 16px backdrop blur and a 1px white-20% border) so chalk text keeps AA contrast over the brightest smoke. The wordmark sits on top, then an Anton uppercase heading ("Bienvenido de nuevo" / "Crea tu cuenta") and a Barlow line.
+- **Floating fields:** underlined inputs whose label (with a Lucide icon) sits inside and floats to 75% above once focused or filled, so the label never disappears. Focus turns the underline and label floodlight green; errors turn them light red with the message under the field. A pitch-green submit button with an arrow that nudges right on hover, the remember checkbox and the mode switch link complete it.
+- Used by the login modal (the smoke replaces the scrim; clicking it closes) and the #/login page.
+
 ### Toast
 A surface-tone strip (240-360px, 3px corners, strong hairline) at the bottom-right, sliding in 24px from the right over 220ms. The icon sits on its own 28px square slab: pitch green with a check for success, red card with an alert for errors. Message in body 500, a 32px dismiss at the end. No coloured side stripe.
 

@@ -7,8 +7,9 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
 /**
  * Accessible dialog: Escape and the backdrop close it, Tab stays inside,
  * the first field gets focus, and focus returns to the trigger on close.
+ * `backdrop` renders a full-screen layer behind the panel (the login smoke).
  */
-export default function Modal({ open, onClose, title, label, wide = false, className = '', children }) {
+export default function Modal({ open, onClose, title, label, wide = false, className = '', backdrop = null, children }) {
   const panelRef = useRef(null);
   const returnRef = useRef(null);
 
@@ -48,6 +49,8 @@ export default function Modal({ open, onClose, title, label, wide = false, class
           animate={{ opacity: 1, transition: { duration: 0.16 } }}
           exit={{ opacity: 0, transition: { duration: 0.12 } }}
         >
+          {/* optional full-screen layer behind the panel; clicks pass through to the scrim */}
+          {backdrop}
           <motion.div
             ref={panelRef}
             className={`modal${wide ? ' modal--wide' : ''}${className ? ` ${className}` : ''}`}

@@ -8,9 +8,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // better-sqlite3 is compiled for Electron's ABI by electron-rebuild.
 export default defineConfig({
   esbuild: { jsx: 'automatic' },
+  // same '@' alias as vite.config.js (shadcn-style imports such as @/components/ui)
+  resolve: { alias: { '@': path.resolve(here, 'src') } },
   test: {
     root: path.resolve(here, '..'),
-    include: ['backend/tests/**/*.test.js', 'frontend/src/**/*.test.{js,jsx}'],
+    include: ['backend/tests/**/*.test.js', 'frontend/src/**/*.test.{js,jsx,ts,tsx}'],
     environment: 'node',
     // Interface tests render React components in a simulated DOM.
     environmentMatchGlobs: [['frontend/src/**', 'jsdom']],
