@@ -515,7 +515,7 @@ A surface-tone strip (240-360px, 3px corners, strong hairline) at the bottom-rig
 - **Hint:** muted body text at 0.85rem below the field.
 
 ### Navigation
-- **Sidebar:** 248px on the surface tone, wordmark and a collapse button on top, the four links as 48px rows with 20px icons and the sliding green slab on the active one, then the theme toggle and the account (avatar, name, "Perfil y ajustes", and a logout icon button) at the foot, each group split by a hairline. Collapsed (button or Ctrl+B, remembered) it becomes a 76px icon rail: the wordmark shrinks to its C and T slabs, labels stay for screen readers, and each icon shows its name in a black broadcast tip on hover or focus. The width eases over 240ms.
+- **Sidebar:** 248px on the surface tone, wordmark and a collapse button on top, the four links as 48px rows with 20px icons and the sliding green slab on the active one, then the theme toggle and the account (avatar, name, "Perfil y ajustes", and a logout icon button) at the foot, each group split by a hairline. Collapsed (button or Ctrl+B, remembered) it becomes a 76px icon rail: the wordmark shrinks to its C and T slabs, labels stay for screen readers, and each icon shows its name in a black broadcast tip on hover or focus. The width switches at once (animating it would relayout every page each frame).
 
 ### Icons
 One family drawn on a 24px grid with a 2px stroke, square caps and mitred joins, inheriting the text colour; 16px in nav, chips and toasts, 18px by default.

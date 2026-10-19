@@ -195,7 +195,6 @@ html, body, #root { height: 100%; }
   overflow-x: hidden;
   overflow-y: auto;
   z-index: 3;
-  transition: width .24s cubic-bezier(.16, 1, .3, 1);
 }
 [data-theme="light"] .app-sidebar { background: var(--bg-base); }
 .app-layout[data-sidebar="collapsed"] { --sidebar-w: 76px; }
@@ -2585,7 +2584,6 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   left: var(--sidebar-w);
   z-index: 0;
   pointer-events: none;
-  transition: left .24s cubic-bezier(.16, 1, .3, 1);
 }
 .app-bg__shader { position: absolute; inset: 0; }
 .app-bg__scrim {
