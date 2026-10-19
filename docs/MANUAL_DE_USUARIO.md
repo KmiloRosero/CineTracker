@@ -8,14 +8,14 @@ CineTracker es una aplicación de escritorio para llevar el registro de las pel�
 
 Necesitas Windows 10 u 11 de 64 bits y conexión a internet para buscar títulos, ver tendencias y tráilers. Lo que ya está en tu catálogo, incluidos los pósters, funciona sin internet.
 
-Hay dos formas de usar la aplicación:
+Hay dos formas de usar la aplicación (las dos se descargan de la página de versiones en GitHub):
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.2.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.2.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.0.3.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.0.3.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
-Los archivos que terminan en `-sin-claves` (los que se descargan de GitHub) son la misma aplicación sin las claves de TMDB y Gemini incluidas. La primera vez que la abras, el Inicio muestra la pantalla **Configura CineTracker**: haz clic en **Configurar claves**, crea tu cuenta y pega tu clave de TMDB en el campo que queda seleccionado (ver la sección 9). Al volver al Inicio aparecen las tendencias.
+La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 9).
 
 ### Aviso "Windows protegió su PC"
 
@@ -49,6 +49,7 @@ En un mismo computador puede haber varias cuentas; cada una solo ve sus propios 
 
 ## 3. Inicio
 
+- **Barra lateral:** el botón junto al logo (o **Ctrl+B**) la contrae para dejar solo los íconos; al pasar el mouse por un ícono aparece su nombre. La aplicación recuerda cómo la dejaste.
 - **Escenario principal:** ocupa la primera pantalla. Pasan hasta 8 títulos, uno cada 7 segundos, con su imagen de fondo. Primero aparecen los tuyos (los que estás viendo, recomendaciones y los recién agregados) y se completan con las tendencias.
   - El contador (`02 / 08`) y la barra verde muestran cuánto falta para el siguiente.
   - El botón redondo de **pausa** detiene el carrusel; también se detiene mientras tienes el mouse sobre los botones o las tarjetas.

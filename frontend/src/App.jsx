@@ -1,5 +1,5 @@
-import React from 'react';
-import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import React, { useCallback } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
@@ -9,20 +9,13 @@ import Lists from './pages/Lists';
 import ListDetail from './pages/ListDetail';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
-import ThemeToggle from './components/ThemeToggle';
 import LoginModal from './components/LoginModal';
-import Wordmark from './components/Wordmark';
+import Sidebar from './components/Sidebar';
 import { ToastProvider } from './components/Toast';
 import { PageLoading } from './components/PageLoading';
-import { IconHome, IconFilm, IconChart, IconList, IconLogIn } from './components/Icons';
+import { useStoredState } from './hooks/useStoredState';
 import { useAuth } from './context/AuthContext';
 
-const NAV_LINKS = [
-  { to: '/',           label: 'Inicio',       Icon: IconHome  },
-  { to: '/catalog',    label: 'Catálogo',     Icon: IconFilm  },
-  { to: '/lists',      label: 'Listas',       Icon: IconList  },
-  { to: '/statistics', label: 'Estadísticas', Icon: IconChart },
-];
 
 const pageVariants = {
   initial: { opacity: 0, y: 8 },
@@ -38,69 +31,11 @@ export function PageWrapper({ children }) {
   );
 }
 
-function Sidebar() {
-  const { user, logout, openLoginModal } = useAuth();
-
-  return (
-    <nav className="app-sidebar" aria-label="Navegación principal">
-      <div className="app-sidebar__logo">
-        <Wordmark />
-      </div>
-
-      {NAV_LINKS.map(({ to, label, Icon }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={to === '/'}
-          className={({ isActive }) => `sidebar-nav__link${isActive ? ' active' : ''}`}
-        >
-          {({ isActive }) => (
-            <>
-              {/* one green slab slides between the active links */}
-              {isActive && (
-                <motion.span
-                  className="sidebar-nav__highlight"
-                  layoutId="nav-highlight"
-                  transition={{ type: 'spring', stiffness: 520, damping: 42 }}
-                  aria-hidden="true"
-                />
-              )}
-              <span className="nav-icon"><Icon size={16} /></span>
-              <span className="sidebar-nav__label">{label}</span>
-            </>
-          )}
-        </NavLink>
-      ))}
-
-      <div className="app-sidebar__spacer" />
-      <ThemeToggle />
-
-      {user ? (
-        <div className="sidebar-user">
-          <NavLink to="/profile" className="sidebar-user__link" aria-label={`${user.name}: perfil y ajustes`}>
-            {user.avatar_url
-              ? <img className="sidebar-user__avatar" src={user.avatar_url} alt="" />
-              : <span className="sidebar-user__initials" aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>}
-            <span className="sidebar-user__info">
-              <span className="sidebar-user__name">{user.name}</span>
-              <span className="sidebar-user__hint">Perfil y ajustes</span>
-            </span>
-          </NavLink>
-          <button className="sidebar-user__logout" onClick={logout}>Cerrar sesión</button>
-        </div>
-      ) : (
-        <button className="sidebar-login-btn" onClick={() => openLoginModal()}>
-          <IconLogIn size={16} />
-          <span>Iniciar sesión</span>
-        </button>
-      )}
-    </nav>
-  );
-}
-
 export default function App() {
   const { loading } = useAuth();
   const location = useLocation();
+  const [sidebar, setSidebar] = useStoredState('cinetracker-sidebar', 'expanded', ['expanded', 'collapsed']);
+  const toggleSidebar = useCallback(() => setSidebar((s) => (s === 'collapsed' ? 'expanded' : 'collapsed')), [setSidebar]);
   // Moving between titles keeps the showcase mounted so it can animate the swap itself.
   const isShowcase = location.pathname.startsWith('/title/') && location.pathname !== '/title/new';
   const routeKey = isShowcase ? '/title' : location.pathname;
@@ -110,8 +45,8 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <ToastProvider>
-        <div className="app-layout">
-          <Sidebar />
+        <div className="app-layout" data-sidebar={sidebar}>
+          <Sidebar collapsed={sidebar === 'collapsed'} onToggle={toggleSidebar} />
 
           <div className="app-content">
             <AnimatePresence mode="wait">

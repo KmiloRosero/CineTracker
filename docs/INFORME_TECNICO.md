@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.0.2
+Versión de la aplicación: 1.0.3
 
 ---
 
@@ -261,7 +261,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
   - Una copia de la base de datos en otro equipo no sirve para entrar, porque el token no se puede descifrar allí.
   - Se borra al cerrar sesión, al eliminar la cuenta o si no se puede abrir.
 - **Claves en el repositorio:** `backend/.env` está en `.gitignore` y el historial de git no contiene claves.
-- **Instaladores:** el instalador normal incluye `backend/.env` para funcionar de inmediato, así que solo debe compartirse con personas de confianza. El instalador `-sin-claves` no incluye claves y es el adecuado para distribuir.
+- **Instaladores:** el público (el de GitHub) incluye solo la clave de TMDB, que es gratuita y tiene límite de uso; la de Gemini, que consume cuota, nunca va en un instalador descargable. El `-con-gemini` lleva todas las claves y es solo para uso propio; el `-sin-claves` no lleva ninguna.
 
 ---
 
@@ -302,7 +302,8 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 | `npm run dev` | Desarrollo con recarga en caliente. |
 | `npm test` | Las 144 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
-| `npm run dist:win` | `CineTracker-Setup-1.0.2.exe` (instalador en español) y `CineTracker-Portable-1.0.2.exe`, con las claves de `backend/.env`. |
+| `npm run dist:win:public` | `CineTracker-Setup-1.0.3.exe` y `CineTracker-Portable-1.0.3.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
+| `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 
 Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firma digital comercial, por lo que Windows SmartScreen muestra un aviso la primera vez (ver el manual de usuario).

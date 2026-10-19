@@ -68,10 +68,10 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "shortcutName": "CineTracker",
-    "artifactName": "CineTracker-Setup-${version}.${ext}"
+    "artifactName": "CineTracker-Setup-${version}-con-gemini.${ext}"
   },
   "publish": null,
   "portable": {
-    "artifactName": "CineTracker-Portable-${version}.${ext}"
+    "artifactName": "CineTracker-Portable-${version}-con-gemini.${ext}"
   }
 }

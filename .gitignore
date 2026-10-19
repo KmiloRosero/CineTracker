@@ -42,3 +42,6 @@ Thumbs.db
 
 # Impeccable review captures (regenerated on each review round)
 .impeccable/review/
+
+# Public installer env (TMDB key only), generated at build time
+frontend/build/public-env/

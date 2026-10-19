@@ -87,7 +87,8 @@ Run from `frontend/`:
 | `npm run test:watch` | Tests in watch mode |
 | `npm run typecheck` | TypeScript check of `src` (the `.tsx` components in `src/components/ui`) |
 | `npm run build` | Production build of the interface into `frontend/dist` |
-| `npm run dist:win` | Windows installer (NSIS) and portable `.exe`, with the keys in `backend/.env` |
+| `npm run dist:win:public` | The installer and portable `.exe` published on GitHub, with only the TMDB key so it works right after installing |
+| `npm run dist:win` | The same with every key in `backend/.env` (`-con-gemini`), for your own use |
 | `npm run dist:win:nokeys` | The same, without any API keys (`-sin-claves`), safe to share |
 | `npm run dist:mac` / `npm run dist:linux` | macOS DMG / Linux AppImage |
 

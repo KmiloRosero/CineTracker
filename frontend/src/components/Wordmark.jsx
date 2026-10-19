@@ -1,11 +1,11 @@
 import React from 'react';
 
-/** CineTracker wordmark: two broadcast slabs, black then green. */
-export default function Wordmark({ size = 'md' }) {
+/** CineTracker wordmark: two broadcast slabs, black then green; `compact` shows just C T. */
+export default function Wordmark({ size = 'md', compact = false }) {
   return (
-    <span className={`wordmark wordmark--${size}`} aria-label="CineTracker">
-      <span className="wordmark__cine" aria-hidden="true">Cine</span>
-      <span className="wordmark__tracker" aria-hidden="true">Tracker</span>
+    <span className={`wordmark wordmark--${size}${compact ? ' wordmark--compact' : ''}`} aria-label="CineTracker">
+      <span className="wordmark__cine" aria-hidden="true">{compact ? 'C' : 'Cine'}</span>
+      <span className="wordmark__tracker" aria-hidden="true">{compact ? 'T' : 'Tracker'}</span>
     </span>
   );
 }

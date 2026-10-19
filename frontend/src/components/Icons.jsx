@@ -46,6 +46,9 @@ export const IconAlert   = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><li
 export const IconPlay    = (p) => <Svg {...p}><polygon points="7 4 20 12 7 20" fill="currentColor"/></Svg>;
 export const IconExternal = (p) => <Svg {...p}><path d="M14 4h6v6"/><line x1="20" y1="4" x2="11" y2="13"/><path d="M18 14v6H4V6h6"/></Svg>;
 
+export const IconSidebar = (p) => <Svg {...p}><rect x="3" y="4" width="18" height="16"/><line x1="9" y1="4" x2="9" y2="20"/></Svg>;
+export const IconLogOut  = (p) => <Svg {...p}><path d="M10 3H4v18h6"/><polyline points="15 7 20 12 15 17"/><line x1="20" y1="12" x2="9" y2="12"/></Svg>;
+
 export function IconSpinner({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
