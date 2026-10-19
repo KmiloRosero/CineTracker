@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GuestPrompt from '../components/GuestPrompt';
 import { ConfirmDialog } from '../components/Modal';
@@ -206,9 +206,10 @@ function ApiKeyRow({ name, source, canSave, onChanged }) {
   );
 }
 
-function ApiKeysForm() {
+function ApiKeysForm({ focus = false }) {
   const [status, setStatus] = useState(null);
   const [error,  setError]  = useState(null);
+  const sectionRef = useRef(null);
 
   async function load() {
     const r = await window.electronAPI.getApiKeys();
@@ -217,10 +218,18 @@ function ApiKeysForm() {
   }
   useEffect(() => { load(); }, []);
 
+  // arriving from Home's setup screen: bring the keys into view, cursor in the first empty one
+  useEffect(() => {
+    if (!focus || !status) return;
+    sectionRef.current?.scrollIntoView({ block: 'center' });
+    const firstEmpty = Object.keys(KEY_INFO).find((name) => !status.keys[name]?.source) ?? 'tmdb';
+    document.getElementById(`apikey-${firstEmpty}`)?.focus({ preventScroll: true });
+  }, [focus, status !== null]);
+
   if (error) return <p className="form-error" role="alert">{error}</p>;
   if (!status) return <p className="field-hint">Cargando…</p>;
   return (
-    <div className="api-keys">
+    <div className="api-keys" ref={sectionRef}>
       {!status.canSave && (
         <p className="form-error" role="alert">Este equipo no permite guardar claves cifradas, así que no se pueden guardar aquí.</p>
       )}
@@ -290,6 +299,7 @@ function PasswordForm() {
 
 // ── Profile page ──────────────────────────────────────────────────────────
 export default function Profile() {
+  const location = useLocation();
   const navigate = useNavigate();
   const showToast = useToast();
   const { user, updateUser, forgetUser } = useAuth();
@@ -347,7 +357,7 @@ export default function Profile() {
         </Section>
 
         <Section index={3} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
-          <ApiKeysForm />
+          <ApiKeysForm focus={location.state?.focus === 'api-keys'} />
         </Section>
 
         <Section index={4} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">

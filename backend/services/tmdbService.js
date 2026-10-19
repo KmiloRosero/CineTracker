@@ -12,7 +12,7 @@ const LANGUAGE   = 'es-MX';
 
 function apiKey() {
   const key = getEnv('TMDB_API_KEY');
-  if (!key) throw new Error('TMDB no está configurado. Agrega TMDB_API_KEY en backend/.env.');
+  if (!key) throw new Error('TMDB no está configurado. Agrega tu clave de TMDB en Perfil > Claves de API.');
   return key;
 }
 
@@ -28,7 +28,7 @@ async function tmdbFetch(endpoint, params = {}, language = LANGUAGE) {
   } catch {
     throw new Error('No se pudo conectar con TMDB. Revisa tu conexión a internet.');
   }
-  if (res.status === 401) throw new Error('TMDB rechazó la clave de la API. Revisa TMDB_API_KEY en backend/.env.');
+  if (res.status === 401) throw new Error('TMDB rechazó la clave de la API. Revísala en Perfil > Claves de API.');
   if (res.status === 404) throw new Error('Ese título no se encontró en TMDB.');
   if (!res.ok) throw new Error(`TMDB no está disponible en este momento (error ${res.status}).`);
   return res.json();

@@ -16,7 +16,7 @@ import { tmdbImage } from '../utils/tmdbImage';
 // Why the AI picks were replaced by genre-based ones, in the user's terms.
 // `ai` is the provider's display name (Gemini or Claude).
 const FALLBACK_NOTE = {
-  'no-api-key':        () => 'Agrega una clave de Gemini para recibir recomendaciones escritas por IA. Por ahora se muestran según tus géneros.',
+  'no-api-key':        () => 'Agrega una clave de Gemini en Perfil > Claves de API para recibir recomendaciones escritas por IA. Por ahora se muestran según tus géneros.',
   'insufficient-data': (ai) => `Califica al menos 3 títulos y deja algunos como Pendiente para recibir recomendaciones de ${ai}.`,
   'offline':           (ai) => `No se pudo conectar con ${ai} (revisa tu conexión). Se muestran recomendaciones según tus géneros.`,
   'rate-limited':      (ai) => `${ai} está ocupado ahora mismo. Se muestran recomendaciones según tus géneros; prueba Actualizar en un minuto.`,
@@ -403,6 +403,7 @@ export default function Home() {
   const [addingTmdbId,    setAddingTmdbId]    = useState(null);
   const [addError,        setAddError]        = useState(null);
   const [trailerFor,      setTrailerFor]      = useState(null);
+  const [tmdbMissing,     setTmdbMissing]     = useState(false);
 
   async function refreshTitles() {
     const all = unwrap(await window.electronAPI.getAllTitles({}));
@@ -452,7 +453,15 @@ export default function Home() {
       .then(setTrending)
       .catch((err) => setTrendingError(err.message))
       .finally(() => setTrendingLoading(false));
+    // a build without keys: guide the first run instead of showing an empty stage
+    window.electronAPI.getApiKeys()
+      .then((r) => setTmdbMissing(!r?.error && !r?.keys?.tmdb?.source))
+      .catch(() => {});
   }, []);
+
+  function openKeySettings() {
+    requireAuth(() => navigate('/profile', { state: { focus: 'api-keys' } }));
+  }
 
   const catalogByTmdbId = useMemo(() => {
     const map = new Map();
@@ -537,7 +546,30 @@ export default function Home() {
           <Ticker overview={user ? overview : null} trending={trending} />
         </Stage>
       )}
-      {stageReady && featured.length === 0 && (
+      {stageReady && featured.length === 0 && tmdbMissing && (
+        <section className="stage stage--empty stage--setup" aria-labelledby="setup-title">
+          <div className="stage__copy">
+            <h1 className="stage__title" id="setup-title">Configura CineTracker</h1>
+            <p className="stage__overview">
+              Para buscar películas y series, ver las tendencias y sus tráilers, CineTracker necesita una clave de TMDB. Es gratis y toma un par de minutos.
+            </p>
+            <ol className="setup-steps">
+              <li><span className="setup-steps__n">1</span>{user ? 'Ya tienes tu cuenta.' : 'Crea una cuenta o inicia sesión.'}</li>
+              <li><span className="setup-steps__n">2</span>Consigue tu clave en themoviedb.org (Ajustes → API).</li>
+              <li><span className="setup-steps__n">3</span>Pégala en Perfil → Claves de API. Si quieres recomendaciones con IA, agrega también una clave de Gemini.</li>
+            </ol>
+            <div className="stage__actions">
+              <button className="btn btn--primary btn--lg" onClick={openKeySettings}>
+                Configurar claves
+              </button>
+              <button className="btn btn--ghost btn--lg stage__ghost" onClick={() => window.electronAPI.openKeyPage('tmdb')}>
+                Conseguir una clave de TMDB
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+      {stageReady && featured.length === 0 && !tmdbMissing && (
         <section className="stage stage--empty">
           <div className="stage__copy">
             <h1 className="stage__title">Tu catálogo empieza aquí</h1>

@@ -2383,3 +2383,18 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 .api-key__result { display: flex; align-items: center; gap: 8px; font-size: .95rem; }
 .api-key__result.is-ok { color: var(--accent-text); }
 .api-key__result.is-error { color: var(--status-dropped); }
+
+/* ─── First run without keys: setup steps on the Home stage ──────────────── */
+.setup-steps { list-style: none; display: flex; flex-direction: column; gap: 10px; max-width: 60ch; }
+.setup-steps li { display: flex; align-items: baseline; gap: 14px; color: #d6d8d2; font-size: 1.02rem; line-height: 1.5; }
+.setup-steps__n {
+  flex-shrink: 0;
+  min-width: 32px;
+  padding: 3px 0 2px;
+  text-align: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-num);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
