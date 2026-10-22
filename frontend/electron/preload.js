@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getTitleById:  (id)          => ipcRenderer.invoke('titles:getById', id),
   /** @param {number} id @param {object} data */
   updateTitle:   (id, data)    => ipcRenderer.invoke('titles:update', id, data),
+  /** @param {number} id @param {{ refresh?: boolean }} [options] — refresh asks the AI; otherwise the saved answer or the rules.
+   *  Returns { reason, mode: 'predict'|'liked'|'disliked', verdict, score, confidence, reasons, similar, source, provider, aiAvailable, stale } */
+  getTitleInsight: (id, options) => ipcRenderer.invoke('titles:getInsight', id, options),
   /** @param {number} id */
   deleteTitle:   (id)          => ipcRenderer.invoke('titles:delete', id),
 

@@ -13,6 +13,7 @@ import GuestPrompt from '../components/GuestPrompt';
 import TrailerModal from '../components/TrailerModal';
 import RelatedTitles from '../components/RelatedTitles';
 import WatchProviders from '../components/WatchProviders';
+import TitleInsight from '../components/TitleInsight';
 import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -216,7 +217,7 @@ function Showcase({ title, records, direction, neighbours, marking, onRate, onSt
       </nav>
 
       {/* ── below the fold: what comes next, then the watch history ── */}
-      {children && <div className="showcase__more">{children}</div>}
+      <div className="showcase__more">{children}</div>
 
       <section className="history" aria-label="Historial">
         <header className="rail__header">
@@ -463,6 +464,7 @@ export default function TitleDetail() {
           onBack={() => navigate(-1)}
           onTrailer={() => setTrailerOpen(true)}
         >
+          <TitleInsight key={`insight-${title.id}`} titleId={title.id} version={title.rating ?? 0} />
           {title.tmdb_id && <WatchProviders key={`watch-${title.id}`} title={title} />}
           {title.tmdb_id && (
             <RelatedTitles

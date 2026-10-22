@@ -9,6 +9,7 @@ const tonightService          = require('../services/tonightService.js');
 const describeSearchService   = require('../services/describeSearchService.js');
 const cinephileService        = require('../services/cinephileService.js');
 const wrappedService          = require('../services/wrappedService.js');
+const insightService          = require('../services/insightService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -67,6 +68,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('titles:getAll',  readable((userId, filters) => titleService.getAllTitles(userId, filters), []));
   ipcMain.handle('titles:getById', authed((userId, id)       => titleService.getTitleWithRecords(userId, id)));
   ipcMain.handle('titles:update',  authed((userId, id, data) => titleService.updateTitle(userId, id, data)));
+  ipcMain.handle('titles:getInsight', authed((userId, id, options) =>
+    insightService.getTitleInsight(userId, id, { refresh: options?.refresh === true })));
   ipcMain.handle('titles:delete',  authed((userId, id)       => titleService.deleteTitle(userId, id)));
 
   ipcMain.handle('records:add',          authed((userId, record)             => recordService.addRecord(userId, record)));
