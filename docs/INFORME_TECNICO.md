@@ -369,7 +369,7 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 
 ## 6. Pruebas
 
-`npm test` ejecuta **213 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **215 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
 **Backend (188 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
@@ -382,7 +382,7 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 - **Funciones nuevas:** gusto y estilos, listas generadas (filtros, exclusiones, validación de la IA, guardado), esta noche, búsqueda por descripción, perfil, año, análisis por título, plataformas, episodios y avisos, estrenos y seguidos, importación y exportación (Letterboxd, IMDb, CSV de ida y vuelta) y retos y rachas. TMDB y la IA siempre simulados.
 - **IPC, claves y sesiones:** restricciones a invitados, ocultamiento de errores internos, cifrado de claves, precedencia de fuentes, sesión recordada (vencimiento, cierre de sesión, base de datos copiada).
 
-**Interfaz (25 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
+**Interfaz (27 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
 
 - Reproductor de YouTube: dominio, sandbox, validación del identificador y estado de carga.
 - Pantalla del tráiler: encontrado, inexistente, error y reintento, cierre.
@@ -403,7 +403,7 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 213 pruebas. |
+| `npm test` | Las 215 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
 | `npm run dist:win:public` | `CineTracker-Setup-1.1.0.exe` y `CineTracker-Portable-1.1.0.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
