@@ -17,8 +17,12 @@ AI features use Google Gemini (or Anthropic Claude when only its key is set). Wi
 | Home | Title showcase |
 |---|---|
 | ![Home](docs/screenshots/home.png) | ![Title showcase](docs/screenshots/showcase.png) |
-| **Catalog** | **Statistics** |
-| ![Catalog](docs/screenshots/catalog.png) | ![Statistics](docs/screenshots/statistics.png) |
+| **Descubrir** | **Statistics** |
+| ![Descubrir: a list built from your taste](docs/screenshots/discover.png) | ![Statistics with the cinephile profile](docs/screenshots/statistics.png) |
+| **Estrenos** | **Tu año en cine** |
+| ![Upcoming releases](docs/screenshots/upcoming.png) | ![Year in review](docs/screenshots/year.png) |
+| **Catalog** | |
+| ![Catalog](docs/screenshots/catalog.png) | |
 
 <sub>Captured with a test account and real TMDB titles.</sub>
 
