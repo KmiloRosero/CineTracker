@@ -2960,3 +2960,64 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 @media (max-width: 900px) {
   .discover-controls__go { margin-left: 0; width: 100%; }
 }
+
+/* ─── Cinephile profile (Statistics) ─────────────────────────────────────── */
+/* on air in both themes: black slab, green rule, the archetype as the caption */
+.cinephile {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 32px 48px;
+  padding: 32px 36px;
+  background: var(--slab-black);
+  color: var(--slab-text);
+  border-top: 6px solid var(--accent);
+}
+.cinephile--empty { display: flex; flex-direction: column; gap: 10px; }
+.cinephile__lead { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; min-width: 0; }
+.cinephile__archetype {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 5vw, 4.5rem);
+  line-height: .9;
+  text-transform: uppercase;
+  letter-spacing: .005em;
+  max-width: 14ch;
+}
+.cinephile__summary { font-size: 1.08rem; line-height: 1.55; color: #dcded8; max-width: 58ch; }
+.cinephile__label {
+  font-family: var(--font-num);
+  font-size: .85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--slab-green);
+}
+.cinephile__blind { font-size: .98rem; line-height: 1.5; color: #c9ccc5; max-width: 58ch; }
+.cinephile__blind .cinephile__label { margin-right: 6px; }
+.cinephile__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; }
+.cinephile .btn--ghost { border-color: rgba(244,244,240,.5); color: var(--slab-text); }
+.cinephile .btn--ghost:hover:not(:disabled) { background: rgba(244,244,240,.12); }
+.cinephile :focus-visible { outline-color: var(--slab-green); }
+.cinephile__stale { font-size: .88rem; color: var(--status-pending); }
+.cinephile__note, .cinephile__error { font-size: .85rem; color: #8b9088; }
+.cinephile__error { color: #f0675c; }
+.cinephile__skeleton { width: min(420px, 100%); height: 72px; background: rgba(244,244,240,.08); }
+.cinephile__traits { list-style: none; display: flex; flex-direction: column; align-self: center; }
+.cinephile__trait {
+  display: grid;
+  gap: 4px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(244,244,240,.16);
+}
+.cinephile__trait:first-child { border-top: 2px solid var(--slab-text); }
+.cinephile__trait-label {
+  font-family: var(--font-num);
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.cinephile__trait-detail { font-size: .95rem; color: #b6bab3; }
+@media (max-width: 1080px) {
+  .cinephile { grid-template-columns: minmax(0, 1fr); padding: 28px 24px; }
+}

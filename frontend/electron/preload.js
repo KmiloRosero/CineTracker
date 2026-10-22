@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Returns { totals, completionRate, averageRating, ratedCount, totalHours,
    *  genreDistribution, topGenres, topRatedGenres, monthlyActivity } */
   getStatsOverview: () => ipcRenderer.invoke('stats:getOverview'),
+  /** @param {{ refresh?: boolean }} [options] — Returns { reason, archetype, summary, traits: [{ label, detail }], blindSpot, source, provider, stale, generatedAt } */
+  getCinephileProfile: (options) => ipcRenderer.invoke('stats:getCinephileProfile', options),
 
   // ── Recommendations ──────────────────────────────────────────────────────
   /** Returns { recommendations: Title[], reason: string } */

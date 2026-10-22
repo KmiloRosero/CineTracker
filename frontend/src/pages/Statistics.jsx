@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MonthlyColumns, GenreBars, StatusBar, ChartTable, STATUS_ORDER, monthLabel } from '../components/StatsChart';
 import ScoreBug from '../components/ScoreBug';
+import CinephileProfile from '../components/CinephileProfile';
 import GuestPrompt from '../components/GuestPrompt';
 import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
@@ -113,6 +114,10 @@ export default function Statistics() {
             <p className="stats__caption">
               {o.totals.movies} {o.totals.movies === 1 ? 'película' : 'películas'} y {o.totals.series} {o.totals.series === 1 ? 'serie' : 'series'} · la tasa de finalización cuenta los títulos terminados entre todos los que empezaste · nota media de {o.ratedCount} {o.ratedCount === 1 ? 'título calificado' : 'títulos calificados'}.
             </p>
+          </motion.div>
+
+          <motion.div variants={panelVariants} custom={1}>
+            <CinephileProfile />
           </motion.div>
 
           <div className="panels">
