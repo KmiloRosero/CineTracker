@@ -28,7 +28,7 @@ Used at home, typically right after finishing or starting a title. Sessions are 
 
 ## Capabilities and Constraints
 
-- Pages: Home, Catalog, Title showcase (title detail; also the new-title form), Statistics, Lists, Profile & Settings, Login/Register (page and modal).
+- Pages: Home, Catalog, Title showcase (title detail; also the new-title form), Descubrir (tonight picker, smart lists by style, describe-to-find), Estrenos (upcoming releases from followed people and genres), Statistics (with cinephile profile, yearly challenge and streaks), Tu año en cine (year in review), Lists, Profile & Settings (with platforms and import/export), Login/Register (page and modal).
 - Accounts: several accounts per installation; each account sees only its own titles, records and lists. Session is in memory (log in again after restart). bcrypt passwords.
 - Guest-first: guests can browse Home (TMDB trending) and every page read-only; any change (add, edit, delete, rate, status, lists) and personalised recommendations require login, and the original action resumes after logging in.
 - Titles: CRUD; fields title, type (movie/series), status, rating 1–10, genres (JSON array), runtime, release year, overview, poster/backdrop paths, notes. TMDB metadata is saved locally so titles work offline afterwards.
@@ -38,6 +38,8 @@ Used at home, typically right after finishing or starting a title. Sessions are 
 - Trailers: the best YouTube trailer from TMDB (Spanish first) plays in a reusable YouTubePlayer on an on-air screen, from the Home stage and the title showcase.
 - API keys can be typed in Perfil (sealed with the OS) and a remembered session keeps the user signed in for 30 days.
 - Recommendations: AI (Google Gemini; Anthropic Claude when only its key is set) with fallback to the rule-based engine when there is no key, no network, an API error, or fewer than 3 rated titles.
+- Every AI feature (Descubrir lists, tonight picker, describe-to-find, cinephile profile, year in review, title insight) picks only from real TMDB or catalog data, validates the model's answer, falls back to rules and says which one wrote the text. Saved AI answers live in `ai_cache` so reopening a page does not pay twice.
+- Series track episode progress; Home shows new episodes of followed series. Users can follow people and genres for upcoming releases, save their streaming platforms, set a yearly goal, see weekly streaks, and import/export CSV (Letterboxd, IMDb, CineTracker).
 - Theme: light/dark toggle persisted locally; dark is the default.
 
 ## Brand Commitments

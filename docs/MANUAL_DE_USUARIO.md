@@ -15,7 +15,7 @@ Hay dos formas de usar la aplicación (las dos se descargan de la página de ver
 | `CineTracker-Setup-1.0.5.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
 | `CineTracker-Portable-1.0.5.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
-La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 9).
+La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 11).
 
 ### Aviso "Windows protegió su PC"
 
@@ -66,7 +66,8 @@ En un mismo computador puede haber varias cuentas; cada una solo ve sus propios 
   - Haz clic en uno de los pósters de la derecha para mostrarlo de inmediato.
   - **Ver título** abre la ficha; **Agregar al catálogo** guarda un título de tendencias; **Ver tráiler** reproduce su tráiler.
 - **Franja de números:** bajo el escenario ves tus totales (títulos, viendo, completados, horas, nota media) y el cambio frente al mes pasado.
-- **Sigue viendo**, **Recomendados para ti**, **Tendencias de la semana** y **Agregados recientemente** aparecen más abajo.
+- **Sigue viendo**, **Nuevos episodios**, **Recomendados para ti**, **Tendencias de la semana** y **Agregados recientemente** aparecen más abajo.
+- **Nuevos episodios** avisa cuando una serie que estás viendo (o que terminaste y sigue al aire) estrenó un episodio en los últimos 30 días que todavía no marcas, o estrena uno en las próximas dos semanas. Ver "Episodios" en la sección 5.
 
 ---
 
@@ -88,6 +89,7 @@ Si el título no está en TMDB, usa **Agregar a mano** y completa los datos que 
 - Los botones de estado (**Todos, Viendo, Pendiente, Completado, Abandonado**) muestran cuántos títulos hay en cada uno.
 - **Género** y **Orden** (agregados recientemente, título A–Z, mejor puntuación, estreno más reciente o más antiguo).
 - Los dos botones de la derecha cambian entre **cuadrícula** y **lista**. La aplicación recuerda tu vista y tu orden.
+- **En mis plataformas** (aparece si elegiste tus plataformas en Perfil) deja solo los pendientes y los que estás viendo que están incluidos en los servicios que pagas. La primera vez tarda unos segundos porque consulta cada título.
 
 ---
 
@@ -106,6 +108,22 @@ Los botones redondos de la derecha sirven para volver, ir al título anterior o 
 ### Dónde verla
 
 Debajo del póster, **Dónde verla** muestra en qué plataformas está el título en Colombia, de forma legal, agrupadas en **Incluida en suscripción**, **Gratis**, **Alquiler** y **Compra**. Cada plataforma abre su página en tu navegador; las principales (Netflix, Disney+, Prime Video, Apple TV, Google Play, YouTube) abren directamente la búsqueda del título, y el resto la página de TMDB con todas las opciones. Los datos son de JustWatch, a través de TMDB.
+
+### Episodios (series)
+
+En las series que vienen de TMDB aparece **Episodios**:
+
+- La barra muestra cuántos episodios estrenados llevas vistos, y **Siguiente** te dice cuál toca (por ejemplo `T1 · E04`). **Marcar como visto** lo marca con un clic.
+- Las pestañas **T1, T2…** muestran cada temporada con sus episodios, fechas y duración. Haz clic en el cuadro de un episodio para marcarlo o desmarcarlo, o usa **Marcar temporada vista**. Los que aún no se estrenan dicen cuándo salen, y una temporada anunciada sin episodios dice **Pronto**.
+- Al marcar el primer episodio de una serie pendiente, pasa sola a **Viendo**.
+
+### ¿Te va a gustar?
+
+Compara el título con tu gusto. Si todavía no lo calificas, te da una **nota probable** (según cómo calificas sus géneros) con su nivel de confianza, los motivos y los títulos tuyos a los que se parece. Si ya lo calificaste, explica **por qué te gustó** o **por qué no te convenció**. Con una clave de Gemini aparece **Analizar con IA**, que lo explica con palabras; la respuesta se guarda y se avisa si tus notas cambian después.
+
+### Quién la hace
+
+Muestra la dirección (o la creación, en series) y el reparto con su foto. **Seguir** agrega a esa persona a **Estrenos** (sección 10).
 
 ### Lo que sigue
 
@@ -141,11 +159,18 @@ En **Listas** puedes agrupar títulos a tu manera (por ejemplo, "Noche de terror
 2. Dentro de la lista, elige un título de tu catálogo y haz clic en **Agregar**. También puedes agregarlo desde la ficha del título con el botón de listas.
 3. Puedes **renombrar** o **eliminar** la lista; al eliminarla, los títulos siguen en tu catálogo.
 
+Las listas que guardas desde **Descubrir** conservan su presentación y el motivo de cada título (**¿Por qué este?**).
+
 ---
 
 ## 8. Estadísticas y recomendaciones
 
-**Estadísticas** muestra tus totales con la variación del último mes, las visualizaciones completadas por mes (últimos 12 meses), tus títulos por estado, los géneros mejor calificados y los títulos por género. Cada gráfica tiene **Ver como tabla**.
+**Estadísticas** muestra tus totales con la variación del último mes, las visualizaciones completadas por mes (últimos 12 meses), tus títulos por estado, los géneros mejor calificados y los títulos por género. Cada gráfica tiene **Ver como tabla**. Además:
+
+- **Tu perfil de cinéfilo:** un retrato de tu gusto con un apodo (por ejemplo "Fan del terror"), un resumen, tus rasgos con los números que los respaldan y un **punto ciego**: algo que casi no has visto y te podría gustar. Con una clave de Gemini lo escribe la IA y se guarda; **Actualizar retrato** lo vuelve a escribir. Necesita al menos 3 títulos vistos.
+- **Reto del año:** ponte una meta ("ver 50 películas este año") de títulos, películas o series. La barra muestra tu avance, la raya blanca indica dónde deberías ir hoy y el texto te dice si vas adelantado o cuántas te faltan por semana. Cada título cuenta una vez, el año en que lo terminaste.
+- **Tu racha:** cuántas semanas seguidas has visto algo (una película, una serie o un episodio), tu mejor racha y las últimas 26 semanas. Si esta semana aún no ves nada, te avisa para que no la pierdas.
+- **Tu año en cine** (botón arriba a la derecha): el resumen de un año: títulos, horas, mes más intenso, tu día favorito para ver algo, la racha más larga, lo mejor y lo peor, lo que repetiste, tus géneros y los "premios del año". Con Gemini, la IA escribe el titular, la historia y los premios (solo a títulos que de verdad viste ese año). Puedes cambiar de año arriba.
 
 **Recomendados para ti** (en el Inicio) elige títulos de tu lista de pendientes:
 
@@ -156,16 +181,57 @@ En **Listas** puedes agrupar títulos a tu manera (por ejemplo, "Noche de terror
 
 ---
 
-## 9. Perfil y ajustes
+## 9. Descubrir
+
+**Descubrir** (en la barra lateral) busca cosas nuevas para ti. Todo lo que propone existe en TMDB: la IA solo elige y explica, nunca inventa títulos.
+
+### ¿Qué veo esta noche?
+
+1. Escribe cómo estás y cuánto tiempo tienes, por ejemplo "algo ligero, 90 minutos, estoy cansado", o elige una de las ideas de abajo.
+2. Elige el **Tiempo** (sin límite, hasta 90 min, hasta 2 h o un episodio) y **De dónde**: tus pendientes, algo nuevo o ambos. Si tienes plataformas, puedes marcar **Solo en mis plataformas**.
+3. Haz clic en **Elige por mí**. Recibes tres opciones con el motivo de cada una; **Otras tres** pide otras.
+
+Sin clave de Gemini, la aplicación entiende palabras como "miedo", "reír", "llorar", "pareja" o "90 minutos" y elige según tus géneros favoritos.
+
+### Listas para ti
+
+1. Elige un **estilo**: la aplicación los detecta en lo que ves (por ejemplo "Terror · 14 vistos · media 8,5", "Terror y misterio", "Cine de los 90" o "Lo mejor de tu gusto").
+2. Elige **Películas** o **Series** y, si quieres, ajústala: **Más oscuro**, **Más corto**, **Menos conocido**, **Reciente**, **Clásico** o **En mis plataformas**.
+3. Haz clic en **Armar lista**. Recibes hasta 10 títulos que aún no tienes, cada uno con su motivo, por ejemplo: "Como te encantó Hereditary, esta tiene el mismo terror lento y familiar".
+
+En cada título puedes **Agregar** (queda como pendiente) o decir **No me interesa** (no se volverá a sugerir; el aviso tiene **Deshacer**). **Guardar como lista** crea la lista con todos y agrega a tu catálogo, como pendientes, los que no tenías. **Otra versión** arma una nueva.
+
+### ¿Cuál era esa película?
+
+Describe lo que recuerdas ("un tipo revive el mismo día en una guerra contra aliens") y haz clic en **Encontrarla**. La IA propone hasta cinco títulos, cada uno con la pista que coincide y qué tan probable es, y solo se muestran los que existen en TMDB. Sin clave de Gemini se busca el texto tal cual en TMDB, que encuentra títulos por nombre pero no por trama.
+
+---
+
+## 10. Estrenos
+
+**Estrenos** muestra, mes a mes, lo que sale en el próximo año de lo que sigues:
+
+- **Personas:** directores, creadores y actores que seguiste desde la ficha de un título (**Quién la hace → Seguir**). Quítalas con la **X**.
+- **Géneros:** mientras no elijas ninguno, se siguen tus dos géneros favoritos (marcados "favorito"). **Elegir géneros** te deja escoger los tuyos.
+
+Cada estreno dice su fecha y por qué aparece ("Denis Villeneuve dirige esta película."), y se puede **Agregar** como pendiente.
+
+---
+
+## 11. Perfil y ajustes
 
 Haz clic en tu nombre (abajo a la izquierda) para abrir **Perfil y ajustes**:
 
 - **Perfil:** cambia tu nombre y tu foto (PNG, JPEG o WebP).
 - **Apariencia:** tema oscuro o claro (también con el botón de la barra lateral), el **fondo** de metal líquido animado o quieto (quieto si tu computador va lento) y el botón para ver de nuevo la **presentación**.
+- **Mis plataformas:** marca los servicios de streaming que pagas (Netflix, Prime Video, Disney+, Max…). Se usan en Descubrir, en ¿Qué veo esta noche? y en el filtro del Catálogo. Los datos son de JustWatch para Colombia.
+- **Tus datos:**
+  - **Exportar:** **Copia de CineTracker (CSV)** guarda todo tu catálogo (estados, notas, puntuaciones y las fechas en que viste cada título) y se puede volver a importar. **Para Letterboxd (CSV)** guarda tus películas vistas en el formato del importador de Letterboxd (letterboxd.com/import).
+  - **Importar:** **Elegir archivo CSV** acepta la exportación de Letterboxd (diary.csv, ratings.csv, watched.csv o watchlist.csv), la de IMDb (tus calificaciones o tu Watchlist) o una copia de CineTracker. Antes de importar ves cuántos títulos trae y una muestra; si es una lista de Letterboxd, indicas si **Ya las vi** o **Quiero verlas**. Cada título se busca en TMDB (exacto cuando el archivo trae el código de IMDb). Lo que ya tienes no se sobrescribe: solo se completa lo que falta (puntuación, fechas vistas). Al final ves cuántos se agregaron, cuántos se completaron y la lista de los que no se encontraron.
 - **Contraseña:** cámbiala escribiendo la actual y la nueva.
 - **Claves de API:**
   - **TMDB** es necesaria para buscar títulos, ver tendencias y tráilers. Consíguela gratis en themoviedb.org (botón **Conseguir una clave**).
-  - **Google Gemini** es opcional y activa las recomendaciones escritas por IA. Consíguela en Google AI Studio.
+  - **Google Gemini** es opcional y activa todo lo escrito por IA: recomendaciones, listas de Descubrir, ¿Qué veo esta noche?, la búsqueda por descripción, tu perfil de cinéfilo, tu año en cine y el análisis de cada título. Consíguela en Google AI Studio. Sin ella todo sigue funcionando con reglas, y cada pantalla te dice cuándo es así.
   - Pega la clave y haz clic en **Guardar**; la aplicación la prueba sola y te dice si funciona. **Probar clave** la vuelve a comprobar y **Quitar** la borra.
   - Las claves se guardan cifradas con Windows y no se vuelven a mostrar. Una clave guardada aquí reemplaza la que trae la instalación.
 - **Eliminar cuenta:** borra tu cuenta con todos sus títulos, historial y listas. Pide tu contraseña y no se puede deshacer.
@@ -174,13 +240,16 @@ Haz clic en tu nombre (abajo a la izquierda) para abrir **Perfil y ajustes**:
 
 ---
 
-## 10. Problemas frecuentes
+## 12. Problemas frecuentes
 
 | Problema | Qué hacer |
 |---|---|
 | "TMDB no está configurado" o la búsqueda no funciona | Agrega una clave de TMDB en Perfil > Claves de API, o usa el instalador que trae las claves. |
 | "No se pudo conectar con TMDB" | Revisa tu conexión a internet. Tu catálogo sigue funcionando sin internet. |
 | Las recomendaciones dicen "según tus géneros" | Falta la clave de Gemini, no hay internet o tienes menos de 3 títulos calificados. El aviso sobre la fila explica el motivo exacto. |
+| Descubrir dice "Aún no conocemos tu gusto" | Marca como vistos y califica al menos dos títulos. |
+| Un título del archivo importado "no se encontró" | El nombre o el año no coinciden con TMDB. Agrégalo a mano desde el Catálogo. |
+| "Episodios" no aparece en una serie | Solo aparece en series agregadas desde TMDB. |
 | El tráiler no carga | Revisa tu conexión. Si el dueño del video no permite verlo fuera de YouTube, usa **Ver en YouTube**. |
 | Tengo que iniciar sesión cada vez | Al iniciar sesión, deja marcada **Mantener la sesión iniciada en este equipo**. |
 | Windows no deja abrir el instalador | Ver "Aviso Windows protegió su PC" en la sección 1. |

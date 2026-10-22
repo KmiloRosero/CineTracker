@@ -34,6 +34,10 @@ La interfaz está en español y sigue un sistema visual propio inspirado en las 
 | Dónde verla | Plataformas legales en Colombia (suscripción, gratis, alquiler, compra) con enlace a cada una. |
 | Presentación | Cuatro pasos la primera vez que se abre la app, que explican para qué sirve y sus funciones; se puede saltar y volver a ver desde Perfil. |
 | Recomendaciones | Gemini con salida JSON validada; motor por reglas como respaldo, siempre con el motivo de cada recomendación. |
+| Descubrir con IA | Listas por estilo con títulos nuevos de TMDB explicados por la IA, "¿Qué veo esta noche?" por ánimo y tiempo, y búsqueda de un título por su descripción. |
+| Perfil, año y análisis | Retrato del gusto del usuario, resumen anual con premios y "¿Te va a gustar?" en cada título. |
+| Series y estrenos | Progreso por episodio, aviso de episodios nuevos y próximos estrenos de personas y géneros seguidos. |
+| Datos y hábitos | Importación desde Letterboxd e IMDb, exportación a CSV y Letterboxd, plataformas del usuario, reto anual y rachas semanales. |
 | Estadísticas | Totales con tendencia mensual, actividad de 12 meses, estados, géneros; cada gráfica con vista de tabla. |
 | Listas, perfil y ajustes | Listas con nombre; foto y nombre; cambio de contraseña; tema; claves de API; eliminación de cuenta. |
 | Sesión recordada | Opcional, 30 días, con token cifrado por el sistema operativo. |
@@ -101,6 +105,12 @@ erDiagram
   users ||--o{ records : "registra"
   users ||--o{ lists : "crea"
   users ||--o{ remembered_sessions : "mantiene"
+  users ||--o{ dismissed_titles : "descarta"
+  users ||--o{ ai_cache : "guarda"
+  users ||--o{ user_platforms : "paga"
+  users ||--o{ follows : "sigue"
+  users ||--o{ challenges : "se propone"
+  titles ||--o{ episode_progress : "marca"
   titles ||--o{ records : "tiene"
   lists ||--o{ list_titles : "contiene"
   titles ||--o{ list_titles : "aparece en"
@@ -155,7 +165,45 @@ erDiagram
     text key PK
     text value
   }
+  dismissed_titles {
+    int user_id PK
+    text type PK
+    int tmdb_id PK
+    text title
+  }
+  ai_cache {
+    int user_id PK
+    text cache_key PK
+    text signature
+    text payload
+  }
+  user_platforms {
+    int user_id PK
+    int provider_id PK
+    text name
+  }
+  episode_progress {
+    int title_id PK
+    int season PK
+    int episode PK
+    int user_id FK
+    text watched_at
+  }
+  follows {
+    int user_id PK
+    text kind PK
+    text ref PK
+    text name
+  }
+  challenges {
+    int user_id PK
+    int year PK
+    int goal
+    text kind
+  }
 ```
+
+`lists` tiene además `description` y `list_titles` tiene `note`: las listas generadas en Descubrir guardan su presentación y el motivo de cada título.
 
 Migraciones:
 
@@ -165,6 +213,11 @@ Migraciones:
 | 1 | Propiedad por usuario de títulos, registros y listas. Los datos que existían pasan a la cuenta más antigua. |
 | 2 | Reparto (`cast_members`) en los títulos. |
 | 3 | Sesiones recordadas (`remembered_sessions`). |
+| 4 | Listas generadas (`lists.description`, `list_titles.note`), títulos descartados (`dismissed_titles`) y caché persistente de la IA (`ai_cache`). |
+| 5 | Plataformas de cada usuario (`user_platforms`). |
+| 6 | Progreso por episodio (`episode_progress`). |
+| 7 | Personas y géneros seguidos (`follows`). |
+| 8 | Retos anuales (`challenges`). |
 
 Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del identificador del género. Así los datos son estables aunque los metadatos se pidan en español, y la interfaz los traduce al mostrarlos. Los géneros combinados de series (por ejemplo "Sci-Fi & Fantasy") se separan en sus equivalentes de película para que las estadísticas cuenten películas y series juntas.
 
@@ -252,6 +305,42 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 - **Caché:** el resultado se guarda por usuario mientras el catálogo no cambie, para no repetir llamadas pagadas.
 - **Claude:** el código también admite Anthropic Claude si solo existe esa clave.
 
+### 4.8 Cliente de IA compartido y lectura del gusto
+
+Todas las funciones con IA pasan por `aiClient` (Gemini, o Claude si solo hay esa clave): una petición con esquema JSON estricto, la misma clasificación de errores y un resultado `{ ok, provider, data | reason }`. Cada servicio valida la respuesta y tiene su respaldo por reglas, de modo que ninguna pantalla queda vacía y la interfaz siempre dice quién escribió cada texto.
+
+`tasteService` lee el catálogo una sola vez para todas: géneros por peso (un 9 cuenta mucho más que un 6 y un abandono casi nada), géneros que el usuario califica mal, décadas, títulos mejor y peor calificados y los **estilos** de Descubrir (cada género favorito, los pares de géneros que se repiten, la década favorita y una mezcla).
+
+### 4.9 Descubrir
+
+- **Listas por estilo** (`discoveryService`): los candidatos salen siempre de TMDB: las recomendaciones de los mejores títulos del usuario en ese estilo y `/discover` con sus géneros. Los ajustes se traducen a filtros de TMDB (duración, votos, fechas, géneros excluidos, proveedores en Colombia). Se excluye lo que ya está en el catálogo, lo descartado, lo no traducido, lo adulto y lo no estrenado. Los 30 mejores, ordenados por reglas, van al modelo, que elige hasta 10 por su `tmdb_id` y explica cada uno; si devuelve menos de 3 válidos, quedan los de las reglas con un motivo calculado ("TMDB la recomienda a quien disfrutó…").
+- **¿Qué veo esta noche?** (`tonightService`): mezcla pendientes (y series a medias) con títulos nuevos; con "Ambos" siempre incluye al menos uno de cada origen. El respaldo entiende palabras de ánimo en español y límites de tiempo escritos ("90 minutos", "dos horas").
+- **Buscar por descripción** (`describeSearchService`): el modelo propone títulos y años; cada uno se verifica con la búsqueda de TMDB y se descarta si no existe.
+
+### 4.10 Perfil, año y análisis por título
+
+- **Perfil de cinéfilo**, **Tu año en cine** e **¿Te va a gustar?** guardan la respuesta de la IA en `ai_cache` con una firma (hash del catálogo o de los números del año). Reabrir la pantalla no repite la llamada; si la firma cambió, se marca como desactualizada. Los textos por reglas no se guardan porque recalcularlos no cuesta nada.
+- Los premios del año solo se aceptan para títulos vistos ese año, y los "se parece a" solo para títulos del catálogo.
+- La nota probable por reglas es el promedio de las notas del usuario en los géneros del título, acercado a su media general según cuánta evidencia hay.
+- El análisis por título nunca llama a la IA al abrir la ficha; solo con **Analizar con IA**.
+
+### 4.11 Series, estrenos y plataformas
+
+- **Episodios:** `/tv/{id}` da las temporadas y el último episodio emitido; con eso se calcula cuántos episodios hay al aire en cada temporada sin pedirlas todas. La lista de cada temporada (`/tv/{id}/season/{n}`) se pide al abrirla. **Nuevos episodios** revisa hasta 40 series seguidas con 5 consultas en paralelo y caché de 6 horas.
+- **Estrenos:** `/person/{id}/combined_credits` (dirección, creación, guion o actuación) y `/discover` con fechas futuras por género.
+- **Plataformas:** catálogo de proveedores de Colombia (`/watch/providers`) sin los canales revendidos dentro de Amazon o Apple; la disponibilidad de cada título usa los mismos datos de "Dónde verla".
+
+### 4.12 Importar y exportar
+
+- `utils/csv.js` lee y escribe CSV según RFC 4180 (comillas, comas y saltos de línea dentro de campos, BOM). Al exportar, los textos que empiezan con `=`, `+`, `-` o `@` se protegen para que una hoja de cálculo no los ejecute como fórmula.
+- El formato se reconoce por los encabezados: diario, calificaciones o listas de Letterboxd (estrellas de 0,5 a 5 pasan a 1–10), calificaciones o lista de IMDb (sin episodios sueltos) y la copia de CineTracker. Las filas repetidas del diario se unen en un título con todas sus fechas.
+- La interfaz envía las filas en lotes de 10 para mostrar el avance. Cada fila se resuelve en TMDB por id (de TMDB, o de IMDb con `/find`) o por título y año; un título existente solo gana lo que le falta y cada fecha nueva se vuelve un registro de visualización.
+- Los diálogos de abrir y guardar son nativos (proceso principal); la interfaz nunca recibe una ruta, solo el texto.
+
+### 4.13 Retos y rachas
+
+El reto cuenta títulos distintos terminados en el año (un registro completado, o un título completado sin registros, por su fecha de actualización) y lo compara con el ritmo esperado al día de hoy. La racha cuenta semanas (de lunes a domingo, hora local) con alguna visualización o episodio; queda "en riesgo" si la semana pasada contó y esta todavía no.
+
 ---
 
 ## 5. Seguridad
@@ -280,9 +369,9 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 
 ## 6. Pruebas
 
-`npm test` ejecuta **151 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **213 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
-**Backend (126 pruebas, `backend/tests/`), sobre bases de datos temporales:**
+**Backend (188 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
 - **Migraciones:** bases nuevas, actualización de bases anteriores a las cuentas, copias de seguridad e idempotencia.
 - **Autenticación y perfil:** registro, inicio de sesión, cambio de contraseña, fotos, eliminación de la cuenta en cascada.
@@ -290,6 +379,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 - **Estadísticas:** totales, tasa de finalización, horas, actividad mensual, tendencias, géneros unificados.
 - **Recomendaciones:** motor por reglas y cada caso de respaldo de Gemini y Claude, con clientes simulados (sin llamadas pagadas).
 - **TMDB, tráilers, lo que sigue y caché de imágenes:** normalización, español con respaldo en inglés, selección de tráiler, orden de la saga, temporadas, filtro de estrenos, seguridad de rutas, uso sin internet.
+- **Funciones nuevas:** gusto y estilos, listas generadas (filtros, exclusiones, validación de la IA, guardado), esta noche, búsqueda por descripción, perfil, año, análisis por título, plataformas, episodios y avisos, estrenos y seguidos, importación y exportación (Letterboxd, IMDb, CSV de ida y vuelta) y retos y rachas. TMDB y la IA siempre simulados.
 - **IPC, claves y sesiones:** restricciones a invitados, ocultamiento de errores internos, cifrado de claves, precedencia de fuentes, sesión recordada (vencimiento, cierre de sesión, base de datos copiada).
 
 **Interfaz (25 pruebas, `frontend/src/**/*.test.{jsx,tsx}`), con Testing Library en jsdom:**
@@ -313,7 +403,7 @@ El inicio de sesión usa un componente con fondo de humo en WebGL y una tarjeta 
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 151 pruebas. |
+| `npm test` | Las 213 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
 | `npm run dist:win:public` | `CineTracker-Setup-1.0.5.exe` y `CineTracker-Portable-1.0.5.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
@@ -338,6 +428,7 @@ Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firm
 - El instalador no está firmado; firmarlo requiere un certificado de pago.
 - Solo se probó el empaquetado para Windows. La configuración para macOS y Linux existe, pero no se verificó.
 - Las recomendaciones con IA dependen de la cuota de la clave de Gemini.
+- Los avisos de nuevos episodios se ven dentro de la aplicación; no hay notificaciones del sistema.
 - Mejoras posibles:
   - Sincronización opcional entre equipos.
   - Importar el historial desde otros servicios.

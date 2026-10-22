@@ -4,6 +4,16 @@ A desktop app to track, rate and get recommendations for the movies and series y
 
 Final project for Software Engineering at Universidad Cooperativa de Colombia (UCC), Pasto, by **Camilo Rosero**.
 
+## What it does
+
+- **Catalog and title pages:** TMDB search, status, 1–10 ratings, watch history, notes, lists, trailers, where to watch in Colombia, saga order and similar titles.
+- **Descubrir:** AI lists built from your styles (say, slow-burn horror) with a reason for every pick, *¿Qué veo esta noche?* from your mood and the time you have, and finding a title from a loose description. Every suggestion is a real TMDB title; the AI only chooses and explains.
+- **Your taste in words:** a cinephile profile on Statistics, a year in review with awards, and *¿Te va a gustar?* with a predicted score on every title.
+- **Series and releases:** episode-by-episode progress, a new-episodes rail, and upcoming releases from the people and genres you follow.
+- **Habits and data:** a yearly challenge, weekly streaks, your streaming platforms as a filter, import from Letterboxd and IMDb, export to CSV or to Letterboxd.
+
+AI features use Google Gemini (or Anthropic Claude when only its key is set). Without a key, each one falls back to rules and says so.
+
 | Home | Title showcase |
 |---|---|
 | ![Home](docs/screenshots/home.png) | ![Title showcase](docs/screenshots/showcase.png) |
