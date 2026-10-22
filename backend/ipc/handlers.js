@@ -8,6 +8,7 @@ const discoveryService        = require('../services/discoveryService.js');
 const tonightService          = require('../services/tonightService.js');
 const describeSearchService   = require('../services/describeSearchService.js');
 const cinephileService        = require('../services/cinephileService.js');
+const wrappedService          = require('../services/wrappedService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -87,6 +88,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('stats:getMonthlyWatched', readable((userId) => statisticsService.getMonthlyWatched(userId), []));
   ipcMain.handle('stats:getTotalHours',     readable((userId) => statisticsService.getTotalHours(userId), { totalHours: 0 }));
   ipcMain.handle('stats:getOverview',       authed((userId)   => statisticsService.getOverview(userId)));
+  ipcMain.handle('stats:getYearInReview', authed((userId, year, options) =>
+    wrappedService.getYearInReview(userId, year, { refresh: options?.refresh === true })));
   ipcMain.handle('stats:getCinephileProfile', authed((userId, options) =>
     cinephileService.getCinephileProfile(userId, { refresh: options?.refresh === true })));
 

@@ -6,6 +6,7 @@ import Catalog from './pages/Catalog';
 import Discover from './pages/Discover';
 import TitleDetail from './pages/TitleDetail';
 import Statistics from './pages/Statistics';
+import YearInReview from './pages/YearInReview';
 import Lists from './pages/Lists';
 import ListDetail from './pages/ListDetail';
 import Profile from './pages/Profile';
@@ -77,6 +78,8 @@ export default function App() {
                 <Route path="/lists"      element={<PageWrapper><Lists /></PageWrapper>} />
                 <Route path="/lists/:id"  element={<PageWrapper><ListDetail /></PageWrapper>} />
                 <Route path="/statistics" element={<PageWrapper><Statistics /></PageWrapper>} />
+                <Route path="/year"       element={<PageWrapper><YearInReview /></PageWrapper>} />
+                <Route path="/year/:year" element={<PageWrapper><YearInReview /></PageWrapper>} />
                 <Route path="/profile"    element={<PageWrapper><Profile /></PageWrapper>} />
                 <Route path="*"           element={<Navigate to="/" replace />} />
               </Routes>

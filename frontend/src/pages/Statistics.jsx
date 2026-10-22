@@ -82,6 +82,9 @@ export default function Statistics() {
     <main className="page statistics">
       <header className="page__header">
         <h1 className="page__heading">Estadísticas</h1>
+        {o && o.totals.titles > 0 && (
+          <Link className="btn btn--primary statistics__year" to="/year">Tu {new Date().getFullYear()} en cine</Link>
+        )}
       </header>
 
       {error && <PageError message={`No se pudieron cargar las estadísticas: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />}

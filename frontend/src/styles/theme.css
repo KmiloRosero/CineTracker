@@ -3021,3 +3021,80 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 @media (max-width: 1080px) {
   .cinephile { grid-template-columns: minmax(0, 1fr); padding: 28px 24px; }
 }
+
+/* ─── Tu año en cine ─────────────────────────────────────────────────────── */
+.statistics__year { margin-left: auto; }
+.year-review { display: flex; flex-direction: column; gap: 32px; }
+.year-review .back-link { margin-bottom: -16px; }
+.year-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px 40px 36px;
+  background: var(--slab-black);
+  color: var(--slab-text);
+  border-top: 6px solid var(--accent);
+  overflow: hidden;
+}
+.year-hero__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.year-hero__top .segmented--onair { flex-wrap: nowrap; }
+.year-hero__year {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(4.5rem, 11vw, 6rem);
+  line-height: .85;
+  letter-spacing: .005em;
+  color: var(--slab-text);
+  font-variant-numeric: tabular-nums;
+}
+.year-hero__headline {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: .95;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+  color: var(--slab-green);
+  max-width: 26ch;
+}
+.year-hero__story { font-size: 1.1rem; line-height: 1.6; color: #dcded8; max-width: 64ch; }
+.year-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.year-hero__note { font-size: .85rem; color: #8b9088; }
+.year-hero .btn--ghost { border-color: rgba(244,244,240,.5); color: var(--slab-text); }
+.year-hero .btn--ghost:hover:not(:disabled) { background: rgba(244,244,240,.12); }
+.year-hero :focus-visible { outline-color: var(--slab-green); }
+
+.year-review__title-link { color: var(--text-primary); }
+.year-review__title-link:hover { color: var(--accent-text); }
+.year-review__worst { margin-top: 16px; font-size: .95rem; color: var(--text-secondary); }
+
+.awards { list-style: none; display: flex; flex-direction: column; }
+.awards__item { display: grid; gap: 4px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.awards__item:first-child { padding-top: 0; }
+.awards__name {
+  justify-self: start;
+  padding: 3px 8px 2px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-num);
+  font-size: .8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.awards__title { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; text-transform: uppercase; }
+.awards__why { font-size: .92rem; color: var(--text-secondary); }
+
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 20px; }
+.facts dt, .facts dd { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.facts dt {
+  font-family: var(--font-num);
+  font-size: .85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-secondary);
+}
+.facts dd { font-family: var(--font-num); font-size: 1.05rem; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.facts dd::first-letter { text-transform: uppercase; }
+@media (max-width: 900px) { .year-hero { padding: 28px 24px; } }
