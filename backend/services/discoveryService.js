@@ -119,7 +119,7 @@ function discoverParams(style, type, mods, providers, page, maxRuntime = null) {
   if (mods.includes('platforms') && providers.length) {
     Object.assign(params, {
       with_watch_providers: providers.join('|'),
-      watch_region: 'CO',
+      watch_region: tmdbService.WATCH_REGION,
       with_watch_monetization_types: 'flatrate|free|ads',
     });
   }

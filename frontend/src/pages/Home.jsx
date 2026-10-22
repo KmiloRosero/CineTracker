@@ -10,7 +10,7 @@ import { useRequireAuth } from '../hooks/useRequireAuth';
 import { StatTicker, CrawlTicker, trendOf } from '../components/Ticker';
 import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { canonicalGenres, genreLabel } from '../utils/genres';
-import { typeLabel } from '../utils/labels';
+import { typeLabel, formatDayMonth } from '../utils/labels';
 import { tmdbImage } from '../utils/tmdbImage';
 
 // Why the AI picks were replaced by genre-based ones, in the user's terms.
@@ -43,7 +43,7 @@ const NO_REC_MSG = {
 function episodeLine(n) {
   const ep = n.kind === 'new' ? n.lastEpisode : n.nextEpisode;
   const code = `T${ep.season} · E${String(ep.episode).padStart(2, '0')}`;
-  const date = new Date(`${ep.air_date}T12:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  const date = formatDayMonth(ep.air_date);
   if (n.kind === 'soon') return `${code} sale el ${date}`;
   const behind = n.behind > 1 ? ` · te faltan ${n.behind}` : '';
   return `${code} salió el ${date}${behind}`;

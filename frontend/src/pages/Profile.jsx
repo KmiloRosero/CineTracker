@@ -399,7 +399,7 @@ export default function Profile() {
           <p className="settings-about">
             La información y las imágenes de películas y series provienen de TMDB.
             Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
-            Las recomendaciones con IA usan Google Gemini.
+            Las funciones con IA usan Google Gemini o, si solo hay esa clave, Anthropic Claude. Las plataformas de streaming vienen de JustWatch.
           </p>
         </Section>
 

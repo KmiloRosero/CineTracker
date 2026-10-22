@@ -8,7 +8,7 @@ import { IconPlus, IconSpinner, IconFilm } from '../components/Icons';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { tmdbImage } from '../utils/tmdbImage';
-import { formatDate } from '../utils/labels';
+import { formatStoredDate } from '../utils/labels';
 
 function unwrap(result) {
   if (result?.error) throw new Error(result.error);
@@ -20,7 +20,7 @@ const MAX_NAME = 60;
 const STRIP = 6;
 
 function formatCreated(iso) {
-  return formatDate(`${iso.replace(' ', 'T')}Z`);
+  return formatStoredDate(iso);
 }
 
 /** A list as a fixture row: name and count at left, its posters registered at one scale. */

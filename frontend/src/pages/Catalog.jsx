@@ -14,7 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useStoredState } from '../hooks/useStoredState';
 import { canonicalGenres, genreLabel, genreKey } from '../utils/genres';
-import { STATUS_LABEL, typeLabel, formatDate } from '../utils/labels';
+import { STATUS_LABEL, typeLabel, formatStoredDate } from '../utils/labels';
 import { tmdbImage } from '../utils/tmdbImage';
 
 const STATUSES = ['watching', 'pending', 'completed', 'dropped'].map((value) => ({ value, label: STATUS_LABEL[value] }));
@@ -40,7 +40,7 @@ function unwrap(result) {
 
 function formatAdded(iso) {
   // SQLite stores UTC as "YYYY-MM-DD HH:MM:SS"
-  return formatDate(`${iso.replace(' ', 'T')}Z`);
+  return formatStoredDate(iso);
 }
 
 // ── List view row ─────────────────────────────────────────────────────────

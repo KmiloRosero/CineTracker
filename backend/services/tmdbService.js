@@ -605,5 +605,5 @@ async function getTrending(limit = 12) {
 
 module.exports = {
   search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, findByImdb, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, findByImdb, ping, WATCH_REGION, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

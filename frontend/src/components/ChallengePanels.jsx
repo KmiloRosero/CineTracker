@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { IconSpinner } from './Icons';
 import { useToast } from './Toast';
 import { unwrap } from '../utils/ai';
+import { formatDayMonth } from '../utils/labels';
 
 const KIND = {
   all:    { label: 'Títulos',   one: 'título',   many: 'títulos' },
@@ -120,9 +121,6 @@ const STATE_TEXT = {
   'none':    () => 'Mira algo esta semana para empezar una racha.',
 };
 
-function weekLabel(start) {
-  return new Date(`${start}T12:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-}
 
 /** "Tu racha": consecutive weeks with something watched, and the last 26 weeks as a strip. */
 export function StreakPanel() {
@@ -150,14 +148,14 @@ export function StreakPanel() {
             key={w.start}
             className={`streak__week${w.n ? ' is-on' : ''}${i === s.weeks.length - 1 ? ' is-now' : ''}`}
             style={w.n ? { '--level': 0.35 + 0.65 * (w.n / max) } : undefined}
-            title={`Semana del ${weekLabel(w.start)}: ${w.n} ${w.n === 1 ? 'cosa vista' : 'cosas vistas'}`}
+            title={`Semana del ${formatDayMonth(w.start)}: ${w.n} ${w.n === 1 ? 'cosa vista' : 'cosas vistas'}`}
           >
-            <span className="sr-only">Semana del {weekLabel(w.start)}: {w.n}</span>
+            <span className="sr-only">Semana del {formatDayMonth(w.start)}: {w.n}</span>
           </li>
         ))}
       </ol>
       <div className="streak__axis" aria-hidden="true">
-        <span>{weekLabel(s.weeks[0].start)}</span>
+        <span>{formatDayMonth(s.weeks[0].start)}</span>
         <span>Esta semana</span>
       </div>
     </section>

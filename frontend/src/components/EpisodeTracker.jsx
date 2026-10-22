@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { IconCheck, IconSpinner } from './Icons';
 import { useToast } from './Toast';
-import { formatDate } from '../utils/labels';
+import { formatStoredDate } from '../utils/labels';
 import { unwrap } from '../utils/ai';
 
 const pad = (n) => String(n).padStart(2, '0');
 const code = (s, e) => `T${s} · E${pad(e)}`;
 
 function airDate(date) {
-  return date ? formatDate(`${date}T12:00:00`) : 'Sin fecha';
+  return date ? formatStoredDate(date) : 'Sin fecha';
 }
 
 /**

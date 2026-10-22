@@ -1,17 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Home from './pages/Home';
-import Catalog from './pages/Catalog';
-import Discover from './pages/Discover';
-import Upcoming from './pages/Upcoming';
-import TitleDetail from './pages/TitleDetail';
-import Statistics from './pages/Statistics';
-import YearInReview from './pages/YearInReview';
-import Lists from './pages/Lists';
-import ListDetail from './pages/ListDetail';
-import Profile from './pages/Profile';
 import Login from './pages/Login';
+
+// Home loads with the app; every other page loads the first time it is opened.
+const Catalog      = lazy(() => import('./pages/Catalog'));
+const Discover     = lazy(() => import('./pages/Discover'));
+const Upcoming     = lazy(() => import('./pages/Upcoming'));
+const TitleDetail  = lazy(() => import('./pages/TitleDetail'));
+const Statistics   = lazy(() => import('./pages/Statistics'));
+const YearInReview = lazy(() => import('./pages/YearInReview'));
+const Lists        = lazy(() => import('./pages/Lists'));
+const ListDetail   = lazy(() => import('./pages/ListDetail'));
+const Profile      = lazy(() => import('./pages/Profile'));
 import LoginModal from './components/LoginModal';
 import Sidebar from './components/Sidebar';
 import AppBackground from './components/AppBackground';
@@ -31,7 +33,7 @@ const pageVariants = {
 export function PageWrapper({ children }) {
   return (
     <motion.div className="page-wrapper" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-      {children}
+      <Suspense fallback={<PageLoading message="Cargando…" />}>{children}</Suspense>
     </motion.div>
   );
 }

@@ -1,5 +1,5 @@
 import { canonicalGenres, genreLabel, genreKey, parseGenres } from './genres';
-import { STATUS_LABEL, STATUS_OPTIONS, typeLabel, formatDate, formatNumber } from './labels';
+import { STATUS_LABEL, STATUS_OPTIONS, typeLabel, formatDate, formatNumber, parseStoredDate, formatStoredDate, formatDayMonth, formatMonthYear } from './labels';
 import { trendOf } from '../components/Ticker';
 
 describe('genres', () => {
@@ -43,5 +43,20 @@ describe('labels', () => {
     expect(trendOf({ current: 2.6, previous: 0 }, 1)).toBe(2.6);
     expect(trendOf({ current: 4, previous: 4 })).toBeNull();
     expect(trendOf({ current: 4, previous: null })).toBeNull();
+  });
+});
+
+describe('stored dates', () => {
+  it('reads SQLite, ISO and bare TMDB dates without shifting the day', () => {
+    expect(parseStoredDate('2026-03-01 15:00:00').toISOString()).toBe('2026-03-01T15:00:00.000Z');
+    expect(parseStoredDate('2026-03-01T15:00:00.000Z').toISOString()).toBe('2026-03-01T15:00:00.000Z');
+    expect(parseStoredDate('2026-10-28').getDate()).toBe(28);
+    expect(formatStoredDate('2026-10-28')).toBe(formatDate(new Date(2026, 9, 28, 12)));
+    expect(formatStoredDate('nope')).toBe('');
+  });
+
+  it('writes short and month labels in Spanish', () => {
+    expect(formatDayMonth('2026-10-12')).toMatch(/^12 oct/);
+    expect(formatMonthYear('2026-11-15')).toBe('Noviembre de 2026');
   });
 });

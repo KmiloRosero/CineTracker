@@ -12,8 +12,8 @@ Hay dos formas de usar la aplicación (las dos se descargan de la página de ver
 
 | Archivo | Para qué |
 |---|---|
-| `CineTracker-Setup-1.0.5.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.0.5.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-Setup-1.1.0.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.1.0.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
 
 La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 11).
 

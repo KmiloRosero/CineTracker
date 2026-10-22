@@ -21,6 +21,6 @@ export default defineConfig({
     // Each file gets a fresh module registry and its own temp database.
     isolate: true,
     // Tests never read real AI keys from backend/.env (no paid calls); suites set fake ones.
-    env: { GEMINI_API_KEY: '', ANTHROPIC_API_KEY: '', GEMINI_MODEL: '' },
+    env: { GEMINI_API_KEY: '', ANTHROPIC_API_KEY: '', GEMINI_MODEL: '', CLAUDE_MODEL: '' },
   },
 });

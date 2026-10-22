@@ -9,7 +9,7 @@ import { PageLoading, PageError } from '../components/PageLoading';
 import { IconSpinner } from '../components/Icons';
 import { useAuth } from '../context/AuthContext';
 import { aiName, fallbackNote, unwrap } from '../utils/ai';
-import { formatDate } from '../utils/labels';
+import { formatStoredDate } from '../utils/labels';
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -34,9 +34,6 @@ function plural(n, one, many) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-function sqlDate(at) {
-  return formatDate(String(at).includes('T') ? at : `${String(at).replace(' ', 'T')}Z`);
-}
 
 /** "Tu año en cine": the year in review, one season recap per year. */
 export default function YearInReview() {
@@ -204,8 +201,8 @@ export default function YearInReview() {
                 <dt>Racha más larga</dt><dd>{plural(s.longestWeekStreak, 'semana seguida', 'semanas seguidas')}</dd>
                 <dt>Semanas con algo visto</dt><dd>{s.activeWeeks} de 52</dd>
                 {s.decade && <><dt>Década favorita</dt><dd>Los {s.decade}</dd></>}
-                {s.first && <><dt>Abriste el año con</dt><dd>{s.first.title} · {sqlDate(s.first.at)}</dd></>}
-                {s.last && s.last.id !== s.first?.id && <><dt>Lo último</dt><dd>{s.last.title} · {sqlDate(s.last.at)}</dd></>}
+                {s.first && <><dt>Abriste el año con</dt><dd>{s.first.title} · {formatStoredDate(s.first.at)}</dd></>}
+                {s.last && s.last.id !== s.first?.id && <><dt>Lo último</dt><dd>{s.last.title} · {formatStoredDate(s.last.at)}</dd></>}
                 {s.rewatched.length > 0 && <><dt>Repetiste</dt><dd>{s.rewatched.map((t) => `${t.title} (${t.times})`).join(', ')}</dd></>}
                 {s.episodes > 0 && <><dt>Episodios marcados</dt><dd>{s.episodes}</dd></>}
                 <dt>Agregados al catálogo</dt><dd>{s.added}</dd>

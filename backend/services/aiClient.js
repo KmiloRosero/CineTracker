@@ -13,7 +13,7 @@ const { getEnv } = require('../utils/env.js');
 // their prompt, schema, validation and rule-based fallback.
 const GEMINI_MODEL = 'gemini-3.8-flash'; // override with GEMINI_MODEL in backend/.env
 const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models';
-const CLAUDE_MODEL = 'claude-opus-5-5';
+const CLAUDE_MODEL = 'claude-opus-5-5'; // override with CLAUDE_MODEL in backend/.env
 const TIMEOUT_MS   = 30000;
 
 const PROVIDER_NAME = { gemini: 'Gemini', claude: 'Claude' };
@@ -102,7 +102,7 @@ async function askClaude(apiKey, { system, prompt, schema, maxTokens }, sdk) {
   let response;
   try {
     response = await client.beta.messages.create({
-      model: CLAUDE_MODEL,
+      model: getEnv('CLAUDE_MODEL') ?? CLAUDE_MODEL,
       max_tokens: maxTokens,
       system,
       messages: [{ role: 'user', content: prompt }],

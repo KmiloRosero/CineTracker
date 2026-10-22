@@ -11,18 +11,18 @@ import { useAuth } from '../context/AuthContext';
 import { getTitleDetails, toCatalogPayload } from '../services/tmdbApi';
 import { tmdbImage } from '../utils/tmdbImage';
 import { unwrap } from '../utils/ai';
+import { formatMonthYear, formatLongDay } from '../utils/labels';
 
 function monthKey(date) {
   return date.slice(0, 7);
 }
 
 function monthTitle(key) {
-  const label = new Date(`${key}-15T12:00:00`).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  return formatMonthYear(`${key}-15`);
 }
 
 function releaseLine(date) {
-  return `Estreno: ${new Date(`${date}T12:00:00`).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+  return `Estreno: ${formatLongDay(date)}`;
 }
 
 /** "Estrenos": releases from followed people and genres, month by month. */
