@@ -47,6 +47,7 @@ export const IconPlay    = (p) => <Svg {...p}><polygon points="7 4 20 12 7 20" f
 export const IconExternal = (p) => <Svg {...p}><path d="M14 4h6v6"/><line x1="20" y1="4" x2="11" y2="13"/><path d="M18 14v6H4V6h6"/></Svg>;
 
 export const IconCompass = (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5"/></Svg>;
+export const IconCalendar = (p) => <Svg {...p}><rect x="3" y="5" width="18" height="16"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><rect x="7" y="13" width="3" height="3" fill="currentColor" stroke="none"/></Svg>;
 export const IconSidebar = (p) => <Svg {...p}><rect x="3" y="4" width="18" height="16"/><line x1="9" y1="4" x2="9" y2="20"/></Svg>;
 export const IconLogOut  = (p) => <Svg {...p}><path d="M10 3H4v18h6"/><polyline points="15 7 20 12 15 17"/><line x1="20" y1="12" x2="9" y2="12"/></Svg>;
 

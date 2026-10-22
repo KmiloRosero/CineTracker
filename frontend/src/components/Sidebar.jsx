@@ -3,13 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle';
 import Wordmark from './Wordmark';
-import { IconHome, IconFilm, IconChart, IconList, IconCompass, IconLogIn, IconLogOut, IconSidebar } from './Icons';
+import { IconHome, IconFilm, IconChart, IconList, IconCompass, IconCalendar, IconLogIn, IconLogOut, IconSidebar } from './Icons';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { to: '/',           label: 'Inicio',       Icon: IconHome  },
   { to: '/catalog',    label: 'Catálogo',     Icon: IconFilm  },
   { to: '/discover',   label: 'Descubrir',    Icon: IconCompass },
+  { to: '/upcoming',   label: 'Estrenos',     Icon: IconCalendar },
   { to: '/lists',      label: 'Listas',       Icon: IconList  },
   { to: '/statistics', label: 'Estadísticas', Icon: IconChart },
 ];

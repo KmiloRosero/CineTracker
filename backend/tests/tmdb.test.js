@@ -287,3 +287,77 @@ describe('where to watch', () => {
     expect(w.groups.flatrate[0].url).toBeNull();
   });
 });
+
+describe('tmdbService: discovery, episodes, people and platforms', () => {
+  beforeEach(() => tmdbService.clearTrailerCache());
+  const inDays = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+
+  it('normalizes discover results as candidates with stored genre names and keeps only allowed filters', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ results: [
+      { id: 7, title: 'Talk to Me', original_title: 'Talk to Me', original_language: 'en', genre_ids: [27, 53], vote_average: 7.13, vote_count: 3000, release_date: '2023-07-28', poster_path: '/t.jpg' },
+    ] }));
+    const [c] = await tmdbService.discover('movie', { with_genres: '27', bogus: 'x', 'vote_count.gte': 100 });
+    expect(c).toMatchObject({ tmdb_id: 7, type: 'movie', genres: ['Horror', 'Thriller'], vote_average: 7.1, readable: true, upcoming: false });
+    const url = new URL(fetchMock.mock.calls[0][0]);
+    expect(url.pathname).toBe('/3/discover/movie');
+    expect(url.searchParams.get('with_genres')).toBe('27');
+    expect(url.searchParams.has('bogus')).toBe(false);
+  });
+
+  it('reads a season and where a series stands', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ name: 'Temporada 1', episodes: [
+      { episode_number: 2, name: 'Dos', air_date: '2020-01-08', runtime: 50 },
+      { episode_number: 1, name: 'Uno', air_date: '2020-01-01', runtime: 52 },
+      { episode_number: 3, name: 'Tres', air_date: inDays(10) },
+    ] }));
+    const season = await tmdbService.getSeason(1399, 1);
+    expect(season.episodes.map((e) => [e.number, e.upcoming])).toEqual([[1, false], [2, false], [3, true]]);
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      status: 'Returning Series', in_production: true,
+      seasons: [{ season_number: 0, episode_count: 2 }, { season_number: 1, episode_count: 3, air_date: '2020-01-01' }],
+      last_episode_to_air: { season_number: 1, episode_number: 2, air_date: '2020-01-08', name: 'Dos' },
+      next_episode_to_air: { season_number: 1, episode_number: 3, air_date: inDays(10) },
+    }));
+    const status = await tmdbService.getSeriesStatus(1399);
+    expect(status.seasons.map((s) => s.number)).toEqual([1]); // specials left out
+    expect(status.lastEpisode).toMatchObject({ season: 1, episode: 2 });
+    await expect(tmdbService.getSeason(1399, -1)).rejects.toThrow('Temporada no válida.');
+  });
+
+  it('lists directors and cast with ids, and only future releases of a person', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      crew: [{ id: 1, name: 'Dir', job: 'Director' }, { id: 1, name: 'Dir', job: 'Director' }, { id: 2, name: 'Prod', job: 'Producer' }],
+      cast: [{ id: 3, name: 'Star', character: 'Hero', order: 0 }],
+    }));
+    const credits = await tmdbService.getCredits(10, 'movie');
+    expect(credits.directors).toEqual([{ id: 1, name: 'Dir', profile_path: null, role: 'director' }]);
+    expect(credits.cast[0]).toMatchObject({ id: 3, character: 'Hero', role: 'cast' });
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      crew: [{ id: 50, media_type: 'movie', title: 'Next film', job: 'Director', release_date: inDays(60) }],
+      cast: [
+        { id: 51, media_type: 'movie', title: 'Old film', release_date: '2001-01-01' },
+        { id: 52, media_type: 'tv', name: 'New show', first_air_date: inDays(30) },
+        { id: 53, media_type: 'movie', title: 'No date' },
+      ],
+    }));
+    const upcoming = await tmdbService.getPersonUpcoming(1);
+    expect(upcoming.map((u) => [u.title, u.role, u.type])).toEqual([['Next film', 'director', 'movie'], ['New show', 'cast', 'series']]);
+  });
+
+  it('merges movie and TV providers for Colombia by local priority', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ results: [
+        { provider_id: 8, provider_name: 'Netflix', logo_path: '/n.jpg', display_priorities: { CO: 1 } },
+        { provider_id: 337, provider_name: 'Disney Plus', display_priorities: { CO: 3 } },
+      ] }))
+      .mockResolvedValueOnce(jsonResponse({ results: [
+        { provider_id: 8, provider_name: 'Netflix', display_priorities: { CO: 0 } },
+        { provider_id: 1899, provider_name: 'Max', display_priorities: { CO: 2 } },
+      ] }));
+    const list = await tmdbService.getProviderCatalog();
+    expect(list.map((p) => p.name)).toEqual(['Netflix', 'Max', 'Disney Plus']);
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get('watch_region')).toBe('CO');
+  });
+});

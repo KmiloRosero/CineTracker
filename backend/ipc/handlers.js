@@ -12,6 +12,7 @@ const wrappedService          = require('../services/wrappedService.js');
 const insightService          = require('../services/insightService.js');
 const platformService         = require('../services/platformService.js');
 const episodeService          = require('../services/episodeService.js');
+const upcomingService         = require('../services/upcomingService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -123,6 +124,13 @@ function registerIpcHandlers(ipcMain) {
       : null;
     return tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true, platforms, availableIds });
   }));
+
+  // ── Estrenos y seguidos ───────────────────────────────────────────────────
+  ipcMain.handle('upcoming:get',            authed((userId)               => upcomingService.getUpcoming(userId)));
+  ipcMain.handle('upcoming:getFollows',     readable((userId)             => upcomingService.getFollows(userId), { people: [], genres: [] }));
+  ipcMain.handle('upcoming:follow',         authed((userId, target)       => upcomingService.follow(userId, target ?? {})));
+  ipcMain.handle('upcoming:unfollow',       authed((userId, target)       => upcomingService.unfollow(userId, target ?? {})));
+  ipcMain.handle('upcoming:getTitlePeople', authed((userId, tmdbId, type) => upcomingService.getTitlePeople(userId, tmdbId, type)));
 
   // ── Mis plataformas ───────────────────────────────────────────────────────
   ipcMain.handle('platforms:getCatalog',      safe(() => tmdbService.getProviderCatalog()));

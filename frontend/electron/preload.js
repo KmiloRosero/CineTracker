@@ -96,6 +96,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   undismissTitle:     (tmdbId, type)      => ipcRenderer.invoke('discover:undismiss', tmdbId, type),
   getDismissedTitles: ()                  => ipcRenderer.invoke('discover:getDismissed'),
 
+  // ── Estrenos ─────────────────────────────────────────────────────────────
+  /** Returns { items: [candidate + { reason, people }], follows, genres: [{ genre, label, auto }], followable, failed } */
+  getUpcoming:     ()               => ipcRenderer.invoke('upcoming:get'),
+  /** Returns { people: [{ id, name, profile_path, role }], genres: [{ genre, label }] } */
+  getFollows:      ()               => ipcRenderer.invoke('upcoming:getFollows'),
+  /** @param {{ kind: 'person', id, name, profile_path?, role? } | { kind: 'genre', genre }} target — Returns the follows */
+  follow:          (target)         => ipcRenderer.invoke('upcoming:follow', target),
+  unfollow:        (target)         => ipcRenderer.invoke('upcoming:unfollow', target),
+  /** Directors/creators and cast of a TMDB title, each with `followed` */
+  getTitlePeople:  (tmdbId, type)   => ipcRenderer.invoke('upcoming:getTitlePeople', tmdbId, type),
+
   // ── Mis plataformas ──────────────────────────────────────────────────────
   /** Streaming services in Colombia: [{ id, name, logo_path }] */
   getPlatformCatalog: ()          => ipcRenderer.invoke('platforms:getCatalog'),

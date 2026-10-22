@@ -484,6 +484,67 @@ async function getSeriesStatus(tmdbId) {
   });
 }
 
+// ── People: credits and what they have coming ──────────────────────────────
+const PEOPLE_TTL  = 12 * 60 * 60 * 1000;
+const peopleCache = new Map();
+
+async function cachedPeople(key, load) {
+  const hit = peopleCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+  const value = await load();
+  peopleCache.set(key, { expires: Date.now() + PEOPLE_TTL, value });
+  return value;
+}
+
+function person(p, role) {
+  return { id: p.id, name: String(p.name).slice(0, 120), profile_path: p.profile_path ?? null, role };
+}
+
+/** Who made a title: { directors: [{ id, name, profile_path, role }], cast: [... with character] }. Series list their creators as directors. */
+async function getCredits(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  requireType(type);
+  const id = Number(tmdbId);
+  return cachedPeople(`credits:${type}:${id}`, async () => {
+    const valid = (p) => p && Number.isInteger(p.id) && p.name;
+    if (type === 'movie') {
+      const data = await tmdbFetch(`/movie/${id}/credits`);
+      const directors = (data.crew ?? []).filter((c) => valid(c) && c.job === 'Director').map((c) => person(c, 'director'));
+      const cast = (data.cast ?? []).filter(valid).sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, CAST_LIMIT)
+        .map((c) => ({ ...person(c, 'cast'), character: c.character ? String(c.character).slice(0, 200) : null }));
+      return { directors: directors.filter((d, i) => directors.findIndex((x) => x.id === d.id) === i), cast };
+    }
+    const data = await tmdbFetch(`/tv/${id}`, { append_to_response: 'aggregate_credits' });
+    const directors = (data.created_by ?? []).filter(valid).map((c) => person(c, 'creator'));
+    const cast = (data.aggregate_credits?.cast ?? []).filter(valid).sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, CAST_LIMIT)
+      .map((c) => ({ ...person(c, 'cast'), character: c.roles?.[0]?.character ? String(c.roles[0].character).slice(0, 200) : null }));
+    return { directors, cast };
+  });
+}
+
+const PERSON_JOBS = { Director: 'director', Creator: 'creator', Screenplay: 'writer', Writer: 'writer' };
+
+/** A person's movies and series that are still to be released, with their role in each. */
+async function getPersonUpcoming(personId) {
+  validateId(personId, 'El id de la persona');
+  return cachedPeople(`upcoming:${Number(personId)}`, async () => {
+    const data = await tmdbFetch(`/person/${Number(personId)}/combined_credits`);
+    const now = today();
+    const items = new Map();
+    const take = (c, role) => {
+      if (!isMovieOrTv(c)) return;
+      const type = c.media_type === 'movie' ? 'movie' : 'series';
+      const date = c.release_date ?? c.first_air_date ?? null;
+      if (!date || date <= now) return; // only dated, future releases
+      const key = `${type}:${c.id}`;
+      if (!items.has(key)) items.set(key, { ...normalizeCandidate(c, type), role });
+    };
+    (data.crew ?? []).forEach((c) => { if (PERSON_JOBS[c.job]) take(c, PERSON_JOBS[c.job]); });
+    (data.cast ?? []).forEach((c) => take(c, 'cast'));
+    return [...items.values()];
+  });
+}
+
 // Streaming services available in the region, for "Mis plataformas".
 const PROVIDERS_TTL = 24 * 60 * 60 * 1000;
 let providerCatalog = null; // { expires, providers }
@@ -515,6 +576,7 @@ async function ping() {
 
 function clearTrailerCache() {
   providerCatalog = null;
+  peopleCache.clear();
   episodeCache.clear();
   listCache.clear();
   trailerCache.clear();
@@ -530,5 +592,5 @@ async function getTrending(limit = 12) {
 
 module.exports = {
   search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

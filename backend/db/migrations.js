@@ -197,6 +197,26 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 7,
+    name: 'followed people and genres',
+    rebuildsTables: false,
+    up(db) {
+      // People (TMDB person id) and genres (stored name) whose releases the user follows.
+      db.exec(`
+        CREATE TABLE follows (
+          user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          kind       TEXT NOT NULL CHECK(kind IN ('person', 'genre')),
+          ref        TEXT NOT NULL,
+          name       TEXT NOT NULL,
+          image_path TEXT,
+          role       TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (user_id, kind, ref)
+        );
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {
