@@ -69,6 +69,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateDiscoverList: (params, options) => ipcRenderer.invoke('discover:generate', params, options),
   /** @param {{ name: string, intro?: string, items: { tmdb_id, type, reason }[] }} payload — Returns { list, added } */
   saveDiscoverList:   (payload)           => ipcRenderer.invoke('discover:save', payload),
+  /** @param {{ mood: string, runtime: 'any'|'90'|'120'|'episode', source: 'pending'|'new'|'both', platformsOnly?: boolean }} input
+   *  Returns { message, picks: [{ kind, key, title?|item?, reason }], source, provider, fallbackReason?, moodGenres, reason } */
+  pickTonight:        (input, options)    => ipcRenderer.invoke('discover:tonight', input, options),
   /** "No me interesa" @param {{ tmdb_id: number, type: string, title: string }} item */
   dismissTitle:       (item)              => ipcRenderer.invoke('discover:dismiss', item),
   undismissTitle:     (tmdbId, type)      => ipcRenderer.invoke('discover:undismiss', tmdbId, type),

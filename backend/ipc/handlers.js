@@ -5,6 +5,7 @@ const statisticsService       = require('../services/statisticsService.js');
 const recommendationService   = require('../services/recommendationService.js');
 const aiRecommendationService = require('../services/aiRecommendationService.js');
 const discoveryService        = require('../services/discoveryService.js');
+const tonightService          = require('../services/tonightService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -96,6 +97,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('discover:save',         authed((userId, payload)        => discoveryService.saveList(userId, payload ?? {})));
   ipcMain.handle('discover:dismiss',      authed((userId, item)           => discoveryService.dismiss(userId, item ?? {})));
   ipcMain.handle('discover:undismiss',    authed((userId, tmdbId, type)   => discoveryService.undismiss(userId, tmdbId, type)));
+  ipcMain.handle('discover:tonight',      authed((userId, input, options) =>
+    tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true })));
   ipcMain.handle('discover:getDismissed', authed((userId)                 => discoveryService.getDismissed(userId)));
 
   // TMDB metadata is public, so guests can browse trending titles and search.
@@ -171,6 +174,7 @@ function registerIpcHandlers(ipcMain) {
     const result = apiKeyService.setKey(name, value);
     aiRecommendationService.clearCache();
     discoveryService.clearCache();
+    tonightService.clearCache();
     tmdbService.clearTrailerCache();
     return result;
   }));
@@ -178,6 +182,7 @@ function registerIpcHandlers(ipcMain) {
     const result = apiKeyService.clearKey(name);
     aiRecommendationService.clearCache();
     discoveryService.clearCache();
+    tonightService.clearCache();
     return result;
   }));
   ipcMain.handle('settings:testApiKey', safe((name) => {

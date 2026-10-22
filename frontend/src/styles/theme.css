@@ -2840,6 +2840,98 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   color: var(--text-secondary);
 }
 
+/* tonight: an on-air slab, black in both themes */
+.tonight { display: flex; flex-direction: column; gap: 24px; }
+.tonight__form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-areas: "title title" "mood options" "go go";
+  gap: 24px 40px;
+  padding: 36px 40px 32px;
+  background: var(--slab-black);
+  color: var(--slab-text);
+  border-top: 6px solid var(--accent);
+}
+.tonight__title {
+  grid-area: title;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 4.6vw, 4rem);
+  line-height: .92;
+  text-transform: uppercase;
+  letter-spacing: .005em;
+}
+.tonight__mood { grid-area: mood; display: flex; flex-direction: column; gap: 10px; }
+.tonight__options { grid-area: options; display: flex; flex-direction: column; gap: 18px; }
+.tonight__go { grid-area: go; display: flex; flex-wrap: wrap; gap: 10px; }
+.tonight__label {
+  font-family: var(--font-num);
+  font-size: .85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #c9ccc5;
+}
+.tonight__field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tonight textarea {
+  min-height: 84px;
+  padding: 12px 14px;
+  background: #1c1f1d;
+  border: 1px solid rgba(244,244,240,.35);
+  border-radius: var(--radius-sm);
+  color: var(--slab-text);
+  font-size: 1.1rem;
+  line-height: 1.45;
+  resize: vertical;
+  caret-color: var(--slab-green);
+}
+.tonight textarea::placeholder { color: #8b9088; }
+.tonight textarea:focus { outline: none; border-color: var(--slab-green); box-shadow: 0 0 0 3px rgba(31,181,116,.28); }
+.tonight__moods { display: flex; flex-wrap: wrap; gap: 6px; }
+.tonight__mood-chip {
+  min-height: 32px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid rgba(244,244,240,.3);
+  color: #dcded8;
+  font-family: var(--font-num);
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  transition: background var(--t), color var(--t), border-color var(--t);
+}
+.tonight__mood-chip:hover { border-color: var(--slab-text); color: var(--slab-text); }
+.tonight__mood-chip[aria-pressed="true"] { background: var(--slab-text); border-color: var(--slab-text); color: var(--slab-black); }
+.tonight__check { display: inline-flex; align-items: center; gap: 10px; min-height: 36px; font-size: .95rem; color: #dcded8; }
+.tonight__check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.tonight .btn--ghost { border-color: rgba(244,244,240,.5); color: var(--slab-text); }
+.tonight .btn--ghost:hover:not(:disabled) { background: rgba(244,244,240,.12); }
+.tonight :focus-visible { outline-color: var(--slab-green); }
+
+.segmented--onair {
+  --sc-line: rgba(244,244,240,.35); --sc-line-2: rgba(244,244,240,.2); --sc-ctl-bg: rgba(244,244,240,.04);
+  --sc-text: #f4f4f0; --sc-text-2: #dcded8; --sc-ground: #0a0a0a;
+  flex-wrap: wrap;
+}
+.segmented--onair .segmented__option { flex: 1 1 auto; }
+
+.tonight__message {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: .01em;
+  margin-bottom: 14px;
+  max-width: 34ch;
+}
+.tonight__note { margin-bottom: 16px; font-size: .9rem; color: var(--text-secondary); padding: 10px 14px; border: 1px dashed var(--border-strong); }
+.tonight__empty { padding: 20px 24px; border: 1px dashed var(--border-strong); color: var(--text-secondary); max-width: 640px; }
+.tonight__picks .fixture { grid-template-columns: 120px minmax(0, 1fr); }
+.tonight__picks .fixture__poster { width: 120px; }
+
+@media (max-width: 1080px) {
+  .tonight__form { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "mood" "options" "go"; padding: 28px 24px; }
+}
 @media (max-width: 900px) {
   .discover-controls__go { margin-left: 0; width: 100%; }
 }

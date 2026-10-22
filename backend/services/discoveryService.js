@@ -87,7 +87,7 @@ function dateRange(style, mods) {
   return { from: null, to: today() };
 }
 
-function discoverParams(style, type, mods, providers, page) {
+function discoverParams(style, type, mods, providers, page, maxRuntime = null) {
   const isMovie = type === 'movie';
   const ids = [...new Set(style.genres.map((g) => tmdbGenreId(g, type)).filter(Boolean))];
   const range = dateRange(style, mods);
@@ -106,6 +106,7 @@ function discoverParams(style, type, mods, providers, page) {
     params['with_runtime.lte'] = isMovie ? 100 : 35;
     if (isMovie) params['with_runtime.gte'] = 60;
   }
+  if (maxRuntime) params['with_runtime.lte'] = maxRuntime;
   if (mods.includes('obscure')) {
     Object.assign(params, { sort_by: 'vote_average.desc', 'vote_count.gte': isMovie ? 40 : 20, 'vote_count.lte': 1500, 'vote_average.gte': 6.6 });
   }
@@ -143,7 +144,7 @@ function fitsSeedFilters(c, style, mods) {
  * filters. Titles already in the catalog, dismissed, untranslated, adult
  * or unreleased are left out. Each candidate keeps the seeds that led to it.
  */
-async function gatherCandidates(taste, style, type, mods, { providers = [], exclude = new Set(), tmdb = tmdbService } = {}) {
+async function gatherCandidates(taste, style, type, mods, { providers = [], exclude = new Set(), maxRuntime = null, tmdb = tmdbService } = {}) {
   const pool = new Map();
   const add = (c, seed) => {
     const key = `${c.type}:${c.tmdb_id}`;
@@ -155,7 +156,7 @@ async function gatherCandidates(taste, style, type, mods, { providers = [], excl
   };
 
   // runtime and platform filters cannot be checked on recommendation lists
-  const useSeeds = !mods.includes('shorter') && !mods.includes('platforms');
+  const useSeeds = !mods.includes('shorter') && !mods.includes('platforms') && !maxRuntime;
   if (useSeeds) {
     const seeds = style.seeds.filter((s) => s.type === type).slice(0, SEEDS_TO_ASK);
     const lists = await Promise.all(seeds.map((s) => tmdb.getTitleRecommendations(s.tmdb_id, type).catch(() => [])));
@@ -166,7 +167,7 @@ async function gatherCandidates(taste, style, type, mods, { providers = [], excl
 
   if (style.genres.length || style.kind === 'decade') {
     const pages = await Promise.all([1, 2].map((page) =>
-      tmdb.discover(type, discoverParams(style, type, mods, providers, page)).catch((err) => {
+      tmdb.discover(type, discoverParams(style, type, mods, providers, page, maxRuntime)).catch((err) => {
         if (page === 1 && pool.size === 0) throw err; // nothing else to show: surface the TMDB error
         return [];
       })));

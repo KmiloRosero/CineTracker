@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
+import TonightPicker from '../components/TonightPicker';
 import GuestPrompt from '../components/GuestPrompt';
 import { PageError } from '../components/PageLoading';
 import { gridVariants } from '../components/cardAnimations';
@@ -265,6 +266,10 @@ export default function Discover() {
       </header>
 
       {error && <PageError message={`No se pudo cargar Descubrir: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />}
+
+      {!error && (
+        <TonightPicker catalogIds={catalogIds} addingId={addingId} onAdd={addOne} onOpen={openTitle} />
+      )}
 
       {!error && (
         <section className="rail discover__section" aria-labelledby="lists-title">
