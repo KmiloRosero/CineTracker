@@ -9,6 +9,7 @@ const Catalog      = lazy(() => import('./pages/Catalog'));
 const Discover     = lazy(() => import('./pages/Discover'));
 const Upcoming     = lazy(() => import('./pages/Upcoming'));
 const TitleDetail  = lazy(() => import('./pages/TitleDetail'));
+const TitlePreview = lazy(() => import('./pages/TitlePreview'));
 const Statistics   = lazy(() => import('./pages/Statistics'));
 const YearInReview = lazy(() => import('./pages/YearInReview'));
 const Lists        = lazy(() => import('./pages/Lists'));
@@ -79,6 +80,7 @@ export default function App() {
                 <Route path="/discover"   element={<PageWrapper><Discover /></PageWrapper>} />
                 <Route path="/upcoming"   element={<PageWrapper><Upcoming /></PageWrapper>} />
                 <Route path="/title/:id"  element={<PageWrapper><TitleDetail /></PageWrapper>} />
+                <Route path="/tmdb/:type/:tmdbId" element={<PageWrapper><TitlePreview /></PageWrapper>} />
                 <Route path="/lists"      element={<PageWrapper><Lists /></PageWrapper>} />
                 <Route path="/lists/:id"  element={<PageWrapper><ListDetail /></PageWrapper>} />
                 <Route path="/statistics" element={<PageWrapper><Statistics /></PageWrapper>} />

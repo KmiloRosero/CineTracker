@@ -75,6 +75,8 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('titles:update',  authed((userId, id, data) => titleService.updateTitle(userId, id, data)));
   ipcMain.handle('titles:getInsight', authed((userId, id, options) =>
     insightService.getTitleInsight(userId, id, { refresh: options?.refresh === true })));
+  ipcMain.handle('tmdb:getInsight', authed((userId, tmdbId, type, options) =>
+    insightService.getTmdbInsight(userId, tmdbId, type, { refresh: options?.refresh === true })));
   ipcMain.handle('titles:delete',  authed((userId, id)       => titleService.deleteTitle(userId, id)));
 
   ipcMain.handle('records:add',          authed((userId, record)             => recordService.addRecord(userId, record)));

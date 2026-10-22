@@ -1,5 +1,8 @@
 const aiCache = require('../repositories/aiCacheRepository.js');
-const { requireTitle } = require('./titleService.js');
+const { requireTitle, rowFromTmdb } = require('./titleService.js');
+const titleRepository = require('../repositories/titleRepository.js');
+const tmdbService = require('./tmdbService.js');
+const { validateId } = require('../utils/validators.js');
 const { getTasteProfile, tasteForPrompt, describeTitle, joinNames } = require('./tasteService.js');
 const { tryAskJSON, pickProvider, cleanText } = require('./aiClient.js');
 const { digest } = require('./cinephileService.js');
@@ -111,6 +114,25 @@ function titleBlock(title) {
  */
 async function getTitleInsight(userId, titleId, options = {}) {
   const title = requireTitle(userId, titleId);
+  return insightFor(userId, title, `insight:${title.id}`, options);
+}
+
+/**
+ * The same reading for a TMDB title the user has not added (the preview
+ * page): always "will you like it?". When the title is in the catalog
+ * already, its own insight is returned. `options.tmdb` for tests.
+ */
+async function getTmdbInsight(userId, tmdbId, type, options = {}) {
+  validateId(tmdbId, 'El id de TMDB');
+  if (type !== 'movie' && type !== 'series') throw new Error('El tipo debe ser "movie" o "series".');
+  const owned = titleRepository.findByTmdbId(userId, Number(tmdbId));
+  if (owned && owned.type === type) return getTitleInsight(userId, owned.id, options);
+  const details = await (options.tmdb ?? tmdbService).getDetails(Number(tmdbId), type);
+  const title = { ...rowFromTmdb(details), id: null };
+  return insightFor(userId, title, `insight:tmdb:${type}:${Number(tmdbId)}`, options);
+}
+
+async function insightFor(userId, title, key, options) {
   const taste = getTasteProfile(userId);
   const others = taste.titles.filter((t) => t.id !== title.id && t.rating != null);
   const aiAvailable = pickProvider() !== null;
@@ -120,7 +142,6 @@ async function getTitleInsight(userId, titleId, options = {}) {
   const mean = round1(others.reduce((s, t) => s + t.rating, 0) / others.length);
   const rules = ruleInsight(title, others, mean);
   const signature = digest(`${taste.signature}#${title.rating ?? ''}`);
-  const key = `insight:${title.id}`;
   const base = { reason: 'ok', mode, aiAvailable, stale: false };
   const fromRules = (extra = {}) => ({ ...base, ...rules, verdict: ruleVerdict(mode, title, rules), source: 'rule-based', ...extra });
 
@@ -164,4 +185,4 @@ async function getTitleInsight(userId, titleId, options = {}) {
   return result;
 }
 
-module.exports = { getTitleInsight, ruleInsight };
+module.exports = { getTitleInsight, getTmdbInsight, ruleInsight };

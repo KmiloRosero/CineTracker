@@ -109,6 +109,10 @@ Los botones redondos de la derecha sirven para volver, ir al título anterior o 
 
 Debajo del póster, **Dónde verla** muestra en qué plataformas está el título en Colombia, de forma legal, agrupadas en **Incluida en suscripción**, **Gratis**, **Alquiler** y **Compra**. Cada plataforma abre su página en tu navegador; las principales (Netflix, Disney+, Prime Video, Apple TV, Google Play, YouTube) abren directamente la búsqueda del título, y el resto la página de TMDB con todas las opciones. Los datos son de JustWatch, a través de TMDB.
 
+### Títulos que aún no tienes
+
+Cualquier tarjeta de un título que no está en tu catálogo (tendencias, Descubrir, Estrenos, parecidas o resultados de búsqueda) se abre con un clic, igual que tus títulos: ves la sinopsis, el reparto, el tráiler, dónde verla, **¿Te va a gustar?** y lo que sigue, sin tener que agregarla. En el escenario del Inicio, las tendencias tienen el botón **Ver detalles**. Desde ahí, **Agregar a pendientes** la guarda para verla después y **Ya la vi** la guarda como completada para que la califiques.
+
 ### Episodios (series)
 
 En las series que vienen de TMDB aparece **Episodios**:

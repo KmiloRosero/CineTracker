@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
 import { cardVariants } from './cardAnimations';
@@ -28,18 +29,23 @@ function IconPoster() {
  * ({ text, tone: 'here' | 'next' | 'soon' }), `dateLine` gives a release date
  * and `current` frames the title being viewed. `reasonVisible` prints the
  * explanation open (generated lists, where the reason is the point) and
- * `onDismiss` adds a "No me interesa" control.
+ * `onDismiss` adds a "No me interesa" control. A TMDB title that is not in
+ * the catalog opens its preview page, so it can be read before adding it.
  */
 export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, reasonVisible = false, adding, onOpen, onAdd, onDismiss, order, tag, dateLine, current = false }) {
+  const navigate = useNavigate();
   const [whyOpen, setWhyOpen] = useState(false);
   const source  = title ?? item;
   const localId = title?.id ?? catalogId ?? null;
+  const previewable = !localId && item?.tmdb_id != null && (item.type === 'movie' || item.type === 'series');
   const meta = [
     source.release_year,
     source.runtime ? `${source.runtime} min` : null,
     typeLabel(source.type),
   ].filter(Boolean);
-  const open = localId ? () => onOpen(localId) : undefined;
+  const open = localId
+    ? () => onOpen(localId)
+    : previewable ? () => navigate(`/tmdb/${item.type}/${item.tmdb_id}`) : undefined;
 
   return (
     <motion.article
@@ -50,7 +56,7 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
       onKeyDown={open ? (e) => e.key === 'Enter' && open() : undefined}
       role={open ? 'button' : undefined}
       tabIndex={open ? 0 : undefined}
-      aria-label={open ? `Abrir ${source.title}` : undefined}
+      aria-label={open ? (localId ? `Abrir ${source.title}` : `Ver detalles de ${source.title}`) : undefined}
     >
       <div className="fixture__poster">
         {source.poster_path

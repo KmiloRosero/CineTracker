@@ -15,9 +15,10 @@ const CONFIDENCE = { high: 'Confianza alta', medium: 'Confianza media', low: 'Co
 /**
  * The title against the person's taste. Opens with the rules' reading (or a
  * saved AI answer, no new request); "Analizar con IA" asks the model.
- * `version` changes when the rating does, so the reading follows it.
+ * Takes a catalog `titleId`, or `tmdb` = { tmdbId, type } for a title not
+ * added yet. `version` changes when the rating does, so the reading follows it.
  */
-export default function TitleInsight({ titleId, version }) {
+export default function TitleInsight({ titleId, tmdb, version }) {
   const [data,  setData]  = useState(null);
   const [busy,  setBusy]  = useState(false);
   const [error, setError] = useState(null);
@@ -26,7 +27,9 @@ export default function TitleInsight({ titleId, version }) {
     setBusy(refresh);
     setError(null);
     try {
-      setData(unwrap(await window.electronAPI.getTitleInsight(titleId, { refresh })));
+      setData(unwrap(await (tmdb
+        ? window.electronAPI.getTmdbInsight(tmdb.tmdbId, tmdb.type, { refresh })
+        : window.electronAPI.getTitleInsight(titleId, { refresh }))));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -34,7 +37,7 @@ export default function TitleInsight({ titleId, version }) {
     }
   }
 
-  useEffect(() => { load(); }, [titleId, version]);
+  useEffect(() => { load(); }, [titleId, tmdb?.tmdbId, tmdb?.type, version]);
 
   if (error && !data) return <p className="form-error" role="alert">No se pudo analizar el título: {error}</p>;
   if (!data) return null;

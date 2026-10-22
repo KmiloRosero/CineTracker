@@ -1,6 +1,6 @@
 const { useTempDatabase, createUser } = require('./helpers.js');
 const titleService = require('../services/titleService.js');
-const { getTitleInsight } = require('../services/insightService.js');
+const { getTitleInsight, getTmdbInsight } = require('../services/insightService.js');
 
 let env, user, ids;
 beforeAll(async () => {
@@ -63,5 +63,33 @@ describe('title insight', () => {
     const t = titleService.addTitle(other.id, { title: 'Solo', type: 'movie' });
     expect(await getTitleInsight(other.id, t.id)).toMatchObject({ reason: 'insufficient-data', needed: 3 });
     await expect(getTitleInsight(other.id, ids.pending)).rejects.toThrow('No se encontró el título.');
+  });
+});
+
+describe('insight for a TMDB title not in the catalog', () => {
+  const tmdb = {
+    getDetails: vi.fn(async (id, type) => ({
+      tmdb_id: id, type, title: 'The Babadook', overview: 'A mother and her son.', genres: ['Horror', 'Drama'], release_year: 2014, cast: [],
+    })),
+  };
+
+  it('predicts from the same genres without adding the title', async () => {
+    const before = titleService.getAllTitles(user.id).length;
+    const r = await getTmdbInsight(user.id, 242224, 'movie', { tmdb });
+    expect(r).toMatchObject({ reason: 'ok', mode: 'predict', source: 'rule-based' });
+    expect(r.reasons[0]).toMatch(/terror/);
+    expect(titleService.getAllTitles(user.id)).toHaveLength(before);
+  });
+
+  it('gives the catalog title its own insight when it is already there', async () => {
+    const owned = titleService.addTitle(user.id, { title: 'Owned', type: 'movie', tmdb_id: 555, genres: '["Horror"]', status: 'completed', rating: 9 });
+    const r = await getTmdbInsight(user.id, 555, 'movie', { tmdb });
+    expect(r.mode).toBe('liked');
+    titleService.deleteTitle(user.id, owned.id);
+  });
+
+  it('validates the id and type', async () => {
+    await expect(getTmdbInsight(user.id, 'x', 'movie', { tmdb })).rejects.toThrow(/id de TMDB/);
+    await expect(getTmdbInsight(user.id, 5, 'book', { tmdb })).rejects.toThrow(/tipo/);
   });
 });

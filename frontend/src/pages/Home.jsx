@@ -143,7 +143,7 @@ function Ticker({ overview, trending }) {
 // Titles advance on their own every ROTATE_MS with a cross-fade and a slow
 // push-in. Rotation pauses while the pointer is on a control, while a control
 // has keyboard focus, while the window is hidden, or when the viewer pauses it.
-function Stage({ featured, onPrimary, primaryState, onTrailer, holdRotation = false, user, onLogin, onBrowse, children }) {
+function Stage({ featured, onPrimary, primaryState, onTrailer, onDetails, holdRotation = false, user, onLogin, onBrowse, children }) {
   const reduceMotion = useReducedMotion();
   const [active, setActive]         = useState(0);
   const [hoverPause, setHoverPause] = useState(false);
@@ -287,6 +287,11 @@ function Stage({ featured, onPrimary, primaryState, onTrailer, holdRotation = fa
             {busy ? <IconSpinner /> : actionIcon}
             {actionLabel}
           </button>
+          {!current.localId && current.tmdbItem && (
+            <button className="btn btn--ghost btn--lg stage__ghost" onClick={() => onDetails(current.tmdbItem)}>
+              Ver detalles
+            </button>
+          )}
           {current.tmdbId && (
             <button className="btn btn--ghost btn--lg stage__ghost" onClick={() => onTrailer(current)}>
               <IconTrailer /> Ver tráiler
@@ -539,6 +544,7 @@ export default function Home() {
           onLogin={() => openLoginModal()}
           onBrowse={() => navigate('/catalog')}
           onTrailer={setTrailerFor}
+          onDetails={(item) => navigate(`/tmdb/${item.type}/${item.tmdb_id}`)}
           holdRotation={trailerFor !== null}
         >
           <Ticker overview={user ? overview : null} trending={trending} />

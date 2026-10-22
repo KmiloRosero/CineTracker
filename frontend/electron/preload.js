@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** @param {number} id @param {{ refresh?: boolean }} [options] — refresh asks the AI; otherwise the saved answer or the rules.
    *  Returns { reason, mode: 'predict'|'liked'|'disliked', verdict, score, confidence, reasons, similar, source, provider, aiAvailable, stale } */
   getTitleInsight: (id, options) => ipcRenderer.invoke('titles:getInsight', id, options),
+  /** Same as getTitleInsight for a TMDB title not in the catalog (the preview page) */
+  getTmdbInsight: (tmdbId, type, options) => ipcRenderer.invoke('tmdb:getInsight', tmdbId, type, options),
   /** @param {number} id */
   deleteTitle:   (id)          => ipcRenderer.invoke('titles:delete', id),
 
