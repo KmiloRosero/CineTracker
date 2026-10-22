@@ -4,6 +4,7 @@ const listService             = require('../services/listService.js');
 const statisticsService       = require('../services/statisticsService.js');
 const recommendationService   = require('../services/recommendationService.js');
 const aiRecommendationService = require('../services/aiRecommendationService.js');
+const discoveryService        = require('../services/discoveryService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -88,6 +89,15 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('recommendations:getAI', authed((userId, options) =>
     aiRecommendationService.getAIRecommendations(userId, { refresh: options?.refresh === true })));
 
+  // ── Descubrir ─────────────────────────────────────────────────────────────
+  ipcMain.handle('discover:getStyles', readable((userId) => discoveryService.getStyles(userId), { styles: [], modifiers: [], counts: null }));
+  ipcMain.handle('discover:generate',  authed((userId, params, options) =>
+    discoveryService.generateList(userId, params ?? {}, { refresh: options?.refresh === true })));
+  ipcMain.handle('discover:save',         authed((userId, payload)        => discoveryService.saveList(userId, payload ?? {})));
+  ipcMain.handle('discover:dismiss',      authed((userId, item)           => discoveryService.dismiss(userId, item ?? {})));
+  ipcMain.handle('discover:undismiss',    authed((userId, tmdbId, type)   => discoveryService.undismiss(userId, tmdbId, type)));
+  ipcMain.handle('discover:getDismissed', authed((userId)                 => discoveryService.getDismissed(userId)));
+
   // TMDB metadata is public, so guests can browse trending titles and search.
   ipcMain.handle('tmdb:search',      safe((query)        => tmdbService.search(query)));
   ipcMain.handle('tmdb:getDetails',  safe((tmdbId, type) => tmdbService.getDetails(tmdbId, type)));
@@ -160,12 +170,14 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('settings:setApiKey', authed((_userId, name, value) => {
     const result = apiKeyService.setKey(name, value);
     aiRecommendationService.clearCache();
+    discoveryService.clearCache();
     tmdbService.clearTrailerCache();
     return result;
   }));
   ipcMain.handle('settings:clearApiKey', authed((_userId, name) => {
     const result = apiKeyService.clearKey(name);
     aiRecommendationService.clearCache();
+    discoveryService.clearCache();
     return result;
   }));
   ipcMain.handle('settings:testApiKey', safe((name) => {

@@ -10,8 +10,10 @@ function findByName(userId, name) {
     .get(userId, name);
 }
 
-function create(userId, name) {
-  const result = getDb().prepare('INSERT INTO lists (user_id, name) VALUES (?, ?)').run(userId, name);
+function create(userId, name, description = null) {
+  const result = getDb()
+    .prepare('INSERT INTO lists (user_id, name, description) VALUES (?, ?, ?)')
+    .run(userId, name, description);
   return findById(userId, result.lastInsertRowid);
 }
 
@@ -26,10 +28,11 @@ function remove(userId, id) {
 }
 
 // Ownership of both list and title is checked by the caller (service layer).
-function addTitle(listId, titleId) {
+// `note` is why a generated list picked the title.
+function addTitle(listId, titleId, note = null) {
   getDb()
-    .prepare('INSERT OR IGNORE INTO list_titles (list_id, title_id) VALUES (?, ?)')
-    .run(listId, titleId);
+    .prepare('INSERT OR IGNORE INTO list_titles (list_id, title_id, note) VALUES (?, ?, ?)')
+    .run(listId, titleId, note);
   return { listId, titleId };
 }
 
@@ -39,10 +42,10 @@ function removeTitle(listId, titleId) {
 }
 
 const TITLES_OF_LIST = `
-  SELECT t.* FROM titles t
+  SELECT t.*, lt.note AS list_note FROM titles t
   JOIN list_titles lt ON lt.title_id = t.id
   WHERE lt.list_id = ?
-  ORDER BY lt.added_at DESC
+  ORDER BY lt.added_at DESC, lt.rowid ASC
 `;
 
 function findByIdWithTitles(userId, id) {

@@ -140,6 +140,8 @@ export default function ListDetail() {
         )}
       </header>
 
+      {list.description && <p className="list-detail__intro">{list.description}</p>}
+
       <form className="inline-create" onSubmit={addTitle}>
         <label htmlFor="add-to-list" className="form-group__label">Agrega un título de tu catálogo</label>
         <div className="inline-create__row">
@@ -162,7 +164,12 @@ export default function ListDetail() {
         <motion.div className="fixture-grid" variants={gridVariants} initial="hidden" animate="visible">
           {list.titles.map((t) => (
             <div key={t.id} className="list-entry">
-              <FixtureCard title={t} onOpen={(tid) => navigate(`/title/${tid}`)} />
+              <FixtureCard
+                title={t}
+                explanation={t.list_note}
+                explanationSource={t.list_note ? 'Motivo guardado cuando se armó la lista en Descubrir.' : undefined}
+                onOpen={(tid) => navigate(`/title/${tid}`)}
+              />
               <button className="list-entry__remove" onClick={() => removeTitle(t)} aria-label={`Quitar ${t.title} de ${list.name}`}>
                 <IconClose size={14} />
               </button>

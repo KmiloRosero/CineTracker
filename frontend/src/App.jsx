@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Home from './pages/Home';
 import Catalog from './pages/Catalog';
+import Discover from './pages/Discover';
 import TitleDetail from './pages/TitleDetail';
 import Statistics from './pages/Statistics';
 import Lists from './pages/Lists';
@@ -71,6 +72,7 @@ export default function App() {
                 <Route path="/login"      element={<PageWrapper><Login /></PageWrapper>} />
                 <Route path="/"           element={<PageWrapper><Home /></PageWrapper>} />
                 <Route path="/catalog"    element={<PageWrapper><Catalog /></PageWrapper>} />
+                <Route path="/discover"   element={<PageWrapper><Discover /></PageWrapper>} />
                 <Route path="/title/:id"  element={<PageWrapper><TitleDetail /></PageWrapper>} />
                 <Route path="/lists"      element={<PageWrapper><Lists /></PageWrapper>} />
                 <Route path="/lists/:id"  element={<PageWrapper><ListDetail /></PageWrapper>} />

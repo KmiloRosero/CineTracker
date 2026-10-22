@@ -1,6 +1,6 @@
 const { getEnv } = require('../utils/env.js');
 const { validateId } = require('../utils/validators.js');
-const { TMDB_GENRE_NAME } = require('../utils/genres.js');
+const { TMDB_GENRE_NAME, genresFromIds } = require('../utils/genres.js');
 
 // TMDB is called from the main process so the API key never reaches the
 // renderer bundle and the renderer CSP can keep connect-src 'self'.
@@ -348,6 +348,82 @@ async function getWatchProviders(tmdbId, type, title = '') {
   return providers;
 }
 
+// ── Discovery candidates ─────────────────────────────────────────────────────
+// Titles that are not in the catalog yet, with what ranking and the AI need:
+// genres (stored names), TMDB score and votes. Lists are cached for a while
+// because the same seeds and filters are asked for again on every refresh.
+const LIST_TTL  = 6 * 60 * 60 * 1000;
+const listCache = new Map(); // url-ish key -> { expires, items }
+
+function normalizeCandidate(item, type) {
+  return {
+    ...normalizeListItem(item, type),
+    original_title:    item.original_title ?? item.original_name ?? null,
+    original_language: item.original_language ?? null,
+    genres:            genresFromIds(item.genre_ids ?? (item.genres ?? []).map((g) => g.id)),
+    vote_average:      typeof item.vote_average === 'number' ? Math.round(item.vote_average * 10) / 10 : null,
+    vote_count:        Number.isInteger(item.vote_count) ? item.vote_count : 0,
+    popularity:        typeof item.popularity === 'number' ? item.popularity : 0,
+    adult:             item.adult === true,
+    readable:          readableInSpanish(item),
+  };
+}
+
+async function cachedList(key, load) {
+  const hit = listCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.items;
+  const items = await load();
+  listCache.set(key, { expires: Date.now() + LIST_TTL, items });
+  return items;
+}
+
+function requireType(type) {
+  if (type !== 'movie' && type !== 'series') throw new Error('El tipo debe ser "movie" o "series".');
+}
+
+/** TMDB's "if you liked this" list for a title (first page), as candidates. */
+async function getTitleRecommendations(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  requireType(type);
+  const endpoint = type === 'movie' ? `/movie/${Number(tmdbId)}/recommendations` : `/tv/${Number(tmdbId)}/recommendations`;
+  return cachedList(`rec:${endpoint}`, async () => {
+    const data = await tmdbFetch(endpoint, { page: 1 });
+    return (data.results ?? []).map((r) => normalizeCandidate(r, type));
+  });
+}
+
+// Discover filters the caller may set; anything else is dropped.
+const DISCOVER_PARAMS = new Set([
+  'with_genres', 'without_genres', 'sort_by', 'vote_count.gte', 'vote_count.lte', 'vote_average.gte',
+  'with_runtime.gte', 'with_runtime.lte', 'primary_release_date.gte', 'primary_release_date.lte',
+  'first_air_date.gte', 'first_air_date.lte', 'with_watch_providers', 'with_watch_monetization_types',
+  'watch_region', 'with_original_language', 'page',
+]);
+
+/** /discover for movies or series with the given filters, as candidates. */
+async function discover(type, params = {}) {
+  requireType(type);
+  const clean = Object.fromEntries(Object.entries(params)
+    .filter(([k, v]) => DISCOVER_PARAMS.has(k) && v !== undefined && v !== null && v !== '')
+    .sort(([a], [b]) => a.localeCompare(b)));
+  const endpoint = type === 'movie' ? '/discover/movie' : '/discover/tv';
+  return cachedList(`discover:${endpoint}?${new URLSearchParams(clean)}`, async () => {
+    const data = await tmdbFetch(endpoint, { include_adult: false, page: 1, ...clean });
+    return (data.results ?? []).map((r) => normalizeCandidate(r, type));
+  });
+}
+
+/** Search one kind of title by name, optionally by year, as candidates. */
+async function searchTyped(query, type, year = null) {
+  requireType(type);
+  if (typeof query !== 'string' || !query.trim()) return [];
+  const isMovie = type === 'movie';
+  const params = { query: query.trim().slice(0, 200), include_adult: false, page: 1 };
+  if (Number.isInteger(year)) params[isMovie ? 'primary_release_year' : 'first_air_date_year'] = year;
+  const data = await tmdbFetch(isMovie ? '/search/movie' : '/search/tv', params);
+  return (data.results ?? []).map((r) => normalizeCandidate(r, type));
+}
+
 /** Checks that the configured key works (Perfil > Claves de API). */
 async function ping() {
   await tmdbFetch('/configuration');
@@ -355,6 +431,7 @@ async function ping() {
 }
 
 function clearTrailerCache() {
+  listCache.clear();
   trailerCache.clear();
   relatedCache.clear();
   watchCache.clear();
@@ -366,4 +443,7 @@ async function getTrending(limit = 12) {
   return (data.results ?? []).filter(isMovieOrTv).slice(0, n).map(normalizeSearchResult);
 }
 
-module.exports = { search, getDetails, getTrending, getTrailer, getRelated, getWatchProviders, ping, clearTrailerCache, normalizeDetails, YOUTUBE_ID };
+module.exports = {
+  search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
+  getTitleRecommendations, discover, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+};

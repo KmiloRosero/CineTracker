@@ -37,6 +37,33 @@ const TMDB_GENRE_NAME = {
   10765: 'Sci-Fi & Fantasy', 10766: 'Soap', 10767: 'Talk', 10768: 'War & Politics',
 };
 
+// TMDB genre ids by stored name, for /discover. Series use their own ids and
+// have no horror, thriller or romance genre: the closest one stands in.
+const MOVIE_GENRE_ID = {
+  'Action': 28, 'Adventure': 12, 'Animation': 16, 'Comedy': 35, 'Crime': 80,
+  'Documentary': 99, 'Drama': 18, 'Family': 10751, 'Fantasy': 14, 'History': 36,
+  'Horror': 27, 'Music': 10402, 'Mystery': 9648, 'Romance': 10749,
+  'Science Fiction': 878, 'Thriller': 53, 'War': 10752, 'Western': 37,
+};
+const TV_GENRE_ID = {
+  'Action': 10759, 'Adventure': 10759, 'Animation': 16, 'Comedy': 35, 'Crime': 80,
+  'Documentary': 99, 'Drama': 18, 'Family': 10751, 'Kids': 10762, 'Mystery': 9648,
+  'Science Fiction': 10765, 'Fantasy': 10765, 'War': 10768, 'Politics': 10768,
+  'Western': 37, 'Reality': 10764, 'Soap': 10766, 'Talk': 10767, 'News': 10763,
+  'Horror': 9648, 'Thriller': 9648, 'Romance': 18, 'History': 18, 'Music': 18,
+};
+
+/** TMDB genre id of a stored genre for 'movie' or 'series', or null. */
+function tmdbGenreId(name, type) {
+  return (type === 'series' ? TV_GENRE_ID : MOVIE_GENRE_ID)[name] ?? null;
+}
+
+/** Stored (canonical) genre names from a list of TMDB genre ids. */
+function genresFromIds(ids) {
+  const names = (Array.isArray(ids) ? ids : []).map((id) => TMDB_GENRE_NAME[id]).filter(Boolean);
+  return canonicalGenres(names);
+}
+
 // Spanish display names. Kept in step with frontend/src/utils/genres.js.
 const GENRE_ES = {
   'Action': 'Acción', 'Adventure': 'Aventura', 'Animation': 'Animación', 'Comedy': 'Comedia',
@@ -55,4 +82,4 @@ function genreLabel(name) {
   return GENRE_ES[name] ?? name;
 }
 
-module.exports = { parseGenres, canonicalGenres, genreLabel, TMDB_GENRE_NAME };
+module.exports = { parseGenres, canonicalGenres, genreLabel, tmdbGenreId, genresFromIds, TMDB_GENRE_NAME };

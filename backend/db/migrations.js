@@ -126,6 +126,41 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 4,
+    name: 'generated lists, dismissed titles and AI cache',
+    rebuildsTables: false,
+    up(db) {
+      // Lists made by "Descubrir" keep their intro, and each entry the reason it was picked.
+      db.exec(`
+        ALTER TABLE lists ADD COLUMN description TEXT;
+        ALTER TABLE list_titles ADD COLUMN note TEXT;
+      `);
+      // "No me interesa": TMDB titles the user does not want suggested again.
+      db.exec(`
+        CREATE TABLE dismissed_titles (
+          user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          tmdb_id    INTEGER NOT NULL,
+          type       TEXT NOT NULL CHECK(type IN ('movie', 'series')),
+          title      TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (user_id, type, tmdb_id)
+        );
+      `);
+      // Generated texts (profile, year summary, title insights) survive restarts,
+      // so opening a page does not pay for the same answer twice.
+      db.exec(`
+        CREATE TABLE ai_cache (
+          user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          cache_key  TEXT NOT NULL,
+          signature  TEXT NOT NULL,
+          payload    TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (user_id, cache_key)
+        );
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

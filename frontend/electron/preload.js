@@ -61,6 +61,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
    *  Each recommendation carries an `explanation` sentence. `refresh` skips the cached AI result. */
   getAIRecommendations: (options) => ipcRenderer.invoke('recommendations:getAI', options),
 
+  // ── Descubrir ────────────────────────────────────────────────────────────
+  /** Returns { styles: [{ id, kind, label, genres, count, avgRating, type, seedTitles }], modifiers: [{ id, label, available }], counts } */
+  getDiscoverStyles:  ()                  => ipcRenderer.invoke('discover:getStyles'),
+  /** @param {{ styleId: string, type: 'movie'|'series', modifiers?: string[] }} params @param {{ refresh?: boolean }} [options]
+   *  Returns { style, type, modifiers, name, intro, items, source, provider, fallbackReason?, reason } */
+  generateDiscoverList: (params, options) => ipcRenderer.invoke('discover:generate', params, options),
+  /** @param {{ name: string, intro?: string, items: { tmdb_id, type, reason }[] }} payload — Returns { list, added } */
+  saveDiscoverList:   (payload)           => ipcRenderer.invoke('discover:save', payload),
+  /** "No me interesa" @param {{ tmdb_id: number, type: string, title: string }} item */
+  dismissTitle:       (item)              => ipcRenderer.invoke('discover:dismiss', item),
+  undismissTitle:     (tmdbId, type)      => ipcRenderer.invoke('discover:undismiss', tmdbId, type),
+  getDismissedTitles: ()                  => ipcRenderer.invoke('discover:getDismissed'),
+
   // ── TMDB (proxied through the main process; the key never reaches the renderer) ──
   /** @param {string} query — Returns up to 8 normalized movie/series results */
   tmdbSearch:      (query)        => ipcRenderer.invoke('tmdb:search', query),

@@ -26,9 +26,11 @@ function IconPoster() {
  * (`title`) and TMDB results (`item`, with an Add action until saved). In a
  * saga, `order` numbers the part, `tag` labels the poster
  * ({ text, tone: 'here' | 'next' | 'soon' }), `dateLine` gives a release date
- * and `current` frames the title being viewed.
+ * and `current` frames the title being viewed. `reasonVisible` prints the
+ * explanation open (generated lists, where the reason is the point) and
+ * `onDismiss` adds a "No me interesa" control.
  */
-export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, adding, onOpen, onAdd, order, tag, dateLine, current = false }) {
+export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, reasonVisible = false, adding, onOpen, onAdd, onDismiss, order, tag, dateLine, current = false }) {
   const [whyOpen, setWhyOpen] = useState(false);
   const source  = title ?? item;
   const localId = title?.id ?? catalogId ?? null;
@@ -84,9 +86,27 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
               <IconPlus /> {adding ? 'Agregando…' : 'Agregar'}
             </button>
           )}
+          {onDismiss && !title && !catalogId && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm fixture__dismiss"
+              onClick={(e) => { e.stopPropagation(); onDismiss(item); }}
+              onKeyDown={(e) => e.stopPropagation()}
+              aria-label={`No me interesa ${source.title}`}
+            >
+              No me interesa
+            </button>
+          )}
         </div>
 
-        {explanation && (
+        {explanation && reasonVisible && (
+          <div className="fixture__why">
+            <p className="fixture__reason is-open">{explanation}</p>
+            {explanationSource && <p className="fixture__why-source">{explanationSource}</p>}
+          </div>
+        )}
+
+        {explanation && !reasonVisible && (
           <div className="fixture__why">
             <button
               type="button"

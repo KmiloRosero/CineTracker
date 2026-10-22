@@ -4,16 +4,17 @@ import { IconCheck, IconClose, IconAlert } from './Icons';
 
 const ToastContext = createContext(null);
 
-/** App-wide toasts: `const showToast = useToast(); showToast({ message, type })`. */
+/** App-wide toasts: `const showToast = useToast(); showToast({ message, type, action? })`; `action` = { label, onClick } (e.g. Deshacer). */
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const idRef = useRef(0);
 
   const dismiss = useCallback((id) => setToasts((prev) => prev.filter((t) => t.id !== id)), []);
 
-  const showToast = useCallback(({ message, type = 'success', duration = 3500 }) => {
+  const showToast = useCallback(({ message, type = 'success', duration, action = null }) => {
     const id = ++idRef.current;
-    setToasts((prev) => [...prev, { id, message, type }]);
+    setToasts((prev) => [...prev, { id, message, type, action }]);
+    duration = duration ?? (action ? 6000 : 3500); // time to reach the action
     setTimeout(() => dismiss(id), duration);
   }, [dismiss]);
 
@@ -33,6 +34,11 @@ export function ToastProvider({ children }) {
             >
               <span className="toast__icon">{t.type === 'error' ? <IconAlert size={16} /> : <IconCheck size={16} />}</span>
               <span className="toast__message">{t.message}</span>
+              {t.action && (
+                <button className="toast__action" onClick={() => { t.action.onClick(); dismiss(t.id); }}>
+                  {t.action.label}
+                </button>
+              )}
               <button className="toast__dismiss" onClick={() => dismiss(t.id)} aria-label="Cerrar notificación">
                 <IconClose size={14} />
               </button>
