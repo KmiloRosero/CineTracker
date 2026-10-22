@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.1.0
+Versión de la aplicación: 1.1.1
 
 ---
 
@@ -405,7 +405,7 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 | `npm run dev` | Desarrollo con recarga en caliente. |
 | `npm test` | Las 215 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
-| `npm run dist:win:public` | `CineTracker-Setup-1.1.0.exe` y `CineTracker-Portable-1.1.0.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
+| `npm run dist:win:public` | `CineTracker-Setup-1.1.1.exe` y `CineTracker-Portable-1.1.1.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 
