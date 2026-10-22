@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import PlatformPicker from '../components/PlatformPicker';
+import DataTransfer from '../components/DataTransfer';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GuestPrompt from '../components/GuestPrompt';
@@ -382,15 +383,19 @@ export default function Profile() {
           <PlatformPicker />
         </Section>
 
-        <Section index={3} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
+        <Section index={3} title="Tus datos" description="Lleva tu historial a CineTracker o sácalo cuando quieras. Los archivos quedan donde tú elijas.">
+          <DataTransfer />
+        </Section>
+
+        <Section index={4} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
           <PasswordForm />
         </Section>
 
-        <Section index={4} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
+        <Section index={5} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
           <ApiKeysForm focus={location.state?.focus === 'api-keys'} />
         </Section>
 
-        <Section index={5} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
+        <Section index={6} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
           <p className="settings-about">
             La información y las imágenes de películas y series provienen de TMDB.
             Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
@@ -398,7 +403,7 @@ export default function Profile() {
           </p>
         </Section>
 
-        <Section index={6} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
+        <Section index={7} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
           <button className="btn btn--danger" onClick={() => { setDeletePassword(''); setDeleting(true); }}>
             <IconTrash size={16} /> Eliminar mi cuenta
           </button>

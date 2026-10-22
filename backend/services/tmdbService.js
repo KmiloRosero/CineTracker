@@ -545,6 +545,16 @@ async function getPersonUpcoming(personId) {
   });
 }
 
+/** The TMDB title for an IMDb id ("tt0113277"): { tmdb_id, type, title, release_year } or null. */
+async function findByImdb(imdbId) {
+  if (typeof imdbId !== 'string' || !/^tt\d{5,10}$/.test(imdbId)) throw new Error('Id de IMDb no válido.');
+  const data = await tmdbFetch(`/find/${imdbId}`, { external_source: 'imdb_id' });
+  const movie = data.movie_results?.[0];
+  if (movie) return normalizeCandidate(movie, 'movie');
+  const tv = data.tv_results?.[0];
+  return tv ? normalizeCandidate(tv, 'series') : null;
+}
+
 // Streaming services available in the region, for "Mis plataformas".
 const PROVIDERS_TTL = 24 * 60 * 60 * 1000;
 let providerCatalog = null; // { expires, providers }
@@ -592,5 +602,5 @@ async function getTrending(limit = 12) {
 
 module.exports = {
   search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, findByImdb, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

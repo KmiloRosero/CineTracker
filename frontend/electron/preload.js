@@ -135,6 +135,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** @param {string} videoId — Opens the YouTube video in the default browser */
   openYouTube:     (videoId)      => ipcRenderer.invoke('app:openYouTube', videoId),
 
+  // ── Import and export ────────────────────────────────────────────────────
+  /** Opens a native dialog; returns { name, content } | { canceled } | { error } */
+  openTextFile:    ()                  => ipcRenderer.invoke('app:openTextFile'),
+  /** Saves text through a native dialog; returns { ok, name } | { canceled } | { error } */
+  saveTextFile:    (fileName, content) => ipcRenderer.invoke('app:saveTextFile', fileName, content),
+  /** @param {string} text @param {{ fileName?: string, listAs?: 'completed'|'pending' }} [options]
+   *  Returns { format, label, ambiguous, listAs, rows, skipped, total } */
+  previewImport:   (text, options)     => ipcRenderer.invoke('data:preview', text, options),
+  /** @param {object[]} rows — at most 25 preview rows. Returns [{ key, title, outcome, titleId?, message? }] */
+  importRows:      (rows)              => ipcRenderer.invoke('data:import', rows),
+  /** @param {'cinetracker'|'letterboxd'} format — Returns { fileName, content, count } */
+  exportData:      (format)            => ipcRenderer.invoke('data:export', format),
+
   // ── App settings ─────────────────────────────────────────────────────────
   getTheme: ()        => ipcRenderer.invoke('app:getTheme'),
   setTheme: (theme)   => ipcRenderer.invoke('app:setTheme', theme),

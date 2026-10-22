@@ -13,6 +13,7 @@ const insightService          = require('../services/insightService.js');
 const platformService         = require('../services/platformService.js');
 const episodeService          = require('../services/episodeService.js');
 const upcomingService         = require('../services/upcomingService.js');
+const dataTransferService     = require('../services/dataTransferService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -131,6 +132,15 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('upcoming:follow',         authed((userId, target)       => upcomingService.follow(userId, target ?? {})));
   ipcMain.handle('upcoming:unfollow',       authed((userId, target)       => upcomingService.unfollow(userId, target ?? {})));
   ipcMain.handle('upcoming:getTitlePeople', authed((userId, tmdbId, type) => upcomingService.getTitlePeople(userId, tmdbId, type)));
+
+  // ── Import and export ─────────────────────────────────────────────────────
+  ipcMain.handle('data:preview', authed((_userId, text, options) => dataTransferService.preview(text, options ?? {})));
+  ipcMain.handle('data:import',  authed((userId, rows)          => dataTransferService.importBatch(userId, rows)));
+  ipcMain.handle('data:export',  authed((userId, format) => {
+    if (format === 'letterboxd') return dataTransferService.exportLetterboxd(userId);
+    if (format === 'cinetracker') return dataTransferService.exportCineTracker(userId);
+    throw new Error('Formato de exportación desconocido.');
+  }));
 
   // ── Mis plataformas ───────────────────────────────────────────────────────
   ipcMain.handle('platforms:getCatalog',      safe(() => tmdbService.getProviderCatalog()));

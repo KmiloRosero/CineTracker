@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, protocol, session, shell, safeStorage } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, session, shell, safeStorage, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs/promises');
 
 // In development the backend lives beside frontend/; electron-builder copies it
 // into the app as <app>/backend (see electron-builder.json "files").
@@ -120,6 +121,44 @@ ipcMain.handle('app:openKeyPage', (_event, name) => {
   if (!Object.prototype.hasOwnProperty.call(KEY_PAGES, name)) return { error: 'Página no válida.' };
   shell.openExternal(KEY_PAGES[name]);
   return { ok: true };
+});
+
+// Import and export (Perfil > Tus datos): the user picks the file in a
+// native dialog; the renderer never gets a path, only the text.
+const CSV_FILTERS = [{ name: 'CSV', extensions: ['csv'] }];
+const MAX_TEXT_BYTES = 20 * 1024 * 1024;
+
+ipcMain.handle('app:saveTextFile', async (_event, fileName, content) => {
+  if (typeof content !== 'string' || content.length > 50 * 1024 * 1024) return { error: 'No hay nada que guardar.' };
+  const safeName = String(fileName ?? 'cinetracker.csv').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    title: 'Guardar exportación',
+    defaultPath: path.join(app.getPath('documents'), safeName.endsWith('.csv') ? safeName : `${safeName}.csv`),
+    filters: CSV_FILTERS,
+  });
+  if (canceled || !filePath) return { canceled: true };
+  try {
+    await fs.writeFile(filePath, content, 'utf8');
+    return { ok: true, name: path.basename(filePath) };
+  } catch {
+    return { error: 'No se pudo guardar el archivo. Elige otra carpeta.' };
+  }
+});
+
+ipcMain.handle('app:openTextFile', async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    title: 'Elegir archivo para importar',
+    properties: ['openFile'],
+    filters: CSV_FILTERS,
+  });
+  if (canceled || !filePaths?.[0]) return { canceled: true };
+  try {
+    const { size } = await fs.stat(filePaths[0]);
+    if (size > MAX_TEXT_BYTES) return { error: 'El archivo es demasiado grande (máximo 20 MB).' };
+    return { name: path.basename(filePaths[0]), content: await fs.readFile(filePaths[0], 'utf8') };
+  } catch {
+    return { error: 'No se pudo leer el archivo.' };
+  }
 });
 
 function createWindow() {
