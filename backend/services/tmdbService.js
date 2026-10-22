@@ -572,7 +572,10 @@ async function getProviderCatalog() {
       byId.set(p.provider_id, { id: p.provider_id, name: String(p.provider_name).slice(0, 80), logo_path: p.logo_path ?? null, priority });
     }
   });
-  const providers = [...byId.values()].sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name)).slice(0, 48)
+  // add-on channels sold inside Amazon or Apple ("MGM Plus Amazon Channel") are left out
+  const providers = [...byId.values()]
+    .filter((p) => !/channel/i.test(p.name))
+    .sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name)).slice(0, 30)
     .map(({ priority, ...p }) => p);
   providerCatalog = { expires: Date.now() + PROVIDERS_TTL, providers };
   return providers;

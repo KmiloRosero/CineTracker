@@ -99,3 +99,21 @@ describe('picking for tonight', () => {
     expect(await pickTonight(user.id, { mood: 'algo' }, { tmdb: noTmdb })).toMatchObject({ reason: 'insufficient-data', picks: [] });
   });
 });
+
+describe('"Ambos"', () => {
+  it('keeps at least one pending title and one new one', async () => {
+    const { user, ids } = await viewer();
+    const tmdb = {
+      getTitleRecommendations: vi.fn(async () => []),
+      discover: vi.fn(async () => [900, 901, 902].map((id) => ({
+        tmdb_id: id, type: 'movie', title: `Fright ${id}`, genres: ['Horror', 'Thriller'], poster_path: '/x.jpg', readable: true,
+        adult: false, upcoming: false, vote_average: 8.5, vote_count: 500, popularity: 1, release_year: 2022,
+      }))),
+    };
+    const result = await pickTonight(user.id, { mood: 'quiero miedo', runtime: 'any', source: 'both' }, { tmdb });
+    const keys = result.picks.map((p) => p.key);
+    expect(keys).toHaveLength(3);
+    expect(keys.filter((k) => k.startsWith('t'))).toHaveLength(2);
+    expect(keys).toContain(`c${ids.horror}`);
+  });
+});

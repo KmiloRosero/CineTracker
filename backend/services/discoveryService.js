@@ -218,7 +218,8 @@ function styleIntro(style) {
 
 function defaultName(style, mods) {
   const suffix = mods.length ? ` · ${mods.map((m) => MODIFIERS[m].label.toLowerCase()).join(', ')}` : '';
-  return `${style.label} para ti${suffix}`.slice(0, 60);
+  // the mix's label already says "tu gusto"
+  return `${style.label}${style.kind === 'mix' ? '' : ' para ti'}${suffix}`.slice(0, 60);
 }
 
 function toItem(c, reason) {

@@ -131,7 +131,7 @@ export default function EpisodeTracker({ title, onTitleChanged }) {
               onClick={() => setSeason(s.number)}
             >
               <span>T{s.number}</span>
-              <small>{s.watched}/{s.aired || s.episode_count || 0}</small>
+              <small>{s.aired === 0 && !s.episode_count ? 'Pronto' : `${s.watched}/${s.aired || s.episode_count}`}</small>
             </button>
           ))}
         </div>
@@ -153,7 +153,10 @@ export default function EpisodeTracker({ title, onTitleChanged }) {
             )}
           </div>
           {loadingSeason && !seasonData && <p className="field-hint" role="status">Cargando episodios…</p>}
-          {seasonData && (
+          {seasonData && seasonData.episodes.length === 0 && (
+            <p className="field-hint" role="status">TMDB aún no publica los episodios de esta temporada.</p>
+          )}
+          {seasonData?.episodes.length > 0 && (
             <ol className="episode-list">
               {seasonData.episodes.map((e) => {
                 const key = `${season}:${e.number}`;

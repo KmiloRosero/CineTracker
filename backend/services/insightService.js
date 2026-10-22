@@ -75,7 +75,8 @@ function ruleInsight(title, others, mean) {
     .sort((a, b) => b.n - a.n)
     .slice(0, 3)
     .map((g) => `Le das ${round1(g.avg)} de media a ${genreLabel(g.genre).toLowerCase()} (${g.n} ${g.n === 1 ? 'título calificado' : 'títulos calificados'}).`);
-  if (similar.length) {
+  // the similar titles are shown on their own; as a reason they only stand in when no genre matched
+  if (reasons.length === 0 && similar.length) {
     reasons.push(`Se parece a ${joinNames(similar.map((t) => `“${t.title}” (${t.rating})`))}.`);
   }
   if (reasons.length === 0) reasons.push(`Aún no calificas nada de sus géneros; tu nota media general es ${mean}.`);

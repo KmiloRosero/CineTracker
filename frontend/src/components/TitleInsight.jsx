@@ -49,7 +49,8 @@ export default function TitleInsight({ titleId, version }) {
   }
 
   const asked = data.source === 'ai';
-  const note = data.fallbackReason && data.fallbackReason !== 'not-asked'
+  // without a key the hint below says it once; other failures say why
+  const note = data.fallbackReason && !['not-asked', 'no-api-key'].includes(data.fallbackReason)
     ? fallbackNote(data, 'Se muestra la lectura con reglas.')
     : null;
 

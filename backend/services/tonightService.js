@@ -64,6 +64,7 @@ const SYSTEM_PROMPT = [
   'Read <mood> for how they feel, how much time and energy they have and who they watch with; respect any stated time limit.',
   'Use <taste> to prefer what they usually love and avoid what they rate badly.',
   'Titles marked "ya la empezaste" are series they are halfway through; suggest one only if it suits the mood.',
+  'When <options> mixes titles from their pending list and new ones, include at least one of each.',
   'For each pick write one or two sentences (at most 35 words) addressed to the person, linking it to their mood and taste.',
   'Only state facts present in the option data or that you are certain of. Also write one short sentence answering their mood.',
   'Write in Spanish (Latin American, informal "tú"), keeping title names as given.',
@@ -219,7 +220,19 @@ async function pickTonight(userId, input = {}, options = {}) {
   if (all.length === 0) return { reason: 'no-options', picks: [], moodGenres: genres, source: null };
 
   const ranked = [...all].sort((a, b) => ruleScore(b, genres, taste, limit) - ruleScore(a, genres, taste, limit));
-  const rules = () => ranked.slice(0, PICKS).map((o) => toPick(o, ruleReason(o, genres, limit)));
+  const rules = () => {
+    let top = ranked.slice(0, PICKS);
+    // "Ambos" means both: keep the best of the other source when the ranking left it out
+    if (source === 'both') {
+      ['catalog', 'tmdb'].forEach((kind) => {
+        if (!top.some((o) => o.kind === kind)) {
+          const best = ranked.find((o) => o.kind === kind);
+          if (best) top = [...top.slice(0, PICKS - 1), best];
+        }
+      });
+    }
+    return top.map((o) => toPick(o, ruleReason(o, genres, limit)));
+  };
   const defaultMessage = genres.length
     ? `Para ${joinNames(genres.slice(0, 2).map((g) => genreLabel(g).toLowerCase()))}, estas tres.`
     : 'Tres opciones según lo que más te gusta.';
