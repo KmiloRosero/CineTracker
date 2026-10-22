@@ -86,6 +86,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   undismissTitle:     (tmdbId, type)      => ipcRenderer.invoke('discover:undismiss', tmdbId, type),
   getDismissedTitles: ()                  => ipcRenderer.invoke('discover:getDismissed'),
 
+  // ── Mis plataformas ──────────────────────────────────────────────────────
+  /** Streaming services in Colombia: [{ id, name, logo_path }] */
+  getPlatformCatalog: ()          => ipcRenderer.invoke('platforms:getCatalog'),
+  /** The user's services: [{ id, name, logo_path }] */
+  getMyPlatforms:     ()          => ipcRenderer.invoke('platforms:get'),
+  /** @param {{ id: number, name: string, logo_path?: string }[]} platforms — replaces the user's list */
+  setMyPlatforms:     (platforms) => ipcRenderer.invoke('platforms:set', platforms),
+  /** Returns { platforms, available: { [titleId]: provider[] }, checked, failed } for pending and watching titles */
+  getPlatformAvailability: ()     => ipcRenderer.invoke('platforms:getAvailability'),
+
   // ── TMDB (proxied through the main process; the key never reaches the renderer) ──
   /** @param {string} query — Returns up to 8 normalized movie/series results */
   tmdbSearch:      (query)        => ipcRenderer.invoke('tmdb:search', query),

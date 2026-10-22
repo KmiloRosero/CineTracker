@@ -118,6 +118,7 @@ export default function Discover() {
   const [error,     setError]     = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [catalog,   setCatalog]   = useState([]);
+  const [platforms, setPlatforms] = useState([]);
 
   const [styleId,   setStyleId]   = useState(null);
   const [type,      setType]      = useState('movie');
@@ -136,11 +137,13 @@ export default function Discover() {
     Promise.all([
       window.electronAPI.getDiscoverStyles().then(unwrap),
       window.electronAPI.getAllTitles({}).then(unwrap),
+      window.electronAPI.getMyPlatforms().then(unwrap).catch(() => []),
     ])
-      .then(([styles, all]) => {
+      .then(([styles, all, mine]) => {
         if (cancelled) return;
         setData(styles);
         setCatalog(all);
+        setPlatforms(mine);
         const first = styles.styles[0];
         if (first) { setStyleId((id) => id ?? first.id); setType((t) => (styleId ? t : first.type)); }
       })
@@ -269,7 +272,7 @@ export default function Discover() {
       {error && <PageError message={`No se pudo cargar Descubrir: ${error}`} onRetry={() => setReloadKey((k) => k + 1)} />}
 
       {!error && (
-        <TonightPicker catalogIds={catalogIds} addingId={addingId} onAdd={addOne} onOpen={openTitle} />
+        <TonightPicker catalogIds={catalogIds} addingId={addingId} onAdd={addOne} onOpen={openTitle} platforms={platforms.length} />
       )}
 
       {!error && (
@@ -325,6 +328,9 @@ export default function Discover() {
                       {m.label}
                     </button>
                   ))}
+                  {platforms.length === 0 && (
+                    <Link className="discover-controls__hint" to="/profile">Elige tus plataformas para filtrar por ellas</Link>
+                  )}
                 </div>
 
                 <button className="btn btn--primary btn--lg discover-controls__go" onClick={() => generate()} disabled={busy !== null || !style}>

@@ -424,6 +424,29 @@ async function searchTyped(query, type, year = null) {
   return (data.results ?? []).map((r) => normalizeCandidate(r, type));
 }
 
+// Streaming services available in the region, for "Mis plataformas".
+const PROVIDERS_TTL = 24 * 60 * 60 * 1000;
+let providerCatalog = null; // { expires, providers }
+
+/** Movie and TV providers in Colombia, merged and ordered by TMDB's local priority. */
+async function getProviderCatalog() {
+  if (providerCatalog && providerCatalog.expires > Date.now()) return providerCatalog.providers;
+  const lists = await Promise.all(['movie', 'tv'].map((kind) => tmdbFetch(`/watch/providers/${kind}`, { watch_region: WATCH_REGION })));
+  const byId = new Map();
+  lists.flatMap((l) => l.results ?? []).forEach((p) => {
+    if (!p || !Number.isInteger(p.provider_id) || !p.provider_name) return;
+    const priority = p.display_priorities?.[WATCH_REGION] ?? p.display_priority ?? 999;
+    const prev = byId.get(p.provider_id);
+    if (!prev || priority < prev.priority) {
+      byId.set(p.provider_id, { id: p.provider_id, name: String(p.provider_name).slice(0, 80), logo_path: p.logo_path ?? null, priority });
+    }
+  });
+  const providers = [...byId.values()].sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name)).slice(0, 48)
+    .map(({ priority, ...p }) => p);
+  providerCatalog = { expires: Date.now() + PROVIDERS_TTL, providers };
+  return providers;
+}
+
 /** Checks that the configured key works (Perfil > Claves de API). */
 async function ping() {
   await tmdbFetch('/configuration');
@@ -431,6 +454,7 @@ async function ping() {
 }
 
 function clearTrailerCache() {
+  providerCatalog = null;
   listCache.clear();
   trailerCache.clear();
   relatedCache.clear();
@@ -445,5 +469,5 @@ async function getTrending(limit = 12) {
 
 module.exports = {
   search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  getTitleRecommendations, discover, getProviderCatalog, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

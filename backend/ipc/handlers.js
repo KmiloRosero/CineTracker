@@ -10,6 +10,7 @@ const describeSearchService   = require('../services/describeSearchService.js');
 const cinephileService        = require('../services/cinephileService.js');
 const wrappedService          = require('../services/wrappedService.js');
 const insightService          = require('../services/insightService.js');
+const platformService         = require('../services/platformService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -101,14 +102,32 @@ function registerIpcHandlers(ipcMain) {
     aiRecommendationService.getAIRecommendations(userId, { refresh: options?.refresh === true })));
 
   // ── Descubrir ─────────────────────────────────────────────────────────────
-  ipcMain.handle('discover:getStyles', readable((userId) => discoveryService.getStyles(userId), { styles: [], modifiers: [], counts: null }));
+  ipcMain.handle('discover:getStyles', readable((userId) =>
+    discoveryService.getStyles(userId, { platforms: platformService.getPlatformIds(userId) }), { styles: [], modifiers: [], counts: null }));
   ipcMain.handle('discover:generate',  authed((userId, params, options) =>
-    discoveryService.generateList(userId, params ?? {}, { refresh: options?.refresh === true })));
+    discoveryService.generateList(userId, params ?? {}, { refresh: options?.refresh === true, platforms: platformService.getPlatformIds(userId) })));
   ipcMain.handle('discover:save',         authed((userId, payload)        => discoveryService.saveList(userId, payload ?? {})));
   ipcMain.handle('discover:dismiss',      authed((userId, item)           => discoveryService.dismiss(userId, item ?? {})));
   ipcMain.handle('discover:undismiss',    authed((userId, tmdbId, type)   => discoveryService.undismiss(userId, tmdbId, type)));
-  ipcMain.handle('discover:tonight',      authed((userId, input, options) =>
-    tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true })));
+  ipcMain.handle('discover:tonight',      authed(async (userId, input, options) => {
+    const platforms = platformService.getPlatformIds(userId);
+    // "only on my platforms" also filters pending titles, which needs their providers
+    const availableIds = input?.platformsOnly && platforms.length
+      ? new Set(Object.keys((await platformService.getAvailability(userId)).available).map(Number))
+      : null;
+    return tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true, platforms, availableIds });
+  }));
+
+  // ── Mis plataformas ───────────────────────────────────────────────────────
+  ipcMain.handle('platforms:getCatalog',      safe(() => tmdbService.getProviderCatalog()));
+  ipcMain.handle('platforms:get',             readable((userId) => platformService.getPlatforms(userId), []));
+  ipcMain.handle('platforms:set',             authed((userId, platforms) => {
+    const saved = platformService.setPlatforms(userId, platforms);
+    discoveryService.clearCache();
+    tonightService.clearCache();
+    return saved;
+  }));
+  ipcMain.handle('platforms:getAvailability', authed((userId) => platformService.getAvailability(userId)));
   ipcMain.handle('discover:describe',     authed((_userId, query)         => describeSearchService.findByDescription(query)));
   ipcMain.handle('discover:getDismissed', authed((userId)                 => discoveryService.getDismissed(userId)));
 

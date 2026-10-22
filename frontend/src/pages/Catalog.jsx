@@ -106,6 +106,12 @@ export default function Catalog() {
   const [formError, setFormError] = useState(null);
   const [toDelete,  setToDelete]  = useState(null);
 
+  // "En mis plataformas": which pending/watching titles the user's services include
+  const [platforms,    setPlatforms]    = useState([]);
+  const [onPlatforms,  setOnPlatforms]  = useState(false);
+  const [availability, setAvailability] = useState(null);
+  const [availLoading, setAvailLoading] = useState(false);
+
   async function loadTitles() {
     setLoading(true);
     setError(null);
@@ -121,7 +127,23 @@ export default function Catalog() {
   useEffect(() => {
     if (user) loadTitles();
     else { setTitles([]); setLoading(false); }
+    if (user) window.electronAPI.getMyPlatforms().then((r) => { if (Array.isArray(r)) setPlatforms(r); }).catch(() => {});
   }, [user]);
+
+  async function togglePlatforms() {
+    const next = !onPlatforms;
+    setOnPlatforms(next);
+    if (!next || availability) return;
+    setAvailLoading(true);
+    try {
+      setAvailability(unwrap(await window.electronAPI.getPlatformAvailability()));
+    } catch (err) {
+      showToast({ message: `No se pudo consultar dónde ver tus títulos: ${err.message}`, type: 'error' });
+      setOnPlatforms(false);
+    } finally {
+      setAvailLoading(false);
+    }
+  }
 
   // ── derived ───────────────────────────────────────────────────────────
   const statusCounts = useMemo(() => {
@@ -144,13 +166,14 @@ export default function Catalog() {
         if (q && !t.title.toLowerCase().includes(q) && !(t.original_title ?? '').toLowerCase().includes(q)) return false;
         if (status && t.status !== status) return false;
         if (genre && !canonicalGenres(t.genres).includes(genre)) return false;
+        if (onPlatforms && availability && !availability.available[t.id]) return false;
         return true;
       })
       .sort(compare);
-  }, [titles, search, status, genre, sort]);
+  }, [titles, search, status, genre, sort, onPlatforms, availability]);
 
-  const filtersActive = Boolean(search || status || genre);
-  function clearFilters() { setSearch(''); setStatus(''); setGenre(''); }
+  const filtersActive = Boolean(search || status || genre || onPlatforms);
+  function clearFilters() { setSearch(''); setStatus(''); setGenre(''); setOnPlatforms(false); }
 
   // ── handlers ─────────────────────────────────────────────────────────
   function openAdd() { requireAuth(() => setModalMode('search')); }
@@ -282,7 +305,23 @@ export default function Catalog() {
                   {s.label} <span className="chip__count">{statusCounts[s.value] ?? 0}</span>
                 </button>
               ))}
+              {platforms.length > 0 && (
+                <button
+                  className={`chip chip--platforms${onPlatforms ? ' chip--active' : ''}`}
+                  aria-pressed={onPlatforms}
+                  onClick={togglePlatforms}
+                  disabled={availLoading}
+                  title={`Pendientes y en curso incluidos en ${platforms.map((p) => p.name).join(', ')}`}
+                >
+                  {availLoading ? <IconSpinner size={14} /> : null}
+                  En mis plataformas
+                  {availability && <span className="chip__count">{Object.keys(availability.available).length}</span>}
+                </button>
+              )}
             </div>
+            {onPlatforms && availability?.failed > 0 && (
+              <p className="field-hint">No se pudo consultar {availability.failed} {availability.failed === 1 ? 'título' : 'títulos'}; revisa tu conexión.</p>
+            )}
           </div>
 
           {loading && <CatalogSkeleton />}

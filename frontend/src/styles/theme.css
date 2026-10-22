@@ -2814,6 +2814,7 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 }
 .discover-controls__mods { display: flex; flex-wrap: wrap; gap: 6px; }
 .discover-controls__go { margin-left: auto; }
+.discover-controls__hint { align-self: center; padding: 0 6px; font-size: .88rem; }
 
 /* a generated list opens like a programme card: lower-third, name, intro */
 .generated { display: flex; flex-direction: column; gap: 20px; }
@@ -3159,3 +3160,34 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 .insight__chip:hover { border-color: var(--accent); color: var(--accent-text); text-decoration: none; }
 .insight__meta { font-size: .88rem; color: var(--text-muted); }
 @media (max-width: 760px) { .insight__body { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+
+/* ─── Mis plataformas (Profile) ──────────────────────────────────────────── */
+.platforms { display: flex; flex-direction: column; gap: 14px; }
+.platforms__grid { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.platform {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 32px 8px 8px;
+  background: var(--bg-module);
+  border: 1px solid var(--border);
+  text-align: left;
+  transition: border-color var(--t), background var(--t);
+}
+.platform:hover:not(:disabled) { border-color: var(--text-secondary); }
+.platform:disabled { cursor: progress; }
+.platform.is-on { border-color: var(--accent); background: var(--accent-dim); }
+.platform__logo { width: 38px; height: 38px; flex-shrink: 0; border-radius: var(--radius-sm); object-fit: cover; background: var(--bg-input); }
+.platform__logo--empty { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 1.2rem; color: var(--text-secondary); }
+.platform__name { font-family: var(--font-num); font-size: .95rem; font-weight: 700; letter-spacing: .02em; line-height: 1.15; overflow-wrap: anywhere; }
+.platform__mark {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.platform.is-on .platform__mark { background: var(--accent); color: var(--on-accent); }
+.chip--platforms { gap: 6px; }

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import PlatformPicker from '../components/PlatformPicker';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import GuestPrompt from '../components/GuestPrompt';
@@ -377,15 +378,19 @@ export default function Profile() {
           </button>
         </Section>
 
-        <Section index={2} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
+        <Section index={2} title="Mis plataformas" description="Marca los servicios que pagas. Descubrir y ¿Qué veo esta noche? pueden mostrarte solo lo que está en ellos, y el Catálogo filtrar tus pendientes. Datos de JustWatch para Colombia.">
+          <PlatformPicker />
+        </Section>
+
+        <Section index={3} title="Contraseña" description="Necesitas tu contraseña actual para poner una nueva.">
           <PasswordForm />
         </Section>
 
-        <Section index={3} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
+        <Section index={4} title="Claves de API" description="Tus claves se guardan cifradas con Windows en este equipo y nunca se vuelven a mostrar. Una clave guardada aquí reemplaza la incluida en la instalación.">
           <ApiKeysForm focus={location.state?.focus === 'api-keys'} />
         </Section>
 
-        <Section index={4} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
+        <Section index={5} title="Acerca de" description="CineTracker guarda tu catálogo en este computador.">
           <p className="settings-about">
             La información y las imágenes de películas y series provienen de TMDB.
             Este producto usa la API de TMDB, pero TMDB no lo respalda ni lo certifica.
@@ -393,7 +398,7 @@ export default function Profile() {
           </p>
         </Section>
 
-        <Section index={5} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
+        <Section index={6} danger title="Eliminar cuenta" description="Elimina tu cuenta con todos sus títulos, visualizaciones y listas. No se puede deshacer.">
           <button className="btn btn--danger" onClick={() => { setDeletePassword(''); setDeleting(true); }}>
             <IconTrash size={16} /> Eliminar mi cuenta
           </button>

@@ -161,6 +161,23 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 5,
+    name: 'streaming platforms per user',
+    rebuildsTables: false,
+    up(db) {
+      // The streaming services a person pays for (TMDB/JustWatch provider ids, region CO).
+      db.exec(`
+        CREATE TABLE user_platforms (
+          user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          provider_id INTEGER NOT NULL,
+          name        TEXT NOT NULL,
+          logo_path   TEXT,
+          PRIMARY KEY (user_id, provider_id)
+        );
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {
