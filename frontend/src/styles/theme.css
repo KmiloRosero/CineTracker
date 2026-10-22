@@ -3352,3 +3352,26 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 .import-results__count--not-found dd, .import-results__count--error dd { color: var(--status-dropped); }
 .import-results__missing summary { cursor: pointer; font-family: var(--font-num); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .9rem; }
 .import-results__missing ul { margin: 10px 0; padding-left: 18px; color: var(--text-secondary); font-size: .92rem; max-height: 240px; overflow: auto; }
+
+/* ─── Challenge and streak (Statistics) ──────────────────────────────────── */
+.challenge, .streak { display: flex; flex-direction: column; gap: 14px; }
+.challenge__empty { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.challenge__form { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 0 12px; }
+.challenge__form .form-group { margin-bottom: 12px; }
+.challenge__form-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
+.challenge__score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.challenge__done { font-family: var(--font-display); font-size: clamp(3.5rem, 6vw, 5rem); line-height: .85; font-variant-numeric: tabular-nums; }
+.challenge__done.is-risk { color: var(--status-pending); }
+.challenge__goal { font-family: var(--font-num); font-size: 1.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); }
+.challenge__bar { position: relative; height: 16px; background: var(--bg-input); }
+.challenge__fill { position: absolute; inset: 0; background: var(--accent); transform-origin: left center; }
+.challenge__fill.is-done { background: var(--accent-text); }
+.challenge__pace { position: absolute; top: -5px; bottom: -5px; width: 3px; margin-left: -1px; background: var(--text-primary); }
+.challenge__text { color: var(--text-secondary); line-height: 1.5; max-width: 52ch; }
+.challenge__actions { display: flex; gap: 8px; margin-top: auto; }
+
+.streak__strip { list-style: none; display: grid; grid-template-columns: repeat(26, minmax(0, 1fr)); gap: 3px; margin-top: 4px; }
+.streak__week { aspect-ratio: 1 / 2.2; background: var(--bg-input); }
+.streak__week.is-on { background: color-mix(in srgb, var(--accent) calc(var(--level, 1) * 100%), var(--bg-input)); }
+.streak__week.is-now { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+.streak__axis { display: flex; justify-content: space-between; font-family: var(--font-num); font-size: .82rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }

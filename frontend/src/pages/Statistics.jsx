@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { MonthlyColumns, GenreBars, StatusBar, ChartTable, STATUS_ORDER, monthLabel } from '../components/StatsChart';
 import ScoreBug from '../components/ScoreBug';
 import CinephileProfile from '../components/CinephileProfile';
+import { ChallengePanel, StreakPanel } from '../components/ChallengePanels';
 import GuestPrompt from '../components/GuestPrompt';
 import { PageError } from '../components/PageLoading';
 import { useAuth } from '../context/AuthContext';
@@ -121,6 +122,11 @@ export default function Statistics() {
 
           <motion.div variants={panelVariants} custom={1}>
             <CinephileProfile />
+          </motion.div>
+
+          <motion.div className="panels" variants={panelVariants} custom={1}>
+            <ChallengePanel />
+            <StreakPanel />
           </motion.div>
 
           <div className="panels">

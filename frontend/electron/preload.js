@@ -66,6 +66,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** Returns { totals, completionRate, averageRating, ratedCount, totalHours,
    *  genreDistribution, topGenres, topRatedGenres, monthlyActivity } */
   getStatsOverview: () => ipcRenderer.invoke('stats:getOverview'),
+  /** @param {number} [year] — Returns { year, goal, kind, progress, expected, ahead, projected, remaining, perWeek, done, over } (goal null when none) */
+  getChallenge: (year)  => ipcRenderer.invoke('stats:getChallenge', year),
+  /** @param {{ year?: number, goal: number|null, kind?: 'all'|'movie'|'series' }} input — goal null removes it */
+  setChallenge: (input) => ipcRenderer.invoke('stats:setChallenge', input),
+  /** Returns { current, best, state: 'active'|'at-risk'|'none', thisWeek, weeks: [{ start, n }] } */
+  getStreaks:   ()      => ipcRenderer.invoke('stats:getStreaks'),
   /** @param {number} [year] @param {{ refresh?: boolean }} [options] — Returns { reason, year, years, stats, headline, story, awards, source, provider } */
   getYearInReview: (year, options) => ipcRenderer.invoke('stats:getYearInReview', year, options),
   /** @param {{ refresh?: boolean }} [options] — Returns { reason, archetype, summary, traits: [{ label, detail }], blindSpot, source, provider, stale, generatedAt } */

@@ -217,6 +217,24 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 8,
+    name: 'yearly challenges',
+    rebuildsTables: false,
+    up(db) {
+      // "Ver 50 películas este año": one goal per user and year.
+      db.exec(`
+        CREATE TABLE challenges (
+          user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          year       INTEGER NOT NULL,
+          goal       INTEGER NOT NULL CHECK(goal BETWEEN 1 AND 1000),
+          kind       TEXT NOT NULL DEFAULT 'all' CHECK(kind IN ('all', 'movie', 'series')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (user_id, year)
+        );
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

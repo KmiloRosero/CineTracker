@@ -14,6 +14,7 @@ const platformService         = require('../services/platformService.js');
 const episodeService          = require('../services/episodeService.js');
 const upcomingService         = require('../services/upcomingService.js');
 const dataTransferService     = require('../services/dataTransferService.js');
+const challengeService        = require('../services/challengeService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -100,6 +101,9 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('stats:getMonthlyWatched', readable((userId) => statisticsService.getMonthlyWatched(userId), []));
   ipcMain.handle('stats:getTotalHours',     readable((userId) => statisticsService.getTotalHours(userId), { totalHours: 0 }));
   ipcMain.handle('stats:getOverview',       authed((userId)   => statisticsService.getOverview(userId)));
+  ipcMain.handle('stats:getChallenge', authed((userId, year)   => challengeService.getChallenge(userId, year ?? undefined)));
+  ipcMain.handle('stats:setChallenge', authed((userId, input)  => challengeService.setChallenge(userId, input ?? {})));
+  ipcMain.handle('stats:getStreaks',   authed((userId)         => challengeService.getStreaks(userId)));
   ipcMain.handle('stats:getYearInReview', authed((userId, year, options) =>
     wrappedService.getYearInReview(userId, year, { refresh: options?.refresh === true })));
   ipcMain.handle('stats:getCinephileProfile', authed((userId, options) =>
