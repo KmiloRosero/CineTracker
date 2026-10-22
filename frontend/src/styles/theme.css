@@ -3191,3 +3191,77 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
 }
 .platform.is-on .platform__mark { background: var(--accent); color: var(--on-accent); }
 .chip--platforms { gap: 6px; }
+
+/* ─── Episodes (series showcase) ─────────────────────────────────────────── */
+.episodes__summary { display: grid; gap: 16px; margin-bottom: 24px; }
+.episodes__bar { height: 12px; background: var(--bg-input); overflow: hidden; }
+.episodes__fill { display: block; height: 100%; background: var(--accent); transform-origin: left center; }
+.episodes__next { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.episodes__label, .episodes__airing {
+  font-family: var(--font-num);
+  font-size: .9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-secondary);
+}
+.episodes__airing { font-weight: 600; letter-spacing: .04em; color: var(--text-muted); flex-basis: 100%; }
+.episodes__code { font-family: var(--font-display); font-size: 2rem; line-height: 1; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+
+.episodes__seasons { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 20px; }
+.episodes__season {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 64px;
+  min-height: 56px;
+  padding: 6px 10px;
+  background: var(--bg-module);
+  border: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: background var(--t), border-color var(--t), color var(--t);
+}
+.episodes__season small { font-family: var(--font-num); font-size: .8rem; font-weight: 600; color: var(--text-secondary); letter-spacing: .04em; }
+.episodes__season:hover { border-color: var(--text-secondary); }
+.episodes__season.is-done { border-color: var(--accent); }
+.episodes__season.is-active { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg-base); }
+.episodes__season.is-active small { color: var(--bg-base); }
+
+.episodes__panel-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; }
+.episodes__panel-title { font-family: var(--font-display); font-weight: 400; font-size: 1.6rem; line-height: 1; text-transform: uppercase; margin-right: auto; }
+
+.episode-list { list-style: none; border-top: 2px solid var(--text-primary); }
+.episode {
+  display: grid;
+  grid-template-columns: 44px 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+.episode__check {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  margin-left: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  color: var(--on-accent);
+  transition: background var(--t), border-color var(--t);
+}
+.episode__check:hover:not(:disabled) { border-color: var(--accent); }
+.episode__check:disabled { cursor: not-allowed; opacity: .5; }
+.episode.is-seen .episode__check { background: var(--accent); border-color: var(--accent); }
+.episode__number { font-family: var(--font-num); font-size: 1.15rem; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.episode__name { font-weight: 600; overflow-wrap: anywhere; }
+.episode.is-seen .episode__name { color: var(--text-secondary); }
+.episode__meta { padding-right: 6px; font-family: var(--font-num); font-size: .9rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.episode.is-upcoming .episode__name { color: var(--text-muted); }
+@media (max-width: 760px) {
+  .episode { grid-template-columns: 44px 30px minmax(0, 1fr); }
+  .episode__meta { grid-column: 3; padding: 0 0 6px; white-space: normal; }
+}

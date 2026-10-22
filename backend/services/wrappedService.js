@@ -137,7 +137,6 @@ function yearStats(userId, year) {
   const best = [...rated].sort((a, b) => b.watch_rating - a.watch_rating || toDate(a.at) - toDate(b.at)).slice(0, 3);
   const worst = [...rated].sort((a, b) => a.watch_rating - b.watch_rating).find((t) => t.watch_rating <= 6) ?? null;
   const busiest = months.reduce((top, m) => (m.n > top.n ? m : top), months[0]);
-  const weekday = weekdays.reduce((top, n, i) => (n > weekdays[top] ? i : top), 0);
 
   const decadeCounts = new Map();
   titles.forEach((t) => {
@@ -148,6 +147,17 @@ function yearStats(userId, year) {
   });
   const decade = [...decadeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
+  // episodes marked one by one count toward the rhythm of the year (weeks, weekdays)
+  const episodes = getDb()
+    .prepare("SELECT watched_at FROM episode_progress WHERE user_id = ? AND strftime('%Y', watched_at) = ?")
+    .all(userId, String(year));
+  episodes.forEach((e) => {
+    const d = toDate(e.watched_at);
+    weekdays[d.getDay()] += 1;
+    weeks.add(weekIndex(d));
+  });
+  const weekday = weekdays.reduce((top, n, i) => (n > weekdays[top] ? i : top), 0);
+
   const added = getDb()
     .prepare("SELECT COUNT(*) AS n FROM titles WHERE user_id = ? AND strftime('%Y', added_at) = ?")
     .get(userId, String(year)).n;
@@ -155,6 +165,7 @@ function yearStats(userId, year) {
   return {
     year,
     watches: watches.length,
+    episodes: episodes.length,
     titles: titles.length,
     movies: titles.filter((t) => t.type === 'movie').length,
     series: titles.filter((t) => t.type === 'series').length,
@@ -163,7 +174,7 @@ function yearStats(userId, year) {
     added,
     months,
     busiestMonth: busiest.n > 0 ? { month: busiest.month, label: MONTHS[Number(busiest.month.slice(5)) - 1], n: busiest.n } : null,
-    favouriteWeekday: watches.length ? { day: weekday, label: WEEKDAYS[weekday], n: weekdays[weekday] } : null,
+    favouriteWeekday: watches.length + episodes.length ? { day: weekday, label: WEEKDAYS[weekday], n: weekdays[weekday] } : null,
     longestWeekStreak: longestRun([...weeks].sort((a, b) => a - b)),
     activeWeeks: weeks.size,
     topGenres,
@@ -189,7 +200,7 @@ function ruleStory(s) {
 
 function promptFor(s) {
   const lines = [
-    `Año: ${s.year}. Visualizaciones: ${s.watches}. Títulos distintos: ${s.titles} (${s.movies} películas, ${s.series} series). Horas: ${s.hours}.`,
+    `Año: ${s.year}. Visualizaciones: ${s.watches}. Episodios marcados: ${s.episodes}. Títulos distintos: ${s.titles} (${s.movies} películas, ${s.series} series). Horas: ${s.hours}.`,
     `Nota media del año: ${s.averageRating ?? 'sin notas'}. Títulos agregados al catálogo: ${s.added}.`,
     s.topGenres.length ? `Géneros: ${s.topGenres.map((g) => `${g.label} (${g.n})`).join(', ')}.` : null,
     s.busiestMonth ? `Mes más intenso: ${s.busiestMonth.label} (${s.busiestMonth.n}). Día favorito: ${s.favouriteWeekday.label}.` : null,
@@ -214,7 +225,7 @@ async function getYearInReview(userId, year, options = {}) {
   const y = Number(year ?? years[0]);
   if (!Number.isInteger(y) || y < 1900 || y > 2200) throw new Error('Año no válido.');
   const stats = yearStats(userId, y);
-  if (stats.watches === 0) return { reason: 'empty', year: y, years };
+  if (stats.watches === 0 && stats.episodes === 0) return { reason: 'empty', year: y, years };
 
   const { watchedTitles, ...publicStats } = stats;
   const signature = digest(JSON.stringify(publicStats));

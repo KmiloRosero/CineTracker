@@ -14,6 +14,7 @@ import TrailerModal from '../components/TrailerModal';
 import RelatedTitles from '../components/RelatedTitles';
 import WatchProviders from '../components/WatchProviders';
 import TitleInsight from '../components/TitleInsight';
+import EpisodeTracker from '../components/EpisodeTracker';
 import { parseGenres, canonicalGenres, genreLabel, genreKey } from '../utils/genres';
 import { parseCast } from '../utils/cast';
 import { tmdbImage } from '../utils/tmdbImage';
@@ -464,6 +465,9 @@ export default function TitleDetail() {
           onBack={() => navigate(-1)}
           onTrailer={() => setTrailerOpen(true)}
         >
+          {title.type === 'series' && title.tmdb_id && (
+            <EpisodeTracker key={`episodes-${title.id}`} title={title} onTitleChanged={setTitle} />
+          )}
           <TitleInsight key={`insight-${title.id}`} titleId={title.id} version={title.rating ?? 0} />
           {title.tmdb_id && <WatchProviders key={`watch-${title.id}`} title={title} />}
           {title.tmdb_id && (

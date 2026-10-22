@@ -207,6 +207,7 @@ export default function YearInReview() {
                 {s.first && <><dt>Abriste el año con</dt><dd>{s.first.title} · {sqlDate(s.first.at)}</dd></>}
                 {s.last && s.last.id !== s.first?.id && <><dt>Lo último</dt><dd>{s.last.title} · {sqlDate(s.last.at)}</dd></>}
                 {s.rewatched.length > 0 && <><dt>Repetiste</dt><dd>{s.rewatched.map((t) => `${t.title} (${t.times})`).join(', ')}</dd></>}
+                {s.episodes > 0 && <><dt>Episodios marcados</dt><dd>{s.episodes}</dd></>}
                 <dt>Agregados al catálogo</dt><dd>{s.added}</dd>
               </dl>
             </Panel>

@@ -11,6 +11,7 @@ const cinephileService        = require('../services/cinephileService.js');
 const wrappedService          = require('../services/wrappedService.js');
 const insightService          = require('../services/insightService.js');
 const platformService         = require('../services/platformService.js');
+const episodeService          = require('../services/episodeService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -78,6 +79,11 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('records:updateStatus', authed((userId, id, status, rating) => recordService.updateRecordStatus(userId, id, status, rating)));
   ipcMain.handle('records:update',       authed((userId, id, data)           => recordService.updateRecord(userId, id, data)));
   ipcMain.handle('records:delete',       authed((userId, id)                 => recordService.deleteRecord(userId, id)));
+
+  ipcMain.handle('episodes:getTracker', authed((userId, titleId)         => episodeService.getTracker(userId, titleId)));
+  ipcMain.handle('episodes:getSeason',  authed((userId, titleId, season) => episodeService.getSeason(userId, titleId, season)));
+  ipcMain.handle('episodes:set',        authed((userId, titleId, episodes, watched) => episodeService.setEpisodes(userId, titleId, episodes, watched)));
+  ipcMain.handle('episodes:getNew',     readable((userId)                => episodeService.getNewEpisodes(userId), []));
 
   ipcMain.handle('lists:create',   authed((userId, name)            => listService.createList(userId, name)));
   ipcMain.handle('lists:addTitle', authed((userId, listId, titleId) => listService.addTitleToList(userId, listId, titleId)));

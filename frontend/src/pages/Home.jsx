@@ -39,6 +39,16 @@ const NO_REC_MSG = {
   'no-match':   'Ninguno de tus pendientes coincide aún con tus géneros favoritos. Sigue calificando.',
 };
 
+/** "T2 · E05 salió el 12 oct · vas 2 atrás" for the Nuevos episodios rail. */
+function episodeLine(n) {
+  const ep = n.kind === 'new' ? n.lastEpisode : n.nextEpisode;
+  const code = `T${ep.season} · E${String(ep.episode).padStart(2, '0')}`;
+  const date = new Date(`${ep.air_date}T12:00:00`).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  if (n.kind === 'soon') return `${code} sale el ${date}`;
+  const behind = n.behind > 1 ? ` · te faltan ${n.behind}` : '';
+  return `${code} salió el ${date}${behind}`;
+}
+
 const FEATURED_COUNT = 8;
 const DECK_SIZE      = 3;
 const ROTATE_MS      = 7000;
@@ -381,6 +391,7 @@ export default function Home() {
   const [addError,        setAddError]        = useState(null);
   const [trailerFor,      setTrailerFor]      = useState(null);
   const [tmdbMissing,     setTmdbMissing]     = useState(false);
+  const [newEpisodes,     setNewEpisodes]     = useState([]);
 
   async function refreshTitles() {
     const all = unwrap(await window.electronAPI.getAllTitles({}));
@@ -423,6 +434,16 @@ export default function Home() {
     if (!user || loading) return;
     loadRecommendations();
   }, [user, loading]);
+
+  // followed series with an episode out (or about to be): checked once per visit
+  useEffect(() => {
+    if (!user) { setNewEpisodes([]); return undefined; }
+    let cancelled = false;
+    window.electronAPI.getNewEpisodes()
+      .then((r) => { if (!cancelled && Array.isArray(r)) setNewEpisodes(r); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user, reloadKey]);
 
   // ── TMDB trending (public) ────────────────────────────────────────────
   useEffect(() => {
@@ -578,6 +599,20 @@ export default function Home() {
         {user && watching.length > 0 && (
           <Rail title="Sigue viendo" sub={`${watching.length} en curso`}>
             {watching.slice(0, 6).map((t) => <FixtureCard key={t.id} title={t} onOpen={openTitle} />)}
+          </Rail>
+        )}
+
+        {user && newEpisodes.length > 0 && (
+          <Rail title="Nuevos episodios" sub={`${newEpisodes.filter((n) => n.kind === 'new').length} por ver`}>
+            {newEpisodes.slice(0, 6).map((n) => (
+              <FixtureCard
+                key={n.title.id}
+                title={n.title}
+                onOpen={openTitle}
+                tag={n.kind === 'new' ? { text: 'Nuevo', tone: 'next' } : { text: 'Pronto', tone: 'soon' }}
+                dateLine={episodeLine(n)}
+              />
+            ))}
           </Rail>
         )}
 

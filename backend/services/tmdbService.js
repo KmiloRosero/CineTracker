@@ -424,6 +424,66 @@ async function searchTyped(query, type, year = null) {
   return (data.results ?? []).map((r) => normalizeCandidate(r, type));
 }
 
+// ── Episodes ─────────────────────────────────────────────────────────────────
+const EPISODE_TTL  = 6 * 60 * 60 * 1000;
+const episodeCache = new Map(); // "season:123:2" / "status:123" -> { expires, value }
+
+async function cachedValue(key, load) {
+  const hit = episodeCache.get(key);
+  if (hit && hit.expires > Date.now()) return hit.value;
+  const value = await load();
+  episodeCache.set(key, { expires: Date.now() + EPISODE_TTL, value });
+  return value;
+}
+
+function normalizeEpisodeRef(e) {
+  return e && Number.isInteger(e.season_number) && Number.isInteger(e.episode_number)
+    ? { season: e.season_number, episode: e.episode_number, name: e.name ?? null, air_date: e.air_date || null }
+    : null;
+}
+
+/** A season's episodes: { number, name, air_date, episodes: [{ number, name, overview, air_date, runtime, still_path, upcoming }] }. */
+async function getSeason(tmdbId, seasonNumber) {
+  validateId(tmdbId, 'El id de TMDB');
+  const n = Number(seasonNumber);
+  if (!Number.isInteger(n) || n < 0 || n > 500) throw new Error('Temporada no válida.');
+  return cachedValue(`season:${Number(tmdbId)}:${n}`, async () => {
+    const data = await tmdbFetch(`/tv/${Number(tmdbId)}/season/${n}`);
+    return {
+      number: n,
+      name: data.name ?? `Temporada ${n}`,
+      air_date: data.air_date || null,
+      episodes: (data.episodes ?? [])
+        .filter((e) => e && Number.isInteger(e.episode_number) && e.episode_number >= 1)
+        .sort((a, b) => a.episode_number - b.episode_number)
+        .map((e) => ({
+          number:     e.episode_number,
+          name:       e.name ?? `Episodio ${e.episode_number}`,
+          overview:   e.overview ? String(e.overview).slice(0, 600) : null,
+          air_date:   e.air_date || null,
+          runtime:    Number.isInteger(e.runtime) ? e.runtime : null,
+          still_path: e.still_path ?? null,
+          upcoming:   !e.air_date || e.air_date > today(),
+        })),
+    };
+  });
+}
+
+/** Where a series stands: { status, inProduction, seasons, lastEpisode, nextEpisode }. */
+async function getSeriesStatus(tmdbId) {
+  validateId(tmdbId, 'El id de TMDB');
+  return cachedValue(`status:${Number(tmdbId)}`, async () => {
+    const data = await tmdbFetch(`/tv/${Number(tmdbId)}`);
+    return {
+      status:       data.status ?? null,
+      inProduction: data.in_production === true,
+      seasons:      normalizeSeasons(data),
+      lastEpisode:  normalizeEpisodeRef(data.last_episode_to_air),
+      nextEpisode:  normalizeEpisodeRef(data.next_episode_to_air),
+    };
+  });
+}
+
 // Streaming services available in the region, for "Mis plataformas".
 const PROVIDERS_TTL = 24 * 60 * 60 * 1000;
 let providerCatalog = null; // { expires, providers }
@@ -455,6 +515,7 @@ async function ping() {
 
 function clearTrailerCache() {
   providerCatalog = null;
+  episodeCache.clear();
   listCache.clear();
   trailerCache.clear();
   relatedCache.clear();
@@ -469,5 +530,5 @@ async function getTrending(limit = 12) {
 
 module.exports = {
   search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, getProviderCatalog, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, ping, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

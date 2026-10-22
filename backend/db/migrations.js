@@ -178,6 +178,25 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 6,
+    name: 'episode progress',
+    rebuildsTables: false,
+    up(db) {
+      // One row per episode the user marked as watched.
+      db.exec(`
+        CREATE TABLE episode_progress (
+          user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title_id   INTEGER NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+          season     INTEGER NOT NULL CHECK(season >= 0),
+          episode    INTEGER NOT NULL CHECK(episode >= 1),
+          watched_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (title_id, season, episode)
+        );
+        CREATE INDEX idx_episode_progress_user ON episode_progress(user_id, watched_at);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

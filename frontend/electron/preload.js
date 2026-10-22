@@ -28,6 +28,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** @param {number} id */
   deleteRecord:       (id)                    => ipcRenderer.invoke('records:delete', id),
 
+  // ── Episodes ─────────────────────────────────────────────────────────────
+  /** @param {number} titleId — Returns { seasons, watched, totals: { aired, watched }, next, status, nextAiring } */
+  getEpisodeTracker: (titleId)                    => ipcRenderer.invoke('episodes:getTracker', titleId),
+  /** @param {number} titleId @param {number} season — Returns { number, name, air_date, episodes } */
+  getSeasonEpisodes: (titleId, season)            => ipcRenderer.invoke('episodes:getSeason', titleId, season),
+  /** @param {number} titleId @param {{ season, episode }[]} episodes @param {boolean} watched — Returns { title, watched } */
+  setEpisodesWatched: (titleId, episodes, watched) => ipcRenderer.invoke('episodes:set', titleId, episodes, watched),
+  /** Followed series with an unwatched new episode or one airing soon */
+  getNewEpisodes:    ()                           => ipcRenderer.invoke('episodes:getNew'),
+
   // ── Lists ────────────────────────────────────────────────────────────────
   /** @param {string} name */
   createList:     (name)              => ipcRenderer.invoke('lists:create', name),
