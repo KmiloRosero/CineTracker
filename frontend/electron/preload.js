@@ -72,6 +72,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** @param {{ mood: string, runtime: 'any'|'90'|'120'|'episode', source: 'pending'|'new'|'both', platformsOnly?: boolean }} input
    *  Returns { message, picks: [{ kind, key, title?|item?, reason }], source, provider, fallbackReason?, moodGenres, reason } */
   pickTonight:        (input, options)    => ipcRenderer.invoke('discover:tonight', input, options),
+  /** @param {string} query — a loose description. Returns { results: [item + { clue, confidence }], source, provider, fallbackReason?, reason } */
+  findByDescription:  (query)             => ipcRenderer.invoke('discover:describe', query),
   /** "No me interesa" @param {{ tmdb_id: number, type: string, title: string }} item */
   dismissTitle:       (item)              => ipcRenderer.invoke('discover:dismiss', item),
   undismissTitle:     (tmdbId, type)      => ipcRenderer.invoke('discover:undismiss', tmdbId, type),

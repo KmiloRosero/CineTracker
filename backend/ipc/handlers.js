@@ -6,6 +6,7 @@ const recommendationService   = require('../services/recommendationService.js');
 const aiRecommendationService = require('../services/aiRecommendationService.js');
 const discoveryService        = require('../services/discoveryService.js');
 const tonightService          = require('../services/tonightService.js');
+const describeSearchService   = require('../services/describeSearchService.js');
 const authService             = require('../services/authService.js');
 const tmdbService             = require('../services/tmdbService.js');
 const apiKeyService           = require('../services/apiKeyService.js');
@@ -99,6 +100,7 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('discover:undismiss',    authed((userId, tmdbId, type)   => discoveryService.undismiss(userId, tmdbId, type)));
   ipcMain.handle('discover:tonight',      authed((userId, input, options) =>
     tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true })));
+  ipcMain.handle('discover:describe',     authed((_userId, query)         => describeSearchService.findByDescription(query)));
   ipcMain.handle('discover:getDismissed', authed((userId)                 => discoveryService.getDismissed(userId)));
 
   // TMDB metadata is public, so guests can browse trending titles and search.
@@ -175,6 +177,7 @@ function registerIpcHandlers(ipcMain) {
     aiRecommendationService.clearCache();
     discoveryService.clearCache();
     tonightService.clearCache();
+    describeSearchService.clearCache();
     tmdbService.clearTrailerCache();
     return result;
   }));
@@ -183,6 +186,7 @@ function registerIpcHandlers(ipcMain) {
     aiRecommendationService.clearCache();
     discoveryService.clearCache();
     tonightService.clearCache();
+    describeSearchService.clearCache();
     return result;
   }));
   ipcMain.handle('settings:testApiKey', safe((name) => {

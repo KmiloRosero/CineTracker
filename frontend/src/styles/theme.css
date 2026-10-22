@@ -2840,6 +2840,31 @@ select[aria-invalid="true"] { border-color: var(--status-dropped) !important; }
   color: var(--text-secondary);
 }
 
+/* describe-to-find: one wide field, like the catalog search */
+.describe { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.describe__field {
+  flex: 1 1 420px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+}
+.describe__field:focus-within { border-color: var(--border-focus); box-shadow: var(--accent-glow); }
+.describe__field input { flex: 1; min-width: 0; border: none; background: none; color: var(--text-primary); font-size: 1.02rem; outline: none; }
+.describe__field input::placeholder { color: var(--text-muted); }
+.describe__examples { margin-bottom: 8px; font-size: .9rem; color: var(--text-muted); }
+.describe__example {
+  border: none; background: none; padding: 0;
+  color: var(--text-secondary); text-align: left;
+  text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px;
+}
+.describe__example:hover { color: var(--text-primary); text-decoration-color: currentColor; }
+
 /* tonight: an on-air slab, black in both themes */
 .tonight { display: flex; flex-direction: column; gap: 24px; }
 .tonight__form {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
 import TonightPicker from '../components/TonightPicker';
+import DescribeSearch from '../components/DescribeSearch';
 import GuestPrompt from '../components/GuestPrompt';
 import { PageError } from '../components/PageLoading';
 import { gridVariants } from '../components/cardAnimations';
@@ -365,6 +366,8 @@ export default function Discover() {
           )}
         </section>
       )}
+
+      {!error && <DescribeSearch catalogIds={catalogIds} addingId={addingId} onAdd={addOne} onOpen={openTitle} />}
     </main>
   );
 }
