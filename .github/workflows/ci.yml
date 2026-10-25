@@ -1,0 +1,148 @@
+# Every push and pull request: tests, type check, build and a smoke run of the
+# real app on Windows, macOS and Linux. A version tag (v1.2.0) also builds the
+# installers for the three systems and attaches them, with SHA-256 checksums,
+# to a draft GitHub release.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Linux libraries for Electron
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb libnss3 libgbm1 libasound2t64 libgtk-3-0
+
+      # also rebuilds better-sqlite3 for Electron (postinstall)
+      - run: npm ci
+
+      - run: npm test
+
+      - run: npm run typecheck
+
+      - run: npm run build
+
+      - name: Smoke test (opens the database and renders the interface)
+        if: runner.os != 'Linux'
+        run: npm run smoke
+
+      - name: Smoke test (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: CINETRACKER_SMOKE=1 xvfb-run -a npx electron . --no-sandbox
+
+  installers:
+    name: Installer (${{ matrix.os }})
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: macos-latest
+            target: --mac
+          - os: ubuntu-latest
+            target: --linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # The public installers carry only the TMDB key (see scripts/public-env.cjs), from the
+      # TMDB_API_KEY repository secret. Without it they are built without keys ("-sin-claves")
+      # and each person adds their own in Perfil > Claves de API.
+      - name: Choose the build (with the TMDB key or without keys)
+        id: keys
+        shell: bash
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          if [ -n "$TMDB_API_KEY" ]; then
+            printf 'TMDB_API_KEY=%s\n' "$TMDB_API_KEY" > ../backend/.env
+            node scripts/public-env.cjs
+            echo "config=electron-builder.public.js" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No TMDB_API_KEY secret: building installers without keys"
+            echo "config=electron-builder.nokeys.js" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Windows installers are signed when a code-signing certificate is configured
+      # (repository secrets WIN_CSC_LINK, base64 .pfx, and WIN_CSC_KEY_PASSWORD).
+      - name: Build installers
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npx electron-builder ${{ matrix.target }} -c ${{ steps.keys.outputs.config }} -c.directories.output=release --publish never
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            frontend/release/*.exe
+            frontend/release/*.dmg
+            frontend/release/*.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: installers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: installers
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Attach to the release (created as a draft when it does not exist)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --draft --title "CineTracker ${TAG#v}" --notes "Instaladores de CineTracker ${TAG#v}."
+          gh release upload "$TAG" installers/* --clobber

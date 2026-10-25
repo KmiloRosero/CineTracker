@@ -11,6 +11,7 @@
     "dev:electron": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "test": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs run",
     "typecheck": "tsc --noEmit -p .",
+    "smoke": "cross-env CINETRACKER_SMOKE=1 electron .",
     "test:watch": "cross-env ELECTRON_RUN_AS_NODE=1 electron ./node_modules/vitest/vitest.mjs",
     "build": "vite build",
     "dist": "npm run build && electron-builder",

@@ -10,4 +10,6 @@ module.exports = {
     : entry)),
   nsis:     { ...base.nsis, artifactName: 'CineTracker-Setup-${version}-sin-claves.${ext}' },
   portable: { ...base.portable, artifactName: 'CineTracker-Portable-${version}-sin-claves.${ext}' },
+  dmg:      { artifactName: 'CineTracker-${version}-mac-${arch}-sin-claves.${ext}' },
+  appImage: { artifactName: 'CineTracker-${version}-linux-${arch}-sin-claves.${ext}' },
 };

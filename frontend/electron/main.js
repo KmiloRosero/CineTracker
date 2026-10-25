@@ -38,6 +38,36 @@ function registerImageProtocol() {
 }
 
 const isDev = process.env.NODE_ENV === 'development';
+
+// Smoke test (CI on Windows, macOS and Linux): CINETRACKER_SMOKE=1 starts the
+// app with a throwaway profile, opens the database, loads the interface and
+// exits 0 when it rendered without errors, 1 otherwise.
+const SMOKE = process.env.CINETRACKER_SMOKE === '1';
+if (SMOKE) {
+  app.setPath('userData', path.join(require('os').tmpdir(), `cinetracker-smoke-${process.pid}`));
+}
+
+function runSmokeTest(win) {
+  const errors = [];
+  win.webContents.on('console-message', (_e, level, message) => { if (level >= 3) errors.push(message); });
+  win.webContents.on('render-process-gone', (_e, d) => errors.push(`renderer gone: ${d.reason}`));
+  const fail = (why) => { console.error(`[smoke] FAIL: ${why}`); app.exit(1); };
+  setTimeout(() => fail('timed out after 60 s'), 60000).unref();
+  win.webContents.once('did-finish-load', async () => {
+    for (let i = 0; i < 40; i++) {
+      const rendered = await win.webContents
+        .executeJavaScript("Boolean(document.querySelector('.app-layout') && window.electronAPI)")
+        .catch(() => false);
+      if (rendered) {
+        if (errors.length) return fail(errors.join(' | '));
+        console.log('[smoke] OK: database opened and interface rendered');
+        return app.exit(0);
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    return fail(`interface did not render${errors.length ? `: ${errors.join(' | ')}` : ''}`);
+  });
+}
 const DEV_URL = 'http://localhost:5173';
 
 let mainWindow;
@@ -179,6 +209,7 @@ function createWindow() {
   });
 
   lockDown(mainWindow.webContents);
+  if (SMOKE) runSmokeTest(mainWindow);
 
   if (isDev) {
     mainWindow.loadURL(DEV_URL);
@@ -187,7 +218,7 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => { if (!SMOKE) mainWindow.show(); });
 }
 
 app.whenReady().then(() => {
