@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import FixtureCard from './FixtureCard';
+import TrailerModal from './TrailerModal';
 import { gridVariants } from './cardAnimations';
 import { IconSpinner } from './Icons';
 import { aiName, fallbackNote, unwrap } from '../utils/ai';
 
-const MOODS = [
+// Ideas that show what can be asked: moods, topics, a title as a model, a country, an era.
+const IDEAS = [
   'Algo ligero, estoy cansado',
-  'Quiero pasar miedo',
-  'Algo que me haga pensar',
-  'Adrenalina pura',
-  'Para llorar un rato',
-  'Plan en pareja',
+  'Terror que de verdad dé miedo',
+  'Algo como Interstellar',
+  'Una serie de robos para maratonear',
+  'Comedia para ver en pareja',
+  'Thriller coreano con giros',
+  'Un clásico de los 80',
+  'Basada en hechos reales',
 ];
 
 const RUNTIMES = [
@@ -27,7 +31,8 @@ const SOURCES = [
   { value: 'both',    label: 'Ambos' },
 ];
 
-const MAX_MOOD = 300;
+const MAX_MOOD = 400;
+const STEP = 3;
 
 function Segmented({ label, options, value, onChange }) {
   return (
@@ -52,9 +57,11 @@ function Segmented({ label, options, value, onChange }) {
 }
 
 /**
- * "¿Qué veo esta noche?": the person says how they feel and how much time
- * they have; three picks come back, each with its reason. Catalog picks open
- * the title; new ones can be added. `platforms` is how many streaming
+ * "¿Qué veo esta noche?": the person writes what they feel like watching
+ * (a mood, a topic, a title as a model, a country, an era) and how much
+ * time they have; up to nine options come back, three at a time, each with
+ * its reason, where to watch it and its trailer. "Otras opciones" never
+ * repeats what was already shown. `platforms` is how many streaming
  * services the person saved (the "only on my platforms" switch needs one).
  */
 export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, platforms = 0 }) {
@@ -63,27 +70,63 @@ export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, pla
   const [source,  setSource]  = useState('both');
   const [onMine,  setOnMine]  = useState(false);
   const [result,  setResult]  = useState(null);
+  const [visible, setVisible] = useState(STEP);
+  const [shown,   setShown]   = useState([]); // keys already offered for this request
   const [busy,    setBusy]    = useState(false);
   const [error,   setError]   = useState(null);
+  const [trailer, setTrailer] = useState(null);
+  const [refining, setRefining] = useState(false);
+  const request = useRef(0); // the newest search wins; older answers are dropped
 
-  async function pick(e, { refresh = false } = {}) {
+  // Two answers per search: the rules' options at once, then (with an AI key)
+  // the AI's, which replace them when they arrive.
+  async function pick(e, { again = false } = {}) {
     e?.preventDefault();
+    const id = ++request.current;
     setBusy(true);
+    setRefining(false);
     setError(null);
+    const exclude = again ? shown : [];
+    const input = { mood, runtime, source, platformsOnly: onMine && platforms > 0, exclude };
+    const keysOf = (r) => (r.picks ?? []).map((p) => p.key);
+    let first;
     try {
-      setResult(unwrap(await window.electronAPI.pickTonight(
-        { mood, runtime, source, platformsOnly: onMine && platforms > 0 },
-        { refresh },
-      )));
+      first = unwrap(await window.electronAPI.pickTonight(input, { refresh: again, fast: true }));
+      if (id !== request.current) return;
+      setResult(first);
+      setVisible(STEP);
+      setShown([...exclude, ...keysOf(first)]);
     } catch (err) {
-      setError(err.message);
+      if (id === request.current) setError(err.message);
+      return;
     } finally {
-      setBusy(false);
+      if (id === request.current) setBusy(false);
+    }
+    if (!first.aiAvailable || first.reason !== 'ok') return;
+
+    setRefining(true);
+    try {
+      const better = unwrap(await window.electronAPI.pickTonight(input, { refresh: again }));
+      if (id !== request.current) return;
+      if (better.reason === 'ok' && better.source === 'ai') {
+        setResult(better);
+        setVisible(STEP);
+        setShown((prev) => [...new Set([...prev, ...keysOf(better)])]);
+      } else {
+        // keep the options on screen and say why the AI did not improve them
+        setResult((prev) => ({ ...prev, provisional: false, provider: better.provider, fallbackReason: better.fallbackReason ?? 'empty-ai-response' }));
+      }
+    } catch {
+      if (id === request.current) setResult((prev) => ({ ...prev, provisional: false, fallbackReason: 'api-error' }));
+    } finally {
+      if (id === request.current) setRefining(false);
     }
   }
 
-  const note = fallbackNote(result, 'Se eligió con reglas: las palabras de tu ánimo, el tiempo y tus géneros favoritos.');
-  const sourceLine = result?.source === 'ai' ? `Elegido por ${aiName(result)} con tu ánimo y tus calificaciones.` : 'Elegido con tu ánimo, el tiempo y tus géneros favoritos.';
+  const note = refining || result?.provisional ? null : fallbackNote(result, 'Se eligió con reglas: lo que escribiste, el tiempo y tus géneros favoritos.');
+  const sourceLine = result?.source === 'ai' ? `Elegido por ${aiName(result)} con tu pedido y tus calificaciones.` : 'Elegido con tu pedido, el tiempo y tus géneros favoritos.';
+  const picks = result?.picks ?? [];
+  const onScreen = picks.slice(0, visible);
 
   return (
     <section className="tonight" aria-labelledby="tonight-title">
@@ -91,18 +134,18 @@ export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, pla
         <h2 className="tonight__title" id="tonight-title">¿Qué veo esta noche?</h2>
 
         <div className="tonight__mood">
-          <label className="tonight__label" htmlFor="tonight-mood">Cuéntame cómo estás</label>
+          <label className="tonight__label" htmlFor="tonight-mood">¿Qué tienes ganas de ver?</label>
           <textarea
             id="tonight-mood"
-            rows={2}
+            rows={3}
             maxLength={MAX_MOOD}
             value={mood}
             onChange={(e) => setMood(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) pick(e); }}
-            placeholder="Algo ligero, de 90 minutos, que estoy cansado…"
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) pick(e); }}
+            placeholder="Como quieras: “algo como Interstellar pero más corto”, “terror coreano de los 2000”, “una comedia para ver con mi novia, nada de terror”…"
           />
-          <div className="tonight__moods" role="group" aria-label="Ideas de ánimo">
-            {MOODS.map((m) => (
+          <div className="tonight__moods" role="group" aria-label="Ideas">
+            {IDEAS.map((m) => (
               <button key={m} type="button" className="tonight__mood-chip" aria-pressed={mood === m} onClick={() => setMood(m)}>
                 {m}
               </button>
@@ -124,35 +167,42 @@ export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, pla
         <div className="tonight__go">
           <button type="submit" className="btn btn--primary btn--lg" disabled={busy}>
             {busy && <IconSpinner />}
-            {busy ? 'Eligiendo…' : 'Elige por mí'}
+            {busy ? 'Buscando…' : 'Elige por mí'}
           </button>
-          {result?.reason === 'ok' && (
-            <button type="button" className="btn btn--ghost btn--lg tonight__again" onClick={(e) => pick(e, { refresh: true })} disabled={busy}>
-              Otras tres
-            </button>
-          )}
+          {busy && <span className="tonight__busy" role="status">Entendiendo lo que quieres y buscando en TMDB…</span>}
         </div>
       </form>
 
       {error && <p className="form-error" role="alert">No se pudo elegir: {error}</p>}
 
       {result?.reason === 'insufficient-data' && (
-        <p className="tonight__empty" role="status">Agrega algunos títulos a tu catálogo primero: así sabemos qué te gusta.</p>
+        <p className="tonight__empty" role="status">Escribe qué quieres ver, o agrega algunos títulos a tu catálogo para que sepamos qué te gusta.</p>
       )}
       {result?.reason === 'no-options' && (
         <p className="tonight__empty" role="status">
           {source === 'pending'
-            ? 'No hay pendientes que quepan en ese tiempo. Prueba con "Algo nuevo" o sin límite.'
-            : 'No encontramos opciones con eso. Prueba con otra duración o con tus pendientes.'}
+            ? 'Ninguno de tus pendientes encaja con eso. Prueba con "Algo nuevo" o "Ambos".'
+            : 'No encontramos opciones con todo eso junto. Quita algún detalle o cambia la duración.'}
         </p>
       )}
 
       {result?.reason === 'ok' && (
         <div className="tonight__result" aria-live="polite">
           <p className="tonight__message">{result.message}</p>
+          {result.chips?.length > 0 && (
+            <p className="tonight__understood">
+              <span className="tonight__understood-label">Entendí</span>
+              {result.chips.map((c) => <span key={c} className="tonight__chip">{c}</span>)}
+            </p>
+          )}
+          {refining && (
+            <p className="tonight__refining" role="status">
+              <IconSpinner /> {aiName(result) === 'la IA' ? 'La IA' : aiName(result)} está afinando estas opciones con tu pedido; puedes ir mirándolas.
+            </p>
+          )}
           {note && <p className="tonight__note" role="status">{note}</p>}
-          <motion.div className="fixture-grid tonight__picks" variants={gridVariants} initial="hidden" animate="visible" key={result.picks.map((p) => p.key).join()}>
-            {result.picks.map((p, i) => (p.kind === 'catalog' ? (
+          <motion.div className="fixture-grid tonight__picks" variants={gridVariants} initial="hidden" animate="visible" key={result.generatedAt}>
+            {onScreen.map((p, i) => (p.kind === 'catalog' ? (
               <FixtureCard
                 key={p.key}
                 title={p.title}
@@ -161,6 +211,9 @@ export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, pla
                 explanation={p.reason}
                 explanationSource={sourceLine}
                 reasonVisible
+                providers={p.providers}
+                onMine={p.onMine}
+                onTrailer={p.title.tmdb_id ? () => setTrailer({ tmdbId: p.title.tmdb_id, type: p.title.type, title: p.title.title }) : undefined}
                 onOpen={onOpen}
               />
             ) : (
@@ -173,14 +226,37 @@ export default function TonightPicker({ catalogIds, addingId, onAdd, onOpen, pla
                 explanation={p.reason}
                 explanationSource={sourceLine}
                 reasonVisible
+                providers={p.providers}
+                onMine={p.onMine}
+                onTrailer={() => setTrailer({ tmdbId: p.item.tmdb_id, type: p.item.type, title: p.item.title })}
                 adding={addingId === p.item.tmdb_id}
                 onAdd={onAdd}
                 onOpen={onOpen}
               />
             )))}
           </motion.div>
+          <div className="tonight__more">
+            {visible < picks.length && (
+              <button type="button" className="btn btn--ghost btn--lg" onClick={() => setVisible((v) => v + STEP)}>
+                Ver {Math.min(STEP, picks.length - visible)} más
+              </button>
+            )}
+            <button type="button" className="btn btn--ghost btn--lg" onClick={(e) => pick(e, { again: true })} disabled={busy}>
+              {busy && <IconSpinner />}
+              Otras opciones
+            </button>
+            <span className="tonight__count">{Math.min(visible, picks.length)} de {picks.length} · nunca te repetimos las de esta búsqueda</span>
+          </div>
         </div>
       )}
+
+      <TrailerModal
+        open={trailer !== null}
+        onClose={() => setTrailer(null)}
+        tmdbId={trailer?.tmdbId}
+        type={trailer?.type}
+        title={trailer?.title ?? ''}
+      />
     </section>
   );
 }

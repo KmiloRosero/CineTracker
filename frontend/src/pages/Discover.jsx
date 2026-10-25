@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
 import TonightPicker from '../components/TonightPicker';
 import DescribeSearch from '../components/DescribeSearch';
+import TrailerModal from '../components/TrailerModal';
 import GuestPrompt from '../components/GuestPrompt';
 import { PageError } from '../components/PageLoading';
 import { gridVariants } from '../components/cardAnimations';
@@ -50,9 +51,9 @@ function StyleBoard({ styles, value, onChange }) {
 }
 
 // ── Generated list ───────────────────────────────────────────────────────
-function GeneratedList({ result, catalogIds, addingId, saving, regenerating, onAdd, onDismiss, onSave, onRegenerate, onOpen }) {
+function GeneratedList({ result, catalogIds, addingId, saving, busy, refining, onAdd, onDismiss, onSave, onRegenerate, onMore, onTrailer, onOpen }) {
   const count = result.items.length;
-  const note = fallbackNote(result, 'La lista se armó con reglas: recomendaciones de TMDB para tus mejores títulos y tus géneros favoritos.');
+  const note = refining || result.provisional ? null : fallbackNote(result, 'La lista se armó con reglas: recomendaciones de TMDB para tus mejores títulos y tus géneros favoritos.');
   const source = result.source === 'ai'
     ? `Motivo escrito por ${aiName(result)} a partir de tus calificaciones.`
     : 'Motivo calculado con tus calificaciones y los datos de TMDB.';
@@ -75,14 +76,25 @@ function GeneratedList({ result, catalogIds, addingId, saving, regenerating, onA
             {saving && <IconSpinner />}
             {saving ? 'Guardando…' : 'Guardar como lista'}
           </button>
-          <button className="btn btn--ghost btn--lg" onClick={onRegenerate} disabled={regenerating}>
-            {regenerating && <IconSpinner />}
-            {regenerating ? 'Armando…' : 'Otra versión'}
+          <button className="btn btn--ghost btn--lg" onClick={onRegenerate} disabled={busy !== null}>
+            {busy === 'refresh' && <IconSpinner />}
+            {busy === 'refresh' ? 'Armando…' : 'Otra versión'}
           </button>
         </div>
+        {result.chips?.length > 0 && (
+          <p className="tonight__understood generated__understood">
+            <span className="tonight__understood-label">Entendí</span>
+            {result.chips.map((c) => <span key={c} className="tonight__chip">{c}</span>)}
+          </p>
+        )}
         <p className="generated__hint">Guardarla agrega a tu catálogo, como pendientes, los títulos que aún no tienes.</p>
       </header>
 
+      {refining && (
+        <p className="tonight__refining tonight__refining--page" role="status">
+          <IconSpinner /> La IA está eligiendo y explicando los mejores de tu estilo; mientras tanto, estos son los de las reglas.
+        </p>
+      )}
       {note && <p className="rail__note" role="status">{note}</p>}
 
       <motion.div className="fixture-grid" variants={gridVariants} initial="hidden" animate="visible">
@@ -95,6 +107,9 @@ function GeneratedList({ result, catalogIds, addingId, saving, regenerating, onA
               explanation={item.reason}
               explanationSource={source}
               reasonVisible
+              providers={item.providers}
+              onMine={item.onMine}
+              onTrailer={onTrailer}
               adding={addingId === item.tmdb_id}
               onAdd={onAdd}
               onDismiss={onDismiss}
@@ -103,6 +118,14 @@ function GeneratedList({ result, catalogIds, addingId, saving, regenerating, onA
           ))}
         </AnimatePresence>
       </motion.div>
+
+      <div className="tonight__more">
+        <button className="btn btn--ghost btn--lg" onClick={onMore} disabled={busy !== null}>
+          {busy === 'more' && <IconSpinner />}
+          {busy === 'more' ? 'Buscando…' : 'Ver 10 más'}
+        </button>
+        <span className="tonight__count">{count} títulos · cada vez que pides más, son otros</span>
+      </div>
     </motion.div>
   );
 }
@@ -124,7 +147,12 @@ export default function Discover() {
   const [type,      setType]      = useState('movie');
   const [mods,      setMods]      = useState([]);
   const [result,    setResult]    = useState(null);
-  const [busy,      setBusy]      = useState(null); // 'generate' | 'refresh' | null
+  const [busy,      setBusy]      = useState(null); // 'generate' | 'refresh' | 'more' | null
+  const [request,   setRequest]   = useState('');
+  const [shownKeys, setShownKeys] = useState([]);
+  const [trailer,   setTrailer]   = useState(null);
+  const [refining,  setRefining]  = useState(false);
+  const listRequest = useRef(0); // the newest request wins
   const [genError,  setGenError]  = useState(null);
   const [addingId,  setAddingId]  = useState(null);
   const [saving,    setSaving]    = useState(false);
@@ -174,16 +202,62 @@ export default function Discover() {
     });
   }
 
-  async function generate({ refresh = false } = {}) {
+  // 'new': a fresh list; 'refresh' ("Otra versión"): a new list without the one on screen;
+  // 'more' ("Ver 10 más"): ten more, never repeating anything shown for this list
+  // Two answers per request: the rules' list at once, then (with an AI key) the
+  // AI's, which replaces it (or, for "Ver 10 más", the ten just added).
+  async function generate(mode = 'new') {
     if (!style) return;
-    setBusy(refresh ? 'refresh' : 'generate');
+    const id = ++listRequest.current;
+    setBusy(mode === 'new' ? 'generate' : mode);
+    setRefining(false);
     setGenError(null);
+    const onScreen = (result?.items ?? []).map((i) => `${i.type}:${i.tmdb_id}`);
+    const exclude = mode === 'more' ? shownKeys : mode === 'refresh' ? onScreen : [];
+    const appending = mode === 'more' && result?.reason === 'ok';
+    const kept = appending ? result.items.length : 0;
+    const params = { styleId: style.id, type, modifiers: mods, request, exclude };
+    const keysOf = (r) => (r.items ?? []).map((i) => `${i.type}:${i.tmdb_id}`);
+    const show = (next, phase) => {
+      if (appending) {
+        setResult((prev) => ({
+          ...prev,
+          ...(phase === 'ai' ? { source: next.source, provider: next.provider, fallbackReason: next.fallbackReason, provisional: false } : {}),
+          items: [...prev.items.slice(0, kept), ...(next.items ?? [])],
+        }));
+      } else {
+        setResult(next);
+      }
+      setShownKeys((prev) => [...new Set([...(mode === 'new' && phase === 'fast' ? [] : prev), ...exclude, ...keysOf(next)])]);
+    };
+
+    let first;
     try {
-      setResult(unwrap(await window.electronAPI.generateDiscoverList({ styleId: style.id, type, modifiers: mods }, { refresh })));
+      first = unwrap(await window.electronAPI.generateDiscoverList(params, { refresh: mode !== 'new', fast: true }));
+      if (id !== listRequest.current) return;
+      if (appending && keysOf(first).length === 0) {
+        showToast({ message: 'No encontramos más títulos con esa combinación. Prueba otro estilo o quita algún ajuste.' });
+        return;
+      }
+      show(first, 'fast');
     } catch (err) {
-      setGenError(err.message);
+      if (id === listRequest.current) setGenError(err.message);
+      return;
     } finally {
-      setBusy(null);
+      if (id === listRequest.current) setBusy(null);
+    }
+    if (!first.aiAvailable || first.reason !== 'ok') return;
+
+    setRefining(true);
+    try {
+      const better = unwrap(await window.electronAPI.generateDiscoverList(params, { refresh: mode !== 'new' }));
+      if (id !== listRequest.current) return;
+      if (better.reason === 'ok' && better.source === 'ai') show(better, 'ai');
+      else setResult((prev) => ({ ...prev, provisional: false, provider: better.provider, fallbackReason: better.fallbackReason ?? 'empty-ai-response' }));
+    } catch {
+      if (id === listRequest.current) setResult((prev) => ({ ...prev, provisional: false, fallbackReason: 'api-error' }));
+    } finally {
+      if (id === listRequest.current) setRefining(false);
     }
   }
 
@@ -333,6 +407,17 @@ export default function Discover() {
                   )}
                 </div>
 
+                <form className="discover-controls__request" onSubmit={(e) => { e.preventDefault(); generate(); }}>
+                  <label htmlFor="discover-request" className="sr-only">Afina la lista con tus palabras</label>
+                  <input
+                    id="discover-request"
+                    value={request}
+                    maxLength={300}
+                    onChange={(e) => setRequest(e.target.value)}
+                    placeholder="Afínala con tus palabras (opcional): con giros, coreanas, de los 80, como Seven…"
+                  />
+                </form>
+
                 <button className="btn btn--primary btn--lg discover-controls__go" onClick={() => generate()} disabled={busy !== null || !style}>
                   {busy === 'generate' && <IconSpinner />}
                   {busy === 'generate' ? 'Armando…' : 'Armar lista'}
@@ -360,11 +445,14 @@ export default function Discover() {
                   catalogIds={catalogIds}
                   addingId={addingId}
                   saving={saving}
-                  regenerating={busy === 'refresh'}
+                  busy={busy}
+                  refining={refining}
                   onAdd={addOne}
                   onDismiss={dismissOne}
                   onSave={saveList}
-                  onRegenerate={() => generate({ refresh: true })}
+                  onRegenerate={() => generate('refresh')}
+                  onMore={() => generate('more')}
+                  onTrailer={(item) => setTrailer({ tmdbId: item.tmdb_id, type: item.type, title: item.title })}
                   onOpen={openTitle}
                 />
               )}
@@ -374,6 +462,14 @@ export default function Discover() {
       )}
 
       {!error && <DescribeSearch catalogIds={catalogIds} addingId={addingId} onAdd={addOne} onOpen={openTitle} />}
+
+      <TrailerModal
+        open={trailer !== null}
+        onClose={() => setTrailer(null)}
+        tmdbId={trailer?.tmdbId}
+        type={trailer?.type}
+        title={trailer?.title ?? ''}
+      />
     </main>
   );
 }

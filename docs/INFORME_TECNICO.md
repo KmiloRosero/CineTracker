@@ -218,6 +218,7 @@ Migraciones:
 | 6 | Progreso por episodio (`episode_progress`). |
 | 7 | Personas y géneros seguidos (`follows`). |
 | 8 | Retos anuales (`challenges`). |
+| 9 | Historial de sugerencias (`suggestion_log`), para no repetir. |
 
 Los géneros se guardan con su nombre en inglés de TMDB, obtenido a partir del identificador del género. Así los datos son estables aunque los metadatos se pidan en español, y la interfaz los traduce al mostrarlos. Los géneros combinados de series (por ejemplo "Sci-Fi & Fantasy") se separan en sus equivalentes de película para que las estadísticas cuenten películas y series juntas.
 
@@ -313,8 +314,12 @@ Todas las funciones con IA pasan por `aiClient` (Gemini, o Claude si solo hay es
 
 ### 4.9 Descubrir
 
-- **Listas por estilo** (`discoveryService`): los candidatos salen siempre de TMDB: las recomendaciones de los mejores títulos del usuario en ese estilo y `/discover` con sus géneros. Los ajustes se traducen a filtros de TMDB (duración, votos, fechas, géneros excluidos, proveedores en Colombia). Se excluye lo que ya está en el catálogo, lo descartado, lo no traducido, lo adulto y lo no estrenado. Los 30 mejores, ordenados por reglas, van al modelo, que elige hasta 10 por su `tmdb_id` y explica cada uno; si devuelve menos de 3 válidos, quedan los de las reglas con un motivo calculado ("TMDB la recomienda a quien disfrutó…").
-- **¿Qué veo esta noche?** (`tonightService`): mezcla pendientes (y series a medias) con títulos nuevos; con "Ambos" siempre incluye al menos uno de cada origen. El respaldo entiende palabras de ánimo en español y límites de tiempo escritos ("90 minutos", "dos horas").
+- **Leer el pedido** (`intentService`): convierte lo que escribe la persona en filtros de TMDB: géneros pedidos y rechazados ("nada de terror"), temas (keywords de TMDB buscadas por nombre, nunca ids escritos en el código), década o año, idioma o país, duración, película o serie y títulos nombrados como modelo ("como Interstellar"), que se verifican en TMDB. Con IA, la misma llamada propone además hasta 12 títulos concretos con su motivo; sin IA, reglas en español leen lo mismo.
+- **Motor de candidatas** (`candidateEngine`): junta títulos de varias fuentes (los propuestos por la IA, los que comparten temas y géneros con el título nombrado, recomendaciones de 4 títulos favoritos elegidos al azar y `/discover` por popularidad y por nota en una página fija y otra variable). Filtra calidad con la nota ponderada de IMDb (`v/(v+m)·R + m/(v+m)·C`) y un piso de nota real, deja fuera documentales y especiales de TV no pedidos y deja un solo título por saga. Puntúa por lo pedido, el gusto y la nota; baja lo sugerido en los últimos días (`suggestion_log`, migración 9) y suma un poco de azar, para que pedir de nuevo traiga otras opciones. Los títulos sin traducción se muestran con su nombre en inglés.
+- **Listas por estilo** (`discoveryService`): el estilo fija los géneros y el texto opcional los afina. La IA elige 10 de las 40 mejores candidatas y explica cada una; "Ver 10 más" y "Otra versión" envían lo que ya está en pantalla para excluirlo.
+- **¿Qué veo esta noche?** (`tonightService`): hasta 9 opciones entre pendientes (que deben compartir lo pedido) y títulos nuevos; con "Ambos" incluye al menos uno de cada origen. Cada opción trae sus plataformas en Colombia y si son del usuario.
+- **Rapidez:** cada pedido se responde dos veces. Primero solo con reglas (alrededor de 1 segundo) y después, con IA, en una sola llamada al modelo; la interfaz reemplaza las opciones cuando llega la segunda respuesta y descarta las respuestas de pedidos viejos.
+- **Cuota gratuita de Gemini:** el plan gratuito permite 20 pedidos al día por modelo. `aiClient` recorre una cadena de modelos (`gemini-3.8-flash`, `3.6-flash`, `3.5-flash`, `3.5-flash-lite`, configurable con `GEMINI_FALLBACK_MODELS`) y recuerda hasta cuándo está agotado o saturado cada uno (429 con su `retryDelay`, 503, 404, demora), sin probar otros modelos cuando la clave misma es rechazada.
 - **Buscar por descripción** (`describeSearchService`): el modelo propone títulos y años; cada uno se verifica con la búsqueda de TMDB y se descarta si no existe.
 
 ### 4.10 Perfil, año y análisis por título
@@ -369,9 +374,9 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 
 ## 6. Pruebas
 
-`npm test` ejecuta **215 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
+`npm test` ejecuta **238 pruebas automáticas** con Vitest, sobre el Node de Electron para que el módulo nativo de SQLite coincida.
 
-**Backend (188 pruebas, `backend/tests/`), sobre bases de datos temporales:**
+**Backend (211 pruebas, `backend/tests/`), sobre bases de datos temporales:**
 
 - **Migraciones:** bases nuevas, actualización de bases anteriores a las cuentas, copias de seguridad e idempotencia.
 - **Autenticación y perfil:** registro, inicio de sesión, cambio de contraseña, fotos, eliminación de la cuenta en cascada.
@@ -403,7 +408,7 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 215 pruebas. |
+| `npm test` | Las 238 pruebas. |
 | `npm run typecheck` | Verificación de TypeScript. |
 | `npm run dist:win:public` | `CineTracker-Setup-1.1.1.exe` y `CineTracker-Portable-1.1.1.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |

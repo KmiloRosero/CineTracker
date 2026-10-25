@@ -75,4 +75,27 @@ async function getAvailability(userId, { tmdb = tmdbService } = {}) {
   return { platforms, available, checked: titles.length, failed };
 }
 
-module.exports = { getPlatforms, getPlatformIds, setPlatforms, getAvailability, mapLimit };
+/**
+ * Adds where each item can be watched (subscription or free, Colombia):
+ * `providers` (up to 3, the user's own first) and `onMine` when one of them
+ * is the user's. Items need tmdb_id and type; lookups that fail are skipped.
+ */
+async function attachProviders(items, mine = [], { tmdb = tmdbService } = {}) {
+  const own = new Set(mine);
+  return mapLimit(items, CONCURRENCY, async (item) => {
+    if (item?.tmdb_id == null || (item.type !== 'movie' && item.type !== 'series')) return { ...item, providers: [], onMine: false };
+    try {
+      const { groups } = await tmdb.getWatchProviders(item.tmdb_id, item.type, item.title ?? '');
+      const list = INCLUDED_GROUPS.flatMap((g) => groups[g] ?? []);
+      const unique = list.filter((p, i) => list.findIndex((q) => q.id === p.id) === i)
+        .sort((a, b) => Number(own.has(b.id)) - Number(own.has(a.id)))
+        .slice(0, 3)
+        .map((p) => ({ id: p.id, name: p.name, logo_path: p.logo_path ?? null, url: p.url ?? null }));
+      return { ...item, providers: unique, onMine: unique.some((p) => own.has(p.id)) };
+    } catch {
+      return { ...item, providers: [], onMine: false };
+    }
+  });
+}
+
+module.exports = { getPlatforms, getPlatformIds, setPlatforms, getAvailability, attachProviders, mapLimit };

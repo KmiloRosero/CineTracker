@@ -191,19 +191,30 @@ Las listas que guardas desde **Descubrir** conservan su presentación y el motiv
 
 ### ¿Qué veo esta noche?
 
-1. Escribe cómo estás y cuánto tiempo tienes, por ejemplo "algo ligero, 90 minutos, estoy cansado", o elige una de las ideas de abajo.
+1. Escribe con tus palabras qué tienes ganas de ver. Puedes combinar todo lo que quieras:
+   - un ánimo o un género: "algo ligero, estoy cansado", "terror que de verdad dé miedo";
+   - un título como modelo: "algo como Interstellar pero más corto";
+   - un tema: "de robos", "basada en hechos reales", "con giros", "de zombis";
+   - una época, un país o un idioma: "un clásico de los 80", "thriller coreano";
+   - lo que no quieres: "nada de terror", "que no sea de acción";
+   - con quién: "para ver con mi novia", "con los niños".
 2. Elige el **Tiempo** (sin límite, hasta 90 min, hasta 2 h o un episodio) y **De dónde**: tus pendientes, algo nuevo o ambos. Si tienes plataformas, puedes marcar **Solo en mis plataformas**.
-3. Haz clic en **Elige por mí**. Recibes tres opciones con el motivo de cada una; **Otras tres** pide otras.
+3. Haz clic en **Elige por mí** (o Enter). En un segundo ves las primeras opciones; con una clave de Gemini, la IA las afina mientras tanto y las reemplaza cuando termina (unos segundos).
 
-Sin clave de Gemini, la aplicación entiende palabras como "miedo", "reír", "llorar", "pareja" o "90 minutos" y elige según tus géneros favoritos.
+Arriba ves lo que entendió ("Entendí: Suspenso · Giros inesperados · Coreana"). Cada opción trae su motivo, **en qué plataformas está** (dice **En tus plataformas** si es una de las tuyas, y un clic en el logo abre el servicio) y el botón **Tráiler**. Hay hasta 9 opciones: **Ver 3 más** muestra las siguientes y **Otras opciones** busca otras distintas; nunca te repite las que ya te mostró en esa búsqueda, y lo que te sugirió en los últimos días baja en la lista.
+
+Sin clave de Gemini, la aplicación entiende esas mismas palabras con reglas y elige entre títulos bien calificados de TMDB.
 
 ### Listas para ti
 
 1. Elige un **estilo**: la aplicación los detecta en lo que ves (por ejemplo "Terror · 14 vistos · media 8,5", "Terror y misterio", "Cine de los 90" o "Lo mejor de tu gusto").
 2. Elige **Películas** o **Series** y, si quieres, ajústala: **Más oscuro**, **Más corto**, **Menos conocido**, **Reciente**, **Clásico** o **En mis plataformas**.
-3. Haz clic en **Armar lista**. Recibes hasta 10 títulos que aún no tienes, cada uno con su motivo, por ejemplo: "Como te encantó Hereditary, esta tiene el mismo terror lento y familiar".
+3. Si quieres, afínala con tus palabras en el campo de al lado: "coreanas con giros", "de los 80", "como Seven".
+4. Haz clic en **Armar lista**. Recibes 10 títulos que aún no tienes, bien calificados, cada uno con su motivo, por ejemplo: "Como te encantó Hereditary, esta tiene el mismo terror lento y familiar". Con Gemini, la IA afina la lista unos segundos después.
 
-En cada título puedes **Agregar** (queda como pendiente) o decir **No me interesa** (no se volverá a sugerir; el aviso tiene **Deshacer**). **Guardar como lista** crea la lista con todos y agrega a tu catálogo, como pendientes, los que no tenías. **Otra versión** arma una nueva.
+En cada título puedes **Agregar** (queda como pendiente), ver el **Tráiler**, ver en qué plataformas está o decir **No me interesa** (no se volverá a sugerir; el aviso tiene **Deshacer**). **Ver 10 más** agrega otros diez distintos, **Otra versión** arma una nueva sin los que ves, y **Guardar como lista** crea la lista con todos y agrega a tu catálogo, como pendientes, los que no tenías.
+
+**Sobre la clave gratuita de Gemini:** el plan gratuito permite unos 20 pedidos al día por modelo. La aplicación pasa sola a otro modelo de Gemini cuando uno se agota o está saturado; si se agotan todos, sigue funcionando con reglas y te lo dice.
 
 ### ¿Cuál era esa película?
 

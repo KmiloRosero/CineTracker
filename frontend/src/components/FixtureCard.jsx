@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import ScoreBug from './ScoreBug';
 import { cardVariants } from './cardAnimations';
 import { tmdbImage } from '../utils/tmdbImage';
+import { IconPlay } from './Icons';
 import { STATUS_LABEL, typeLabel } from '../utils/labels';
 
 function IconPlus() {
@@ -29,10 +30,12 @@ function IconPoster() {
  * ({ text, tone: 'here' | 'next' | 'soon' }), `dateLine` gives a release date
  * and `current` frames the title being viewed. `reasonVisible` prints the
  * explanation open (generated lists, where the reason is the point) and
- * `onDismiss` adds a "No me interesa" control. A TMDB title that is not in
+ * `onDismiss` adds a "No me interesa" control, `onTrailer` a trailer button,
+ * and `providers` ([{ id, name, logo_path, url }], `onMine`) where to watch
+ * it in one look. A TMDB title that is not in
  * the catalog opens its preview page, so it can be read before adding it.
  */
-export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, reasonVisible = false, adding, onOpen, onAdd, onDismiss, order, tag, dateLine, current = false }) {
+export default function FixtureCard({ title, item, catalogId, explanation, explanationSource, reasonVisible = false, adding, onOpen, onAdd, onDismiss, onTrailer, providers, onMine = false, order, tag, dateLine, current = false }) {
   const navigate = useNavigate();
   const [whyOpen, setWhyOpen] = useState(false);
   const source  = title ?? item;
@@ -73,6 +76,25 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
         </h3>
         {meta.length > 0 && <p className="fixture__meta">{meta.join(' · ')}</p>}
         {dateLine && <p className="fixture__date">{dateLine}</p>}
+        {providers?.length > 0 && (
+          <div className={`fixture__providers${onMine ? ' is-mine' : ''}`}>
+            <span className="fixture__providers-label">{onMine ? 'En tus plataformas' : 'Dónde verla'}</span>
+            {providers.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className="fixture__provider"
+                title={`Abrir en ${p.name}`}
+                aria-label={`Ver ${source.title} en ${p.name}`}
+                disabled={!p.url}
+                onClick={(e) => { e.stopPropagation(); if (p.url) window.electronAPI.openWatchLink(p.url); }}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                {p.logo_path ? <img src={tmdbImage(p.logo_path, 'w92')} alt="" /> : <span>{p.name.charAt(0)}</span>}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="fixture__scoreline">
           {title && (
@@ -90,6 +112,17 @@ export default function FixtureCard({ title, item, catalogId, explanation, expla
               aria-label={`Agregar ${source.title} a tu catálogo`}
             >
               <IconPlus /> {adding ? 'Agregando…' : 'Agregar'}
+            </button>
+          )}
+          {onTrailer && (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm fixture__trailer"
+              onClick={(e) => { e.stopPropagation(); onTrailer(source); }}
+              onKeyDown={(e) => e.stopPropagation()}
+              aria-label={`Ver el tráiler de ${source.title}`}
+            >
+              <IconPlay size={12} /> Tráiler
             </button>
           )}
           {onDismiss && !title && !catalogId && (

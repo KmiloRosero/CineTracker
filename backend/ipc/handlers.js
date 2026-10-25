@@ -119,7 +119,7 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('discover:getStyles', readable((userId) =>
     discoveryService.getStyles(userId, { platforms: platformService.getPlatformIds(userId) }), { styles: [], modifiers: [], counts: null }));
   ipcMain.handle('discover:generate',  authed((userId, params, options) =>
-    discoveryService.generateList(userId, params ?? {}, { refresh: options?.refresh === true, platforms: platformService.getPlatformIds(userId) })));
+    discoveryService.generateList(userId, params ?? {}, { refresh: options?.refresh === true, fast: options?.fast === true, platforms: platformService.getPlatformIds(userId) })));
   ipcMain.handle('discover:save',         authed((userId, payload)        => discoveryService.saveList(userId, payload ?? {})));
   ipcMain.handle('discover:dismiss',      authed((userId, item)           => discoveryService.dismiss(userId, item ?? {})));
   ipcMain.handle('discover:undismiss',    authed((userId, tmdbId, type)   => discoveryService.undismiss(userId, tmdbId, type)));
@@ -129,7 +129,7 @@ function registerIpcHandlers(ipcMain) {
     const availableIds = input?.platformsOnly && platforms.length
       ? new Set(Object.keys((await platformService.getAvailability(userId)).available).map(Number))
       : null;
-    return tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true, platforms, availableIds });
+    return tonightService.pickTonight(userId, input ?? {}, { refresh: options?.refresh === true, fast: options?.fast === true, platforms, availableIds });
   }));
 
   // ── Estrenos y seguidos ───────────────────────────────────────────────────

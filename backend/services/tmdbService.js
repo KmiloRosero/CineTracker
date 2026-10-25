@@ -392,12 +392,23 @@ async function getTitleRecommendations(tmdbId, type) {
   });
 }
 
+/** The keyword ids TMDB gives a title (its topics: "space travel", "wormhole"…), most specific first. */
+async function getKeywords(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  requireType(type);
+  const endpoint = type === 'movie' ? `/movie/${Number(tmdbId)}/keywords` : `/tv/${Number(tmdbId)}/keywords`;
+  return cachedList(`kw:${endpoint}`, async () => {
+    const data = await tmdbFetch(endpoint, {}, 'en-US');
+    return (data.keywords ?? data.results ?? []).filter((k) => Number.isInteger(k?.id)).map((k) => k.id);
+  });
+}
+
 // Discover filters the caller may set; anything else is dropped.
 const DISCOVER_PARAMS = new Set([
   'with_genres', 'without_genres', 'sort_by', 'vote_count.gte', 'vote_count.lte', 'vote_average.gte',
   'with_runtime.gte', 'with_runtime.lte', 'primary_release_date.gte', 'primary_release_date.lte',
   'first_air_date.gte', 'first_air_date.lte', 'with_watch_providers', 'with_watch_monetization_types',
-  'watch_region', 'with_original_language', 'page',
+  'watch_region', 'with_original_language', 'with_origin_country', 'with_keywords', 'without_keywords', 'page',
 ]);
 
 /** /discover for movies or series with the given filters, as candidates. */
@@ -411,6 +422,33 @@ async function discover(type, params = {}) {
     const data = await tmdbFetch(endpoint, { include_adult: false, page: 1, ...clean });
     return (data.results ?? []).map((r) => normalizeCandidate(r, type));
   });
+}
+
+/**
+ * The TMDB keyword id for an English topic ("heist", "time travel"), or null.
+ * Ids are looked up, never hardcoded: TMDB keywords are a living list.
+ */
+async function searchKeyword(topic) {
+  if (typeof topic !== 'string' || !topic.trim()) return null;
+  const query = topic.trim().toLowerCase().slice(0, 60);
+  const items = await cachedList(`keyword:${query}`, async () => {
+    const data = await tmdbFetch('/search/keyword', { query, page: 1 }, 'en-US');
+    return (data.results ?? []).filter((k) => Number.isInteger(k?.id) && k.name).map((k) => ({ id: k.id, name: String(k.name).toLowerCase() }));
+  });
+  const exact = items.find((k) => k.name === query);
+  return (exact ?? items[0])?.id ?? null;
+}
+
+/** The English title of a movie or series, for titles TMDB has not translated to Spanish. */
+async function getEnglishTitle(tmdbId, type) {
+  validateId(tmdbId, 'El id de TMDB');
+  requireType(type);
+  const endpoint = type === 'movie' ? `/movie/${Number(tmdbId)}` : `/tv/${Number(tmdbId)}`;
+  const [hit] = await cachedList(`en-title:${endpoint}`, async () => {
+    const data = await tmdbFetch(endpoint, {}, 'en-US');
+    return [data.title ?? data.name ?? null];
+  });
+  return hit;
 }
 
 /** Search one kind of title by name, optionally by year, as candidates. */
@@ -604,6 +642,6 @@ async function getTrending(limit = 12) {
 }
 
 module.exports = {
-  search, searchTyped, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
-  getTitleRecommendations, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, findByImdb, ping, WATCH_REGION, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
+  search, searchTyped, searchKeyword, getEnglishTitle, getDetails, getTrending, getTrailer, getRelated, getWatchProviders,
+  getTitleRecommendations, getKeywords, discover, getProviderCatalog, getSeason, getSeriesStatus, getCredits, getPersonUpcoming, findByImdb, ping, WATCH_REGION, clearTrailerCache, normalizeDetails, readableInSpanish, YOUTUBE_ID,
 };

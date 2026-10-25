@@ -23,7 +23,8 @@ beforeAll(async () => {
   };
 });
 afterAll(() => env.cleanup());
-beforeEach(() => clearCache());
+const { resetModelChain } = require('../services/aiClient.js');
+beforeEach(() => { clearCache(); resetModelChain(); });
 afterEach(() => {
   process.env.GEMINI_API_KEY = '';
   process.env.ANTHROPIC_API_KEY = '';
@@ -231,5 +232,34 @@ describe('without any AI key', () => {
       title: 'Thief',
       explanation: 'Coincide con Crimen, un género que calificaste con 8 o más.',
     });
+  });
+});
+
+describe('Gemini model chain', () => {
+  beforeEach(() => { process.env.GEMINI_API_KEY = 'gemini-test-key-not-real'; });
+
+  it('moves to the next model when one is out of quota, and skips it while benched', async () => {
+    const quota = JSON.stringify({ error: { code: 429, details: [{ retryDelay: '3600s' }] } }).replace('"retryDelay":"3600s"', '"retryDelay": "3600s"');
+    const ok = geminiBody({ recommendations: [{ title_id: ids.dune, reason: 'Because Arrival.' }] });
+    const fetch = vi.fn(async (url) => (url.includes(`/${GEMINI_MODEL}:`)
+      ? new Response(quota, { status: 429 })
+      : new Response(JSON.stringify(ok), { status: 200 })));
+    const first = await getAIRecommendations(user.id, { fetch });
+    expect(first).toMatchObject({ source: 'ai' });
+    expect(fetch.mock.calls.map(([u]) => u.match(/models\/([^:]+)/)[1])).toEqual([GEMINI_MODEL, 'gemini-3.6-flash']);
+
+    clearCache();
+    await getAIRecommendations(user.id, { fetch, refresh: true });
+    expect(fetch.mock.calls.at(-1)[0]).toContain('/gemini-3.6-flash:'); // the benched model is not asked again
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not try other models when the key itself is rejected', async () => {
+    const spy = quiet();
+    const fetch = fakeFetch({ status: 401, body: { error: { code: 401 } } });
+    const r = await getAIRecommendations(user.id, { fetch });
+    spy.mockRestore();
+    expect(r.fallbackReason).toBe('invalid-api-key');
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

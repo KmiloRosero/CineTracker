@@ -12,6 +12,12 @@ const { getEnv } = require('../utils/env.js');
 // its key is set) or Claude (when only an Anthropic key is set). Callers own
 // their prompt, schema, validation and rule-based fallback.
 const GEMINI_MODEL = 'gemini-3.8-flash'; // override with GEMINI_MODEL in backend/.env
+// Free-tier quotas are per model (20 requests a day each at the time of writing), and a model can be
+// overloaded while others answer: when one is out of quota, overloaded or slow, the next is tried.
+// GEMINI_FALLBACK_MODELS (comma separated) overrides the list.
+const GEMINI_FALLBACK_MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+const MAX_MODEL_TRIES = 3;
+const FALLBACK_TIMEOUT_MS = 15000;
 const GEMINI_URL   = 'https://generativelanguage.googleapis.com/v1beta/models';
 const CLAUDE_MODEL = 'claude-opus-5-5'; // override with CLAUDE_MODEL in backend/.env
 const TIMEOUT_MS   = 30000;
@@ -37,8 +43,8 @@ function classifyGeminiStatus(status, body) {
   return 'api-error';
 }
 
-async function askGemini(apiKey, { system, prompt, schema, maxTokens }, fetchImpl = fetch) {
-  const model = getEnv('GEMINI_MODEL') ?? GEMINI_MODEL;
+async function askGemini(apiKey, { system, prompt, schema, maxTokens }, fetchImpl = fetch, modelOverride = null, timeoutMs = TIMEOUT_MS) {
+  const model = modelOverride ?? getEnv('GEMINI_MODEL') ?? GEMINI_MODEL;
   let res;
   try {
     res = await fetchImpl(`${GEMINI_URL}/${encodeURIComponent(model)}:generateContent`, {
@@ -54,15 +60,20 @@ async function askGemini(apiKey, { system, prompt, schema, maxTokens }, fetchImp
           thinkingConfig: { thinkingLevel: 'low' },
         },
       }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
-    throw new AIUnavailable('offline', err?.message); // network failure or timeout
+    const failure = new AIUnavailable('offline', err?.message); // network failure or timeout
+    failure.timedOut = err?.name === 'TimeoutError';
+    throw failure;
   }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new AIUnavailable(classifyGeminiStatus(res.status, body), `HTTP ${res.status}: ${body.slice(0, 200)}`);
+    const failure = new AIUnavailable(classifyGeminiStatus(res.status, body), `HTTP ${res.status}: ${body.slice(0, 200)}`);
+    failure.status = res.status;
+    failure.retrySeconds = Number(body.match(/"retryDelay":\s*"(\d+)s"/)?.[1]) || null;
+    throw failure;
   }
 
   let data;
@@ -120,6 +131,50 @@ async function askClaude(apiKey, { system, prompt, schema, maxTokens }, sdk) {
   return response.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
 }
 
+// ── Gemini model chain ───────────────────────────────────────────────────────
+
+const benched = new Map(); // model -> time (ms) until which it is skipped
+
+function geminiChain() {
+  const main = getEnv('GEMINI_MODEL') ?? GEMINI_MODEL;
+  const configured = getEnv('GEMINI_FALLBACK_MODELS');
+  const fallbacks = configured ? configured.split(',').map((m) => m.trim()).filter(Boolean) : GEMINI_FALLBACK_MODELS;
+  return [...new Set([main, ...fallbacks])];
+}
+
+/** How long to skip a model after a failure that is about that model, or null to stop trying. */
+function benchFor(err) {
+  if (!(err instanceof AIUnavailable)) return null;
+  if (err.status === 429) return (err.retrySeconds ?? 60) * 1000;   // out of quota until it resets
+  if (err.status === 503) return 60 * 1000;                         // overloaded
+  if (err.status === 404) return 24 * 60 * 60 * 1000;               // model not offered to this key
+  if (err.timedOut) return 2 * 60 * 1000;                            // too slow right now
+  return null;                                                       // bad key, refusal, offline: same for every model
+}
+
+/** Asks the first Gemini model that is not benched; moves down the chain when one is out of quota, overloaded or slow. */
+async function askGeminiChain(apiKey, spec, fetchImpl) {
+  const now = Date.now();
+  const ready = geminiChain().filter((m) => (benched.get(m) ?? 0) <= now);
+  const models = (ready.length ? ready : geminiChain().slice(0, 1)).slice(0, MAX_MODEL_TRIES);
+  let lastError;
+  for (const [i, model] of models.entries()) {
+    try {
+      return await askGemini(apiKey, spec, fetchImpl, model, i === 0 ? TIMEOUT_MS : FALLBACK_TIMEOUT_MS);
+    } catch (err) {
+      const bench = benchFor(err);
+      if (bench === null) throw err;
+      benched.set(model, Date.now() + bench);
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+function resetModelChain() {
+  benched.clear();
+}
+
 // ── Shared flow ──────────────────────────────────────────────────────────────
 
 /** Gemini when its key is set, otherwise Claude, otherwise none. */
@@ -142,7 +197,7 @@ async function askJSON(request, options = {}) {
   if (!picked) throw new AIUnavailable('no-api-key');
   const spec = { maxTokens: 4000, ...request };
   const text = picked.provider === 'gemini'
-    ? await askGemini(picked.apiKey, spec, options.fetch)
+    ? await askGeminiChain(picked.apiKey, spec, options.fetch)
     : await askClaude(picked.apiKey, spec, options.sdk);
   try {
     return JSON.parse(text);
@@ -202,5 +257,5 @@ function cleanText(value, max = 300) {
 
 module.exports = {
   AIUnavailable, askJSON, tryAskJSON, pickProvider, pingGemini, cleanText,
-  GEMINI_MODEL, CLAUDE_MODEL, PROVIDER_NAME,
+  GEMINI_MODEL, GEMINI_FALLBACK_MODELS, CLAUDE_MODEL, PROVIDER_NAME, resetModelChain,
 };

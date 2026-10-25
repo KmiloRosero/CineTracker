@@ -235,6 +235,25 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 9,
+    name: 'suggestion history',
+    rebuildsTables: false,
+    up(db) {
+      // What Descubrir and the tonight picker already showed, so they do not repeat themselves.
+      db.exec(`
+        CREATE TABLE suggestion_log (
+          user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          type     TEXT NOT NULL CHECK(type IN ('movie', 'series')),
+          tmdb_id  INTEGER NOT NULL,
+          times    INTEGER NOT NULL DEFAULT 1,
+          shown_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (user_id, type, tmdb_id)
+        );
+        CREATE INDEX idx_suggestion_log_recent ON suggestion_log(user_id, shown_at);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

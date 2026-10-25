@@ -8,7 +8,7 @@ const { canonicalGenres, genreLabel } = require('../utils/genres.js');
 const WATCHED = new Set(['completed', 'watching', 'dropped']);
 const MAX_STYLES      = 8;
 const MIN_STYLE_TITLES = 2;
-const SEEDS_PER_STYLE = 5;
+const SEEDS_PER_STYLE = 10; // a varying handful of these is expanded each time
 
 /** Digest of the catalog fields that taste depends on; changes when a rating or status does. */
 function catalogSignature(titles) {

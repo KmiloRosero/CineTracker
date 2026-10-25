@@ -43,6 +43,9 @@ function fakeTmdb({ recs = {}, discover = [] } = {}) {
   return {
     getTitleRecommendations: vi.fn(async (id) => recs[id] ?? []),
     discover: vi.fn(async () => discover),
+    searchKeyword: vi.fn(async () => null),
+    searchTyped: vi.fn(async () => []),
+    getWatchProviders: vi.fn(async () => ({ groups: { flatrate: [{ id: 8, name: 'Netflix', logo_path: '/n.jpg' }], free: [] } })),
     getDetails: vi.fn(async (id, type) => ({
       tmdb_id: id, type, title: `Title ${id}`, overview: 'From TMDB', poster_path: `/p${id}.jpg`,
       release_year: 2020, runtime: 100, genres: ['Horror'], cast: [],
@@ -89,12 +92,13 @@ describe('generated lists', () => {
       },
       discover: [candidate(3, 'Talk to Me', { vote_average: 7.1 })],
     });
-    const result = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb });
+    const result = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb, random: () => 0 });
     expect(result).toMatchObject({ reason: 'ok', source: 'rule-based', fallbackReason: 'no-api-key' });
     expect(result.items.map((i) => i.title)).toEqual(['Midsommar', 'The Babadook', 'Talk to Me']);
-    expect(result.items[0].reason).toBe('TMDB la recomienda a quien disfrutó “Hereditary” y “The Witch”, que calificaste con 10 y 9.');
+    expect(result.items[0].reason).toBe('TMDB la recomienda a quien disfrutó “Hereditary” y “The Witch”, que calificaste con 10 y 9. Tiene 7 en TMDB con 900 votos.');
     expect(result.items[0].because).toEqual(['Hereditary', 'The Witch']);
-    expect(result.items[2].reason).toMatch(/de tus géneros favoritos y tiene 7.1 en TMDB/);
+    expect(result.items[2].reason).toBe('Es de terror, de tus géneros favoritos, y tiene 7,1 en TMDB con 900 votos.');
+    expect(result.items[0]).toMatchObject({ providers: [{ id: 8, name: 'Netflix' }], onMine: false });
     expect(result.name).toBe('Terror para ti');
   });
 
@@ -122,7 +126,7 @@ describe('generated lists', () => {
     expect(result.modifiers).toEqual(['classic', 'darker', 'shorter']); // the later of recent/classic wins, unknown ones go
     expect(tmdb.getTitleRecommendations).not.toHaveBeenCalled();
     const params = tmdb.discover.mock.calls[0][1];
-    expect(params).toMatchObject({ with_genres: '27', 'with_runtime.lte': 100, 'primary_release_date.lte': '1995-12-31', without_genres: '35,10751,16' });
+    expect(params).toMatchObject({ with_genres: '27', 'with_runtime.lte': 100, 'primary_release_date.lte': '1995-12-31', without_genres: '35,10751,16,99,10770' });
   });
 
   it('lets the AI choose among the candidates only and keeps its reasons', async () => {
@@ -165,9 +169,9 @@ describe('generated lists', () => {
     const tmdb = fakeTmdb({ discover: [candidate(1, 'Midsommar')] });
     await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb });
     await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb });
-    expect(tmdb.discover).toHaveBeenCalledTimes(2); // two pages, once
+    expect(tmdb.discover).toHaveBeenCalledTimes(4); // popular and top rated, two pages each, once
     await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb, refresh: true });
-    expect(tmdb.discover).toHaveBeenCalledTimes(4);
+    expect(tmdb.discover).toHaveBeenCalledTimes(8);
   });
 });
 
@@ -213,5 +217,50 @@ describe('saving a generated list', () => {
     expect(discoveryService.getDismissed(b.id)).toEqual([]);
     discoveryService.undismiss(a.id, 77, 'series');
     expect(discoveryService.getDismissed(a.id)).toEqual([]);
+  });
+});
+
+describe('variety', () => {
+  const name = (n) => `${['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliet', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo', 'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey', 'Xray', 'Yankee', 'Zulu'][n % 26]} ${'Story'.repeat(1 + Math.floor(n / 26))}`;
+  const many = (from, n, extra = {}) => Array.from({ length: n }, (_, i) => candidate(from + i, name(i), extra));
+
+  it('does not repeat what is on screen and pushes back what was shown before', async () => {
+    const user = await horrorFan();
+    const tmdb = fakeTmdb({ discover: many(1000, 25) });
+    const first = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb, random: () => 0 });
+    const firstIds = first.items.map((i) => i.tmdb_id);
+    expect(firstIds).toHaveLength(10);
+
+    // "Ver 10 más": what is on screen is left out
+    const more = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie', exclude: firstIds.map((id) => `movie:${id}`) }, { tmdb, random: () => 0, refresh: true });
+    expect(more.items.map((i) => i.tmdb_id).some((id) => firstIds.includes(id))).toBe(false);
+
+    // "Otra versión" without exclusions still moves away from what was just shown
+    const again = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb, random: () => 0, refresh: true });
+    const repeated = again.items.filter((i) => firstIds.includes(i.tmdb_id)).length;
+    expect(repeated).toBeLessThan(10);
+  });
+
+  it('leaves out weak titles with few votes', async () => {
+    const user = await horrorFan();
+    const tmdb = fakeTmdb({ discover: [
+      candidate(1, 'Good', { vote_average: 7.5, vote_count: 4000 }),
+      candidate(2, 'Bad', { vote_average: 4.9, vote_count: 4000 }),
+      candidate(3, 'Unknown', { vote_average: 9.5, vote_count: 3 }),
+    ] });
+    const result = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie' }, { tmdb });
+    expect(result.items.map((i) => i.title)).toEqual(['Good']);
+  });
+
+  it("narrows a style with the person's own words", async () => {
+    const user = await horrorFan();
+    const tmdb = fakeTmdb({ discover: many(2000, 5) });
+    tmdb.searchKeyword = vi.fn(async () => 9672);
+    const result = await discoveryService.generateList(user.id, { styleId: 'genre:Horror', type: 'movie', request: 'coreanas basadas en hechos reales de los 2000' }, { tmdb });
+    expect(result.chips).toEqual(['Hechos reales', 'Años 2000', 'Coreana']);
+    expect(tmdb.discover.mock.calls[0][1]).toMatchObject({
+      with_genres: '27', with_keywords: '9672', with_original_language: 'ko', with_origin_country: 'KR',
+      'primary_release_date.gte': '2000-01-01', 'primary_release_date.lte': '2009-12-31',
+    });
   });
 });
