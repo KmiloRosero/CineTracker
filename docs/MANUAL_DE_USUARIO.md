@@ -6,14 +6,18 @@ CineTracker es una aplicación de escritorio para llevar el registro de las pel�
 
 ## 1. Instalación
 
-Necesitas Windows 10 u 11 de 64 bits y conexión a internet para buscar títulos, ver tendencias y tráilers. Lo que ya está en tu catálogo, incluidos los pósters, funciona sin internet.
+CineTracker funciona en **Windows 10 u 11**, **macOS** (Intel o Apple Silicon) y **Linux** de 64 bits. Necesitas internet para buscar títulos, ver tendencias y tráilers; lo que ya está en tu catálogo, incluidos los pósters, funciona sin internet.
 
-Hay dos formas de usar la aplicación (las dos se descargan de la página de versiones en GitHub):
+Todo se descarga de la página de versiones del proyecto en GitHub:
 
-| Archivo | Para qué |
-|---|---|
-| `CineTracker-Setup-1.1.1.exe` | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
-| `CineTracker-Portable-1.1.1.exe` | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| Archivo | Sistema | Para qué |
+|---|---|---|
+| `CineTracker-Setup-1.2.0.exe` | Windows | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
+| `CineTracker-Portable-1.2.0.exe` | Windows | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
+| `CineTracker-1.2.0-mac-arm64.dmg` | macOS (Apple Silicon: M1, M2…) | Ábrelo y arrastra CineTracker a Aplicaciones. |
+| `CineTracker-1.2.0-mac-x64.dmg` | macOS (Intel) | Igual que el anterior. |
+| `CineTracker-1.2.0-linux-x86_64.AppImage` | Linux | Dale permiso de ejecución (`chmod +x CineTracker-*.AppImage`) y ábrelo. |
+| `SHA256SUMS.txt` | Todos | Sumas de verificación de cada archivo (ver más abajo). |
 
 La aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 11).
 
@@ -25,6 +29,22 @@ El instalador no tiene una firma digital comercial, así que Windows puede mostr
 2. Haz clic en **Ejecutar de todas formas**.
 
 Después sigue el asistente de instalación, que está en español. Puedes elegir la carpeta donde se instala.
+
+### Aviso de macOS ("no se puede abrir" o "está dañado")
+
+La aplicación no está notarizada por Apple, así que macOS la bloquea la primera vez:
+
+1. En Aplicaciones, haz clic derecho sobre **CineTracker** y elige **Abrir**; luego confirma **Abrir**. Desde ahí se abre normal.
+2. Si macOS dice que "está dañado", abre la Terminal y escribe `xattr -cr /Applications/CineTracker.app`; después ábrela de nuevo.
+
+### Comprobar que el archivo es el original
+
+Cada versión publica `SHA256SUMS.txt` con la "huella" de cada instalador. Para comprobar el tuyo:
+
+- **Windows (PowerShell):** `Get-FileHash .\CineTracker-Setup-1.2.0.exe` y compara el resultado con la línea del archivo.
+- **macOS y Linux:** `shasum -a 256 CineTracker-*` y compara.
+
+Si coinciden, el archivo es exactamente el que se publicó y nadie lo modificó.
 
 ---
 

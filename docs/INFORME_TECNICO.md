@@ -3,7 +3,7 @@
 **Proyecto final de Ingeniería de Software**
 Universidad Cooperativa de Colombia (UCC), sede Pasto
 Autor: Camilo Rosero
-Versión de la aplicación: 1.1.1
+Versión de la aplicación: 1.2.0
 
 ---
 
@@ -408,13 +408,25 @@ El reto cuenta títulos distintos terminados en el año (un registro completado,
 | Comando (en `frontend/`) | Resultado |
 |---|---|
 | `npm run dev` | Desarrollo con recarga en caliente. |
-| `npm test` | Las 238 pruebas. |
+| `npm test` | Las 239 pruebas. |
+| `npm run smoke` | Prueba de humo: abre la aplicación real con un perfil temporal, la base de datos (módulo nativo de SQLite) y la interfaz, y termina con código 0 si se dibujó sin errores en consola. |
 | `npm run typecheck` | Verificación de TypeScript. |
-| `npm run dist:win:public` | `CineTracker-Setup-1.1.1.exe` y `CineTracker-Portable-1.1.1.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
+| `npm run dist:win:public` | `CineTracker-Setup-1.2.0.exe` y `CineTracker-Portable-1.2.0.exe`: los que se publican. Llevan solo la clave de TMDB (generada por `scripts/public-env.cjs`), así que la app funciona apenas se instala sin exponer la cuota de Gemini. |
 | `npm run dist:win` | Los mismos ejecutables terminados en `-con-gemini`, con todas las claves de `backend/.env`. Solo para uso propio. |
 | `npm run dist:win:nokeys` | Los mismos ejecutables, terminados en `-sin-claves`, sin ninguna clave. |
 
-Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firma digital comercial, por lo que Windows SmartScreen muestra un aviso la primera vez (ver el manual de usuario).
+Los archivos se generan en `C:\CineTracker-release`.
+
+### 7.1 Integración continua en Windows, macOS y Linux
+
+`.github/workflows/ci.yml` corre en GitHub Actions:
+
+- **En cada cambio** (push o pull request), en Windows, macOS y Linux: instala dependencias (recompilando SQLite para Electron), ejecuta las pruebas, la verificación de TypeScript, el build y la prueba de humo de la aplicación real (en Linux con una pantalla virtual, `xvfb`).
+- **Al publicar una etiqueta de versión** (`v1.2.0`): genera los instaladores de los tres sistemas (`.exe` instalador y portátil, `.dmg` para Mac Intel y Apple Silicon, `.AppImage` para Linux), calcula `SHA256SUMS.txt` y los adjunta a un borrador de la versión en GitHub. Los instaladores públicos llevan solo la clave de TMDB, desde el secreto `TMDB_API_KEY` del repositorio; si el secreto no existe, se generan sin claves (`-sin-claves`).
+
+### 7.2 Firma de código
+
+Los instaladores no llevan firma comercial: Windows SmartScreen y macOS Gatekeeper muestran un aviso la primera vez (el manual explica cómo continuar). La firma necesita un certificado que no se puede generar desde el proyecto: uno de pago (por ejemplo, Certum para código abierto o Azure Trusted Signing) o el programa gratuito de SignPath para proyectos de código abierto, que requiere solicitarlo. El flujo ya está preparado: con los secretos `WIN_CSC_LINK` (el certificado `.pfx` en base64) y `WIN_CSC_KEY_PASSWORD`, electron-builder firma los instaladores de Windows sin otros cambios. Mientras tanto, cada versión publica las sumas SHA-256 para comprobar que un instalador es el original.
 
 ---
 
@@ -430,11 +442,10 @@ Los archivos se generan en `C:\CineTracker-release`. El instalador no lleva firm
 
 ## 9. Limitaciones y trabajo futuro
 
-- El instalador no está firmado; firmarlo requiere un certificado de pago.
-- Solo se probó el empaquetado para Windows. La configuración para macOS y Linux existe, pero no se verificó.
+- Los instaladores no están firmados ni notarizados: requiere un certificado (ver 7.2). El flujo ya firma en cuanto exista.
+- En macOS y Linux la aplicación se prueba automáticamente (pruebas, build y prueba de humo en cada cambio), pero no se ha probado a mano en un equipo físico con esos sistemas.
 - Las recomendaciones con IA dependen de la cuota de la clave de Gemini.
 - Los avisos de nuevos episodios se ven dentro de la aplicación; no hay notificaciones del sistema.
 - Mejoras posibles:
   - Sincronización opcional entre equipos.
-  - Importar el historial desde otros servicios.
   - Notificaciones de estrenos de los títulos pendientes.

@@ -4,6 +4,8 @@ A desktop app to track, rate and get recommendations for the movies and series y
 
 Final project for Software Engineering at Universidad Cooperativa de Colombia (UCC), Pasto, by **Camilo Rosero**.
 
+[![CI](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml) — tests, build and a smoke run of the app on Windows, macOS and Linux on every push.
+
 ## What it does
 
 - **Catalog and title pages:** TMDB search, status, 1–10 ratings, watch history, notes, lists, trailers, where to watch in Colombia, saga order and similar titles.
@@ -101,6 +103,7 @@ Run from `frontend/`:
 | `npm run dev` | Vite dev server and Electron with hot reload |
 | `npm test` | All tests: backend and interface (Vitest under Electron's Node) |
 | `npm run test:watch` | Tests in watch mode |
+| `npm run smoke` | Starts the real app with a throwaway profile and exits 0 when the database opened and the interface rendered without errors (what CI runs on each system) |
 | `npm run typecheck` | TypeScript check of `src` (the `.tsx` components in `src/components/ui`) |
 | `npm run build` | Production build of the interface into `frontend/dist` |
 | `npm run dist:win:public` | The installer and portable `.exe` published on GitHub, with only the TMDB key so it works right after installing |
