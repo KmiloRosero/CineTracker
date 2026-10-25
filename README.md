@@ -17,8 +17,10 @@ AI features use Google Gemini (or Anthropic Claude when only its key is set). Wi
 | Home | Title showcase |
 |---|---|
 | ![Home](docs/screenshots/home.png) | ![Title showcase](docs/screenshots/showcase.png) |
-| **Descubrir** | **Statistics** |
-| ![Descubrir: a list built from your taste](docs/screenshots/discover.png) | ![Statistics with the cinephile profile](docs/screenshots/statistics.png) |
+| **¿Qué veo esta noche?** | **Descubrir** |
+| ![Tonight: what was understood, picks with reasons, where to watch and trailers](docs/screenshots/tonight.png) | ![Descubrir: a list built from your taste](docs/screenshots/discover.png) |
+| **Statistics** | |
+| ![Statistics with the cinephile profile](docs/screenshots/statistics.png) | |
 | **Estrenos** | **Tu año en cine** |
 | ![Upcoming releases](docs/screenshots/upcoming.png) | ![Year in review](docs/screenshots/year.png) |
 | **Catalog** | |
