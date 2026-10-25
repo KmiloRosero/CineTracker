@@ -6,6 +6,8 @@ const { findCandidates, buildFilters, ruleReason, candidateLine } = require('./c
 const { attachProviders } = require('./platformService.js');
 const { tryAskJSON, pickProvider, cleanText } = require('./aiClient.js');
 const { canonicalGenres, genreLabel } = require('../utils/genres.js');
+const aiCache = require('../repositories/aiCacheRepository.js');
+const { digest } = require('./cinephileService.js');
 
 // "¿Qué veo esta noche?": up to nine options for right now from what the
 // person writes ("algo como Interstellar pero más corto", "terror coreano",
@@ -308,8 +310,30 @@ async function pickTonight(userId, input = {}, options = {}) {
   return result;
 }
 
+const HOME_KEY = 'home-recommendations';
+const HOME_AI_TTL_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * "Recomendados para ti" on Home: the same engine with no request, from the
+ * person's pending list and new titles. `fast` answers with the rules (no
+ * AI, no quota); otherwise the AI's answer is saved for six hours or until
+ * the catalog changes, so visiting Home does not spend the daily quota.
+ * `refresh` with `exclude` (keys on screen) asks for a new set.
+ */
+async function getHomeRecommendations(userId, { refresh = false, fast = false, exclude = [] } = {}, options = {}) {
+  const input = { mood: '', runtime: 'any', source: 'both', exclude };
+  if (fast) return pickTonight(userId, input, { ...options, fast: true, refresh });
+  const signature = digest(getTasteProfile(userId).signature);
+  const saved = aiCache.get(userId, HOME_KEY);
+  const fresh = saved && Date.now() - Date.parse(`${String(saved.createdAt).replace(' ', 'T')}Z`) < HOME_AI_TTL_MS;
+  if (!refresh && fresh && saved.signature === signature) return saved.payload;
+  const result = await pickTonight(userId, input, { ...options, refresh: true });
+  if (result.reason === 'ok' && result.source === 'ai') aiCache.set(userId, HOME_KEY, signature, result);
+  return result;
+}
+
 function clearCache() {
   cache.clear();
 }
 
-module.exports = { pickTonight, clearCache, PICKS };
+module.exports = { pickTonight, getHomeRecommendations, clearCache, PICKS };

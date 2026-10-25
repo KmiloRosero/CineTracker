@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import FixtureCard from '../components/FixtureCard';
@@ -12,32 +12,11 @@ import { getTrending, getTitleDetails, toCatalogPayload } from '../services/tmdb
 import { canonicalGenres, genreLabel } from '../utils/genres';
 import { typeLabel, formatDayMonth } from '../utils/labels';
 import { tmdbImage } from '../utils/tmdbImage';
+import { aiName, fallbackNote } from '../utils/ai';
 
-// Why the AI picks were replaced by genre-based ones, in the user's terms.
-// `ai` is the provider's display name (Gemini or Claude).
-const FALLBACK_NOTE = {
-  'no-api-key':        () => 'Agrega una clave de Gemini en Perfil > Claves de API para recibir recomendaciones escritas por IA. Por ahora se muestran según tus géneros.',
-  'insufficient-data': (ai) => `Califica al menos 3 títulos y deja algunos como Pendiente para recibir recomendaciones de ${ai}.`,
-  'offline':           (ai) => `No se pudo conectar con ${ai} (revisa tu conexión). Se muestran recomendaciones según tus géneros.`,
-  'rate-limited':      (ai) => `${ai} está ocupado ahora mismo. Se muestran recomendaciones según tus géneros; prueba Actualizar en un minuto.`,
-  'invalid-api-key':   (ai) => `La clave de ${ai} fue rechazada. Se muestran recomendaciones según tus géneros.`,
-  'api-permission':    (ai) => `La clave de ${ai} no puede usar este modelo. Se muestran recomendaciones según tus géneros.`,
-  'api-error':         (ai) => `${ai} devolvió un error. Se muestran recomendaciones según tus géneros.`,
-  'refused':           (ai) => `${ai} rechazó la solicitud. Se muestran recomendaciones según tus géneros.`,
-  'invalid-response':  (ai) => `No se pudo usar la respuesta de ${ai}. Se muestran recomendaciones según tus géneros.`,
-  'empty-ai-response': (ai) => `${ai} no encontró coincidencias en tu lista. Se muestran recomendaciones según tus géneros.`,
-};
-
-const AI_NAME  = { gemini: 'Gemini', claude: 'Claude' };
-const aiName   = (recs) => AI_NAME[recs?.provider] ?? 'la IA';
-const aiSource = (ai) => `Escrito por ${ai} tras comparar este título con los que calificaste.`;
-const RULE_SOURCE = 'Basado en cuántas veces calificaste estos géneros con 8 o más.';
-
-const NO_REC_MSG = {
-  'no-ratings': 'Califica con 8 o más los títulos que termines para desbloquear recomendaciones.',
-  'no-pending': 'Agrega títulos como Pendiente para recibir sugerencias de tu propia lista.',
-  'no-match':   'Ninguno de tus pendientes coincide aún con tus géneros favoritos. Sigue calificando.',
-};
+const aiSource = (r) => `Elegido por ${aiName(r)} con tus calificaciones.`;
+const RULE_SOURCE = 'Elegido con tus calificaciones, tus géneros favoritos y la nota en TMDB.';
+const RECS_ON_HOME = 6;
 
 /** "T2 · E05 salió el 12 oct · vas 2 atrás" for the Nuevos episodios rail. */
 function episodeLine(n) {
@@ -423,15 +402,33 @@ export default function Home() {
   }, [user, reloadKey]);
 
   // ── recommendations, after the catalog is ready ──────────────────────
+  // The shared engine: the rules' picks at once, then the AI's (saved for hours,
+  // so Home does not spend the AI quota on every visit). Actualizar asks for a new set.
+  const recsRequest = useRef(0);
   async function loadRecommendations({ refresh = false } = {}) {
+    const id = ++recsRequest.current;
     setRecsLoading(true);
     setRecsError(null);
+    const exclude = refresh ? (recs?.picks ?? []).map((p) => p.key) : [];
+    let first;
     try {
-      setRecs(unwrap(await window.electronAPI.getAIRecommendations({ refresh })));
+      first = unwrap(await window.electronAPI.getHomeRecommendations({ fast: true, refresh, exclude }));
+      if (id !== recsRequest.current) return;
+      setRecs(first);
     } catch (err) {
-      setRecsError(err.message);
+      if (id === recsRequest.current) setRecsError(err.message);
+      return;
     } finally {
-      setRecsLoading(false);
+      if (id === recsRequest.current) setRecsLoading(false);
+    }
+    if (!first.aiAvailable || first.reason !== 'ok') return;
+    try {
+      const better = unwrap(await window.electronAPI.getHomeRecommendations({ refresh, exclude }));
+      if (id !== recsRequest.current) return;
+      if (better.reason === 'ok' && better.source === 'ai') setRecs(better);
+      else setRecs((prev) => ({ ...prev, provisional: false, provider: better.provider, fallbackReason: better.fallbackReason }));
+    } catch {
+      if (id === recsRequest.current) setRecs((prev) => ({ ...prev, provisional: false, fallbackReason: 'api-error' }));
     }
   }
 
@@ -473,7 +470,7 @@ export default function Home() {
   }, [titles]);
 
   const watching        = useMemo(() => titles.filter((t) => t.status === 'watching'), [titles]);
-  const recommendations = useMemo(() => recs?.recommendations ?? [], [recs]);
+  const recommendations = useMemo(() => (recs?.picks ?? []).slice(0, RECS_ON_HOME), [recs]);
   const recent          = titles.slice(0, 6);
 
   // Featured lineup: your own titles first, topped up with this week's trending.
@@ -487,7 +484,7 @@ export default function Home() {
     const own = user
       ? [
           ...watching.map((t) => fromLocal(t, 'Viendo ahora')),
-          ...recommendations.map((t) => fromLocal(t, 'Para ti')),
+          ...recommendations.map((p, i) => (p.kind === 'catalog' ? fromLocal(p.title, 'Para ti') : { ...fromTrending(p.item, i + 1), label: 'Para ti' })),
           ...titles.filter((t) => t.backdrop_path).map((t) => fromLocal(t, 'Recién agregado')),
         ].filter(keep)
       : [];
@@ -625,7 +622,7 @@ export default function Home() {
         {user && (
           <Rail
             title="Recomendados para ti"
-            sub={recs ? (recs.source === 'ai' ? `Elegidos por ${aiName(recs)}` : 'Según tus géneros favoritos') : undefined}
+            sub={recs?.reason === 'ok' ? (recs.source === 'ai' ? `Elegidos por ${aiName(recs)}` : recs.provisional ? 'La IA los está afinando…' : 'Según tu gusto') : undefined}
             action={
               <button
                 className="btn btn--ghost btn--sm"
@@ -637,23 +634,40 @@ export default function Home() {
                 {recsLoading ? 'Actualizando…' : 'Actualizar'}
               </button>
             }
-            note={recs?.source === 'rule-based' ? FALLBACK_NOTE[recs.fallbackReason]?.(aiName(recs)) ?? null : null}
+            note={recs?.provisional ? null : fallbackNote(recs, 'Mientras tanto se eligen con tus calificaciones y la nota en TMDB.')}
             empty={
               recsError ? <RailEmpty>No se pudieron cargar las recomendaciones: {recsError}</RailEmpty>
               : !recs && recsLoading ? <RailEmpty>Buscando títulos que encajen con tu gusto…</RailEmpty>
-              : recommendations.length === 0 ? <RailEmpty>{NO_REC_MSG[recs?.reason] ?? 'Aún no hay recomendaciones.'}</RailEmpty>
+              : recs?.reason === 'insufficient-data' ? <RailEmpty>Agrega y califica algunos títulos para recibir recomendaciones a tu medida.</RailEmpty>
+              : recommendations.length === 0 ? <RailEmpty>Aún no hay recomendaciones. Prueba Descubrir para buscar algo concreto.</RailEmpty>
               : undefined
             }
           >
-            {recommendations.map((t) => (
+            {recommendations.map((p) => (p.kind === 'catalog' ? (
               <FixtureCard
-                key={t.id}
-                title={t}
-                explanation={t.explanation}
-                explanationSource={recs.source === 'ai' ? aiSource(aiName(recs)) : RULE_SOURCE}
+                key={p.key}
+                title={p.title}
+                explanation={p.reason}
+                explanationSource={recs.source === 'ai' ? aiSource(recs) : RULE_SOURCE}
+                providers={p.providers}
+                onMine={p.onMine}
                 onOpen={openTitle}
               />
-            ))}
+            ) : (
+              <FixtureCard
+                key={p.key}
+                item={p.item}
+                catalogId={catalogByTmdbId.get(p.item.tmdb_id)}
+                tag={{ text: 'Nuevo', tone: 'soon' }}
+                explanation={p.reason}
+                explanationSource={recs.source === 'ai' ? aiSource(recs) : RULE_SOURCE}
+                providers={p.providers}
+                onMine={p.onMine}
+                adding={addingTmdbId === p.item.tmdb_id}
+                onAdd={handleAddTrending}
+                onOpen={openTitle}
+              />
+            )))}
           </Rail>
         )}
 

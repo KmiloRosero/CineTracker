@@ -177,3 +177,25 @@ describe('tonight with AI', () => {
     expect(keys(r)).toContain('movie:900');
   });
 });
+
+describe('Home recommendations', () => {
+  const { getHomeRecommendations } = require('../services/tonightService.js');
+  const answer = (json) => new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(json) }] } }] }), { status: 200 });
+
+  it('answers fast without AI, and saves the AI answer so Home does not spend quota on every visit', async () => {
+    const { user, ids } = await viewer();
+    const tmdb = fakeTmdb({ discover: [film(910, 'Fresh one', { genres: ['Comedy'] })] });
+    const quick = await getHomeRecommendations(user.id, { fast: true }, { tmdb, random: fixed });
+    expect(quick).toMatchObject({ reason: 'ok', source: 'rule-based' });
+
+    process.env.GEMINI_API_KEY = 'gemini-test-key-not-real';
+    const fetch = vi.fn(async () => answer({ message: 'Para ti.', picks: [{ key: `c${ids.comedy}`, reason: 'Corta y divertida.' }, { key: 'movie:910', reason: 'Nueva y ligera.' }] }));
+    const first = await getHomeRecommendations(user.id, {}, { tmdb, fetch, random: fixed });
+    expect(first).toMatchObject({ source: 'ai' });
+    const again = await getHomeRecommendations(user.id, {}, { tmdb, fetch, random: fixed });
+    expect(again.picks.map((p) => p.key)).toEqual(first.picks.map((p) => p.key));
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await getHomeRecommendations(user.id, { refresh: true }, { tmdb, fetch, random: fixed });
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});

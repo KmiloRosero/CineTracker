@@ -111,6 +111,11 @@ function registerIpcHandlers(ipcMain) {
   ipcMain.handle('stats:getCinephileProfile', authed((userId, options) =>
     cinephileService.getCinephileProfile(userId, { refresh: options?.refresh === true })));
 
+  ipcMain.handle('recommendations:getHome', authed((userId, options) => tonightService.getHomeRecommendations(userId, {
+    refresh: options?.refresh === true,
+    fast: options?.fast === true,
+    exclude: Array.isArray(options?.exclude) ? options.exclude : [],
+  }, { platforms: platformService.getPlatformIds(userId) })));
   ipcMain.handle('recommendations:get',   authed((userId) => recommendationService.getRecommendations(userId)));
   ipcMain.handle('recommendations:getAI', authed((userId, options) =>
     aiRecommendationService.getAIRecommendations(userId, { refresh: options?.refresh === true })));

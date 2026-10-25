@@ -80,6 +80,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCinephileProfile: (options) => ipcRenderer.invoke('stats:getCinephileProfile', options),
 
   // ── Recommendations ──────────────────────────────────────────────────────
+  /** Home's picks from the shared engine: @param {{ fast?: boolean, refresh?: boolean, exclude?: string[] }} [options]
+   *  Returns the same shape as pickTonight (picks with reason, providers, onMine) */
+  getHomeRecommendations: (options) => ipcRenderer.invoke('recommendations:getHome', options),
   /** Returns { recommendations: Title[], reason: string } */
   getRecommendations: () => ipcRenderer.invoke('recommendations:get'),
   /** @param {{ refresh?: boolean }} [options] — Returns { recommendations, reason, source, provider, fallbackReason?, generatedAt? }.
