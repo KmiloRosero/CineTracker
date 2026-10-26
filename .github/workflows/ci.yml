@@ -109,9 +109,12 @@ jobs:
         shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: npx electron-builder ${{ matrix.target }} -c ${{ steps.keys.outputs.config }} -c.directories.output=release --publish never
+          SIGN_CERT: ${{ secrets.WIN_CSC_LINK }}
+          SIGN_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          # an empty WIN_CSC_LINK would be read as a path: set it only when a certificate exists
+          if [ -n "$SIGN_CERT" ]; then export WIN_CSC_LINK="$SIGN_CERT" WIN_CSC_KEY_PASSWORD="$SIGN_PASSWORD"; fi
+          npx electron-builder ${{ matrix.target }} -c ${{ steps.keys.outputs.config }} -c.directories.output=release --publish never
 
       - uses: actions/upload-artifact@v4
         with:
