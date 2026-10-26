@@ -39,58 +39,7 @@ AI features use Google Gemini (or Anthropic Claude when only its key is set). Wi
 
 
 
----
 
-## Architecture
-
-```
-┌──────────────────────────── Renderer (Chromium, sandboxed) ────────────────────────────┐
-│  React pages ─▶ components ─▶ window.electronAPI.*        <img src="ctimg://w342/..."> │
-└───────────────────────────────────────┬───────────────────────────────┬────────────────┘
-                    contextBridge (preload.js), IPC invoke              │ custom protocol
-┌───────────────────────────────────────▼───────────────────────────────▼────────────────┐
-│ Main process                                                                           │
-│  ipc/handlers.js   session check (guest / logged in), error mapping                    │
-│        │                                                                               │
-│  services/         validation and business rules                                       │
-│   auth · title · record · list · statistics · recommendation · aiRecommendation ·      │
-│   tmdb · imageCache                                                                    │
-│        │                                         │                       │             │
-│  repositories/     SQL only, scoped by user      │  TMDB API (key in     │  disk cache │
-│        │                                         │  backend/.env)        │  of images  │
-│  db/  SQLite (better-sqlite3) + versioned        │  Gemini / Claude API  │             │
-│       migrations, one-time backup before each    │  (optional)           │             │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-
----
-
-## Getting started
-
-Requirements: Node.js 20+ and npm, on Windows, macOS or Linux.
-
-```bash
-git clone https://github.com/KmiloRosero/CineTracker.git
-cd CineTracker/frontend
-npm install        # also rebuilds better-sqlite3 for Electron
-```
-
-Create `backend/.env` from the example and add your keys:
-
-```bash
-cp ../backend/.env.example ../backend/.env
-```
-
-Then start the app:
-
-```bash
-npm run dev
-```
-
-Vite serves the interface on `http://localhost:5173` and Electron opens it (DevTools opens in its own window in development).
-
-> If `npm run dev` fails with `Cannot read properties of undefined (reading 'whenReady')`, your shell has `ELECTRON_RUN_AS_NODE=1` set (some editor terminals set it). Clear it and run again.
 
 ---
 
