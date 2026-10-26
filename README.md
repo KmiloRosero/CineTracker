@@ -28,20 +28,9 @@ AI features use Google Gemini (or Anthropic Claude when only its key is set). Wi
 | **Catalog** | |
 | ![Catalog](docs/screenshots/catalog.png) | |
 
-<sub>Captured with a test account and real TMDB titles.</sub>
-
-## Documentación
-
-- [Manual de usuario](docs/MANUAL_DE_USUARIO.md): instalación, uso de cada pantalla, tráilers, claves de API y problemas frecuentes.
-- [Informe técnico](docs/INFORME_TECNICO.md): arquitectura, modelo de datos, integraciones (TMDB, YouTube, Gemini), seguridad, pruebas y decisiones.
-
----
 
 
 
-
-
----
 
 ## Scripts
 
