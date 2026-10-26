@@ -14,14 +14,12 @@ Todo se descarga de la página de versiones del proyecto en GitHub:
 |---|---|---|
 | `CineTracker-Setup-1.2.0.exe` | Windows | Instalador: crea accesos directos en el escritorio y en el menú Inicio. Recomendado. |
 | `CineTracker-Portable-1.2.0.exe` | Windows | Versión portátil: se abre con doble clic, sin instalar. Útil en un computador prestado. |
-| `CineTracker-1.2.0-mac-arm64-sin-claves.dmg` | macOS (Apple Silicon: M1, M2…) | Ábrelo y arrastra CineTracker a Aplicaciones. |
-| `CineTracker-1.2.0-mac-x64-sin-claves.dmg` | macOS (Intel) | Igual que el anterior. |
-| `CineTracker-1.2.0-linux-x86_64-sin-claves.AppImage` | Linux | Dale permiso de ejecución (`chmod +x CineTracker-*.AppImage`) y ábrelo. |
+| `CineTracker-1.2.0-mac-arm64.dmg` | macOS (Apple Silicon: M1, M2…) | Ábrelo y arrastra CineTracker a Aplicaciones. |
+| `CineTracker-1.2.0-mac-x64.dmg` | macOS (Intel) | Igual que el anterior. |
+| `CineTracker-1.2.0-linux-x86_64.AppImage` | Linux | Dale permiso de ejecución (`chmod +x CineTracker-*.AppImage`) y ábrelo. |
 | `SHA256SUMS.txt` | Todos | Sumas de verificación de cada archivo (ver más abajo). |
 
-En Windows, la aplicación viene lista para usar: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 11).
-
-En **macOS y Linux** la versión 1.2.0 viene sin claves: la primera vez, pega una clave gratuita de TMDB en Perfil > Claves de API (el botón **Conseguir una clave** abre la página para crearla). Después todo funciona igual que en Windows.
+La aplicación viene lista para usar en los tres sistemas: ya trae la clave de TMDB, así que la búsqueda, las tendencias, los tráilers, las sagas y los próximos estrenos funcionan apenas la abres. Las recomendaciones escritas por inteligencia artificial son opcionales: sin clave de Gemini, la aplicación recomienda según tus géneros favoritos, y si quieres las de IA pegas tu propia clave de Gemini en Perfil > Claves de API (sección 11).
 
 ### Aviso "Windows protegió su PC"
 
