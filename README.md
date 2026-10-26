@@ -1,11 +1,10 @@
 # CineTracker
 
-A desktop app to track, rate and get recommendations for the movies and series you watch. Your catalogue, ratings and watch history stay on your own computer; there is no server and no social feed. The interface is in Spanish.
+Una aplicación de escritorio para realizar un seguimiento, calificar y obtener recomendaciones de las películas y series que ves.
 
-Final project for Software Engineering at Universidad Cooperativa de Colombia (UCC), Pasto, by **Camilo Rosero**.
 
-[![CI](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml) — tests, build and a smoke run of the app on Windows, macOS and Linux on every push.
 
+[![CI](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml) 
 ## What it does
 
 - **Catalog and title pages:** TMDB search, status, 1–10 ratings, watch history, notes, lists, trailers, where to watch in Colombia, saga order and similar titles.
