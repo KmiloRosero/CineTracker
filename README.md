@@ -7,13 +7,12 @@ Una aplicación de escritorio para realizar un seguimiento, calificar y obtener 
 [![CI](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KmiloRosero/CineTracker/actions/workflows/ci.yml) 
 ## What it does
 
-- **Catalog and title pages:** TMDB search, status, 1–10 ratings, watch history, notes, lists, trailers, where to watch in Colombia, saga order and similar titles.
-- **Descubrir:** AI lists built from your styles (say, slow-burn horror) with a reason for every pick, *¿Qué veo esta noche?* from your mood and the time you have, and finding a title from a loose description. Every suggestion is a real TMDB title; the AI only chooses and explains.
-- **Your taste in words:** a cinephile profile on Statistics, a year in review with awards, and *¿Te va a gustar?* with a predicted score on every title.
-- **Series and releases:** episode-by-episode progress, a new-episodes rail, and upcoming releases from the people and genres you follow.
-- **Habits and data:** a yearly challenge, weekly streaks, your streaming platforms as a filter, import from Letterboxd and IMDb, export to CSV or to Letterboxd.
+- **Catálogo y páginas de títulos:** Búsqueda en TMDB, estado, calificaciones del 1 al 10, historial de visualización, notas, listas, tráilers, dónde ver en Colombia, orden de la saga y títulos similares.
+- **Descubrir:** Listas generadas por IA basadas en tus gustos (por ejemplo, terror a fuego lento) con una justificación para cada elección, *¿Qué veo esta noche?* según tu estado de ánimo y el tiempo que tengas, y búsqueda de títulos a partir de descripciones vagas. Cada sugerencia es un título real de TMDB; la IA solo selecciona y explica.
+- **Tus gustos en palabras:** Un perfil cinéfilo en Estadísticas, un resumen anual con premios, y *¿Te va a gustar?* con una puntuación estimada para cada título.
+- **Series y estrenos:** Progreso episodio por episodio, un carrusel de nuevos episodios y próximos estrenos de las personas y géneros que sigues.
+- **Hábitos y datos:** Un reto anual, rachas semanales, tus plataformas de streaming como filtro, importación desde Letterboxd e IMDb, y exportación a CSV o a Letterboxd.
 
-AI features use Google Gemini (or Anthropic Claude when only its key is set). Without a key, each one falls back to rules and says so.
 
 | Home | Title showcase |
 |---|---|
